@@ -1,0 +1,21 @@
+name: EarthCore
+main: mello.EarthCore
+version: ${version}
+api-version: "1.21"
+author: Mello
+
+commands:
+  bal:
+    description: Mostra seu saldo
+  pay:
+    description: Envia dinheiro para outro jogador
+    usage: /pay <player> <valor>
+  eco:
+    description: Comandos administrativos da economia
+    usage: /eco <set|add|remove|check> <player> [amount]
+    permission: economy.admin
+
+permissions:
+  economy.admin:
+    description: Acesso aos comandos administrativos da economia
+    default: op
