@@ -120,6 +120,10 @@ public class EcoCommand implements CommandExecutor {
             sender.sendMessage("Quantidade deve ser não-negativa.");
             throw new NumberFormatException("negative");
         }
+        if (Double.isInfinite(v) || Double.isNaN(v)) {
+            sender.sendMessage("Quantidade inválida.");
+            throw new NumberFormatException("not-finite");
+        }
         return v;
     }
 }

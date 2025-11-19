@@ -17,18 +17,30 @@ public class CurrencyStorage {
     private final Map<UUID, Double> cache = new HashMap<>();
 
     public CurrencyStorage(File dataFolder) {
+        dataFolder.mkdirs();
         this.file = new File(dataFolder, "currency.yml");
         this.config = YamlConfiguration.loadConfiguration(file);
         loadAll();
     }
 
     private void loadAll() {
-        if (!file.exists()) return;
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                Bukkit.getLogger().severe("[Currency] Não foi possível criar currency.yml: " + e.getMessage());
+                return;
+            }
+        }
 
         for (String key : config.getKeys(false)) {
-            UUID uuid = UUID.fromString(key);
-            double balance = config.getDouble(key);
-            cache.put(uuid, balance);
+            try {
+                UUID uuid = UUID.fromString(key);
+                double balance = config.getDouble(key);
+                cache.put(uuid, balance);
+            } catch (IllegalArgumentException ex) {
+                Bukkit.getLogger().warning("[Currency] UUID inválido em currency.yml: " + key);
+            }
         }
         Bukkit.getLogger().info("[Currency] Dados carregados: " + cache.size());
     }

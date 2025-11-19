@@ -40,7 +40,23 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
-        boolean ok = service.transfer(player.getUniqueId(), target.getUniqueId(), amount);
+        if (amount <= 0) {
+            player.sendMessage("O valor deve ser maior que zero.");
+            return true;
+        }
+
+        if (target.getUniqueId().equals(player.getUniqueId())) {
+            player.sendMessage("Você não pode transferir coins para si mesmo.");
+            return true;
+        }
+
+        boolean ok;
+        try {
+            ok = service.transfer(player.getUniqueId(), target.getUniqueId(), amount);
+        } catch (IllegalArgumentException ex) {
+            player.sendMessage("Operação cancelada: " + ex.getMessage());
+            return true;
+        }
 
         if (!ok) {
             player.sendMessage("Você não tem saldo suficiente!");
