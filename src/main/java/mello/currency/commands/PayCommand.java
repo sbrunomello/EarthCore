@@ -1,16 +1,27 @@
 package mello.currency.commands;
 
+import mello.clans.ClanService;
+import mello.clans.TaxResult;
 import mello.currency.CurrencyService;
+import mello.kingdoms.KingdomService;
+import mello.kingdoms.TaxBreakdown;
 import org.bukkit.Bukkit;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 
+/**
+ * Transferência entre jogadores com suporte a taxas de reinos e clãs.
+ */
 public class PayCommand implements CommandExecutor {
 
     private final CurrencyService service;
+    private final KingdomService kingdomService;
+    private final ClanService clanService;
 
-    public PayCommand(CurrencyService service) {
+    public PayCommand(CurrencyService service, KingdomService kingdomService, ClanService clanService) {
         this.service = service;
+        this.kingdomService = kingdomService;
+        this.clanService = clanService;
     }
 
     @Override
@@ -50,9 +61,16 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
+        // Pré-calcula taxas para evitar inconsistências financeiras em caso de erro.
+        TaxBreakdown kingdomTax = kingdomService != null ? kingdomService.calculateTax(target.getUniqueId(), amount) : new TaxBreakdown(amount, 0, null);
+        TaxResult clanTax = clanService != null ? clanService.calculateTax(target.getUniqueId(), kingdomTax.netAmount()) : new TaxResult(kingdomTax.netAmount(), 0, null);
+
+        double netAmount = clanTax.netAmount();
+        double totalTax = (amount - netAmount);
+
         boolean ok;
         try {
-            ok = service.transfer(player.getUniqueId(), target.getUniqueId(), amount);
+            ok = service.withdraw(player.getUniqueId(), amount);
         } catch (IllegalArgumentException ex) {
             player.sendMessage("Operação cancelada: " + ex.getMessage());
             return true;
@@ -63,8 +81,25 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
+        service.deposit(target.getUniqueId(), netAmount);
+        if (kingdomTax.taxAmount() > 0) {
+            kingdomService.applyTax(target.getUniqueId(), kingdomTax.taxAmount());
+        }
+        if (clanTax.taxAmount() > 0) {
+            clanService.applyTax(target.getUniqueId(), clanTax.taxAmount());
+        }
+
         player.sendMessage("Você pagou §a" + amount + "§f para " + target.getName());
-        target.sendMessage("Você recebeu §a" + amount + "§f de " + player.getName());
+        if (totalTax > 0) {
+            player.sendMessage("§7Impostos retidos: §c" + totalTax);
+        }
+        target.sendMessage("Você recebeu §a" + netAmount + "§f de " + player.getName());
+        if (kingdomTax.taxAmount() > 0) {
+            target.sendMessage("§7Seu reino recolheu §a" + kingdomTax.taxAmount() + "§7 para a tesouraria.");
+        }
+        if (clanTax.taxAmount() > 0) {
+            target.sendMessage("§7Seu clã recolheu §a" + clanTax.taxAmount() + "§7 para o banco.");
+        }
 
         return true;
     }
