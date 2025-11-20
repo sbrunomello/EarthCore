@@ -151,7 +151,7 @@ roles:
 ## Roadmap / Futuras Implementações
 - 🟢 Núcleo de economia e comandos básicos.
 - 🟢 Sistema inicial de jobs com payouts configuráveis.
-- 🟡 Reinos e clãs com claims, cargos e impostos.
+- 🟢 Reinos e clãs com claims, cargos e impostos.
 - 🟡 Skills/MMO com árvore de benefícios.
 - 🟡 Lojas de jogador e mercado global.
 - 🟡 Integração completa com Dynmap (markers dinâmicos e áreas).

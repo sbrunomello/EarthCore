@@ -1,0 +1,138 @@
+package mello.kingdoms.commands;
+
+import mello.common.OperationResult;
+import mello.kingdoms.Kingdom;
+import mello.kingdoms.KingdomService;
+import mello.kingdoms.TaxBreakdown;
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
+import java.util.Locale;
+
+/**
+ * Comando /kingdom com subcomandos de criação, convite, claims e informações.
+ */
+public class KingdomCommand implements CommandExecutor {
+
+    private final KingdomService service;
+
+    public KingdomCommand(KingdomService service) {
+        this.service = service;
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Somente jogadores podem usar este comando.");
+            return true;
+        }
+
+        if (args.length == 0) {
+            sendHelp(player);
+            return true;
+        }
+
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        switch (sub) {
+            case "create":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom create <nome>");
+                    return true;
+                }
+                OperationResult createResult = service.createKingdom(player.getUniqueId(), args[1]);
+                player.sendMessage(createResult.message());
+                return true;
+
+            case "invite":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom invite <jogador>");
+                    return true;
+                }
+                Player target = Bukkit.getPlayer(args[1]);
+                if (target == null) {
+                    player.sendMessage("Jogador offline.");
+                    return true;
+                }
+                OperationResult inviteResult = service.invite(player.getUniqueId(), target.getUniqueId());
+                player.sendMessage(inviteResult.message());
+                if (inviteResult.success()) {
+                    target.sendMessage("§eVocê foi convidado para um reino! Use /kingdom join <nome> para aceitar.");
+                }
+                return true;
+
+            case "join":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom join <nome>");
+                    return true;
+                }
+                OperationResult joinResult = service.acceptInvite(player.getUniqueId(), args[1]);
+                player.sendMessage(joinResult.message());
+                return true;
+
+            case "leave":
+                OperationResult leaveResult = service.leave(player.getUniqueId());
+                player.sendMessage(leaveResult.message());
+                return true;
+
+            case "claim":
+                OperationResult claimResult = service.claim(player.getUniqueId(), player.getLocation().getChunk());
+                player.sendMessage(claimResult.message());
+                return true;
+
+            case "unclaim":
+                OperationResult unclaimResult = service.unclaim(player.getUniqueId(), player.getLocation().getChunk());
+                player.sendMessage(unclaimResult.message());
+                return true;
+
+            case "info":
+                Kingdom kingdom;
+                if (args.length >= 2) {
+                    kingdom = service.getByName(args[1]);
+                    if (kingdom == null) {
+                        player.sendMessage("Reino não encontrado.");
+                        return true;
+                    }
+                } else {
+                    kingdom = service.getByMember(player.getUniqueId());
+                    if (kingdom == null) {
+                        player.sendMessage("Você não faz parte de um reino. Use /kingdom create para fundar um.");
+                        return true;
+                    }
+                }
+                sendInfo(player, kingdom);
+                return true;
+
+            default:
+                sendHelp(player);
+                return true;
+        }
+    }
+
+    private void sendInfo(Player player, Kingdom kingdom) {
+        player.sendMessage("§6Reino: §e" + kingdom.getName());
+        player.sendMessage("§7Rei: §f" + Bukkit.getOfflinePlayer(kingdom.getKing()).getName());
+        player.sendMessage("§7Membros: §f" + kingdom.getMembers().size());
+        player.sendMessage("§7Claims: §f" + kingdom.getClaims().size());
+        player.sendMessage("§7Tesouraria: §a" + kingdom.getTreasury());
+
+        TaxBreakdown tax = service.calculateTax(player.getUniqueId(), 1000);
+        if (tax.collectorName() != null) {
+            double rate = 1 - (tax.netAmount() / 1000);
+            player.sendMessage("§7Imposto padrão sobre transações: §f" + String.format(Locale.US, "%.2f%%", rate * 100));
+        }
+    }
+
+    private void sendHelp(Player player) {
+        player.sendMessage("§eComandos de reino:");
+        player.sendMessage("§7/kingdom create <nome> §f- cria um novo reino");
+        player.sendMessage("§7/kingdom invite <jogador> §f- convida alguém");
+        player.sendMessage("§7/kingdom join <nome> §f- aceita um convite");
+        player.sendMessage("§7/kingdom claim §f- reivindica o chunk atual");
+        player.sendMessage("§7/kingdom unclaim §f- remove o claim atual");
+        player.sendMessage("§7/kingdom info [nome] §f- mostra detalhes");
+        player.sendMessage("§7/kingdom leave §f- sai do seu reino");
+    }
+}
