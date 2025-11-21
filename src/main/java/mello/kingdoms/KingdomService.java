@@ -5,8 +5,8 @@ import mello.clans.ClanService;
 import mello.common.OperationResult;
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
+import mello.kingdoms.TaxBreakdown;
 import org.bukkit.Chunk;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Orquestra regras de reinos: criação, claims, convites e impostos.
+ * Orquestra regras de reinos: criação, claims, upgrades e dissolução.
  */
 public class KingdomService {
 
@@ -54,8 +54,7 @@ public class KingdomService {
     public Kingdom getByChunk(Chunk chunk) {
         if (chunk == null) return null;
 
-        ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
-        String kingdomName = storage.getKingdomByChunk(claimedChunk.toStorageKey());
+        String kingdomName = storage.getKingdomByChunk(toChunkKey(chunk));
         return kingdomName == null ? null : storage.getByName(kingdomName);
     }
 
@@ -76,20 +75,26 @@ public class KingdomService {
         if (clan == null) {
             return OperationResult.fail("Você precisa estar em um clã para fundar um reino.");
         }
-
-        if (!economyService.withdraw(creator, config.getCreateCost(), MoneyTransactionType.SYSTEM_EVENT, "Criação de reino")) {
-            return OperationResult.fail("Saldo insuficiente para criar um reino (custo: " + config.getCreateCost() + ")");
+        if (!clan.getLeader().equals(creator)) {
+            return OperationResult.fail("Somente o líder do clã pode fundar um reino.");
+        }
+        if (clan.getMembers().size() < config.getMinMembersForCreation()) {
+            return OperationResult.fail("Seu clã precisa de pelo menos " + config.getMinMembersForCreation() + " membros para criar um reino.");
+        }
+        if (!clan.hasClaim()) {
+            return OperationResult.fail("O clã precisa ter um claim para ser usado como capital.");
+        }
+        if (!economyService.withdraw(creator, config.getStartingKingdomCost(), MoneyTransactionType.SYSTEM_EVENT, "Criação de reino")) {
+            return OperationResult.fail("Saldo insuficiente para criar um reino (custo: " + config.getStartingKingdomCost() + ")");
         }
 
-        Kingdom kingdom = new Kingdom(name, creator);
-
-        if (clan.hasClaim()) {
-            ClaimedChunk starterClaim = clanService.consumeClaim(clan.getName());
-            if (starterClaim != null) {
-                kingdom.addClaim(starterClaim);
+        String capitalKey = clan.getSingleClaim().toStorageKey();
+        Kingdom kingdom = new Kingdom(UUID.randomUUID(), name, clan.getTag(), KingdomTier.VILLAGE, clan.getName(), capitalKey, creator);
+        clan.getMembers().forEach((memberId, role) -> {
+            if (!memberId.equals(creator)) {
+                kingdom.addMember(memberId, KingdomRole.CITIZEN);
             }
-        }
-
+        });
         storage.addKingdom(kingdom);
         logger.info("[Kingdoms] Novo reino criado: " + name + " por " + creator);
         notifyDynmapUpdate(kingdom);
@@ -102,7 +107,7 @@ public class KingdomService {
 
         KingdomRole role = kingdom.getRole(inviter);
         if (role == null || !role.canManageMembers()) {
-            return OperationResult.fail("Somente rei ou conselheiro podem convidar.");
+            return OperationResult.fail("Somente rei ou nobre podem convidar.");
         }
 
         invites.put(target, kingdom.getName());
@@ -118,9 +123,41 @@ public class KingdomService {
         Kingdom kingdom = storage.getByName(kingdomName);
         if (kingdom == null) return OperationResult.fail("Reino não encontrado.");
 
-        kingdom.addMember(playerId, KingdomRole.MEMBER);
+        kingdom.addMember(playerId, KingdomRole.CITIZEN);
         invites.remove(playerId);
         return OperationResult.ok("Você entrou em " + kingdom.getName());
+    }
+
+    public OperationResult upgrade(UUID playerId) {
+        Kingdom kingdom = getByMember(playerId);
+        if (kingdom == null) return OperationResult.fail("Você não pertence a um reino.");
+        if (!kingdom.getKing().equals(playerId)) {
+            return OperationResult.fail("Somente o rei pode evoluir o reino.");
+        }
+        KingdomTier next = kingdom.getTier().next();
+        if (next == null) {
+            return OperationResult.fail("Seu reino já está no nível máximo.");
+        }
+        KingdomsConfig.TierSettings settings = config.getTierSettings(next);
+        if (settings == null) {
+            return OperationResult.fail("Configuração do próximo nível não encontrada.");
+        }
+        int membersCount = clanService != null && kingdom.getClanName() != null ?
+                Optional.ofNullable(clanService.getByName(kingdom.getClanName())).map(c -> c.getMembers().size()).orElse(kingdom.getMembers().size())
+                : kingdom.getMembers().size();
+        if (membersCount < settings.minMembers()) {
+            return OperationResult.fail("É necessário pelo menos " + settings.minMembers() + " membros para evoluir para " + settings.displayName());
+        }
+        int claimsUsed = kingdom.getClaims().size() + 1; // capital
+        if (claimsUsed < settings.minClaimsUsed()) {
+            return OperationResult.fail("É necessário ter pelo menos " + settings.minClaimsUsed() + " claims ativos para evoluir.");
+        }
+        if (!economyService.withdraw(playerId, settings.upgradeCost(), MoneyTransactionType.SYSTEM_EVENT, "Evolução de reino")) {
+            return OperationResult.fail("Saldo insuficiente para evoluir. Custo: " + settings.upgradeCost());
+        }
+        kingdom.setTier(next);
+        notifyDynmapUpdate(kingdom);
+        return OperationResult.ok("Reino evoluído para " + settings.displayName());
     }
 
     public OperationResult leave(UUID playerId) {
@@ -151,27 +188,33 @@ public class KingdomService {
 
         KingdomRole role = kingdom.getRole(playerId);
         if (role == null || !role.canManageClaims()) {
-            return OperationResult.fail("Somente rei ou conselheiro podem dar claim.");
+            return OperationResult.fail("Somente rei ou nobre podem dar claim.");
         }
 
-        ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
-        String chunkKey = claimedChunk.toStorageKey();
+        String chunkKey = toChunkKey(chunk);
         if (storage.getKingdomByChunk(chunkKey) != null) {
             return OperationResult.fail("Este chunk já pertence a outro reino.");
         }
-
         if (clanService != null) {
             String owningClan = clanService.getClanByChunk(chunk);
-            if (owningClan != null) {
-                return OperationResult.fail("Este chunk já pertence ao clã " + owningClan + ". Converta-o em reino ou libere o terreno.");
+            if (owningClan != null && !owningClan.equalsIgnoreCase(kingdom.getClanName())) {
+                return OperationResult.fail("Este chunk já pertence ao clã " + owningClan + ".");
             }
         }
 
-        if (!economyService.withdraw(playerId, config.getClaimCost(), MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para reino")) {
-            return OperationResult.fail("Saldo insuficiente para claim. Custo: " + config.getClaimCost());
+        KingdomsConfig.TierSettings settings = config.getTierSettings(kingdom.getTier());
+        int totalClaimsAfter = kingdom.getClaims().size() + 1 + 1; // existing + new + capital
+        if (settings != null && totalClaimsAfter > settings.maxClaims()) {
+            return OperationResult.fail("Limite de claims do tier atingido.");
         }
 
-        kingdom.addClaim(claimedChunk);
+        double cost = config.getBaseClaimCost() + (kingdom.getClaims().size() * config.getCostPerExistingClaim());
+        if (!economyService.withdraw(playerId, cost, MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para reino")) {
+            return OperationResult.fail("Saldo insuficiente para claim. Custo: " + cost);
+        }
+
+        KingdomClaim claim = KingdomClaim.fromChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+        kingdom.addClaim(claim);
         storage.updateChunks(kingdom);
         notifyDynmapUpdate(kingdom);
         markChunkWithTorches(chunk);
@@ -189,37 +232,35 @@ public class KingdomService {
 
         KingdomRole role = kingdom.getRole(playerId);
         if (role == null || !role.canManageClaims()) {
-            return OperationResult.fail("Somente rei ou conselheiro podem remover claims.");
+            return OperationResult.fail("Somente rei ou nobre podem remover claims.");
         }
 
-        ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
-        if (!kingdom.isClaimed(claimedChunk)) {
+        String key = toChunkKey(chunk);
+        if (key.equalsIgnoreCase(kingdom.getCapitalClaimId())) {
+            return OperationResult.fail("A capital não pode ser desclaimada.");
+        }
+
+        KingdomClaim target = kingdom.getClaims().stream()
+                .filter(c -> c.toStorageKey().equalsIgnoreCase(key))
+                .findFirst().orElse(null);
+        if (target == null) {
             return OperationResult.fail("Este chunk não pertence ao seu reino.");
         }
 
-        kingdom.removeClaim(claimedChunk);
+        kingdom.removeClaim(target);
         storage.updateChunks(kingdom);
         notifyDynmapUpdate(kingdom);
         return OperationResult.ok("Claim removido em " + chunk.getX() + ", " + chunk.getZ());
     }
 
-    public TaxBreakdown calculateTax(UUID receiverId, double amount) {
-        Kingdom kingdom = getByMember(receiverId);
-        if (kingdom == null) {
-            return new TaxBreakdown(amount, 0, null);
-        }
+    public OperationResult disband(UUID playerId) {
+        Kingdom kingdom = getByMember(playerId);
+        if (kingdom == null) return OperationResult.fail("Você não pertence a um reino.");
+        if (!kingdom.getKing().equals(playerId)) return OperationResult.fail("Somente o rei pode dissolver o reino.");
 
-        double tax = Math.max(0, amount * config.getTransactionTaxRate());
-        double net = amount - tax;
-        if (net < 0) net = 0;
-        return new TaxBreakdown(net, tax, kingdom.getName());
-    }
-
-    public void applyTax(UUID receiverId, double taxAmount) {
-        if (taxAmount <= 0) return;
-        Kingdom kingdom = getByMember(receiverId);
-        if (kingdom == null) return;
-        kingdom.deposit(taxAmount);
+        storage.removeKingdom(kingdom.getName());
+        notifyDynmapRemoval(kingdom.getName());
+        return OperationResult.ok("Reino dissolvido com sucesso.");
     }
 
     public OperationResult deposit(UUID playerId, double amount) {
@@ -244,6 +285,25 @@ public class KingdomService {
         storage.saveAll();
     }
 
+    public TaxBreakdown calculateTax(UUID receiverId, double amount) {
+        Kingdom kingdom = getByMember(receiverId);
+        if (kingdom == null) {
+            return new TaxBreakdown(amount, 0, null);
+        }
+
+        double tax = 0;
+        double net = amount - tax;
+        if (net < 0) net = 0;
+        return new TaxBreakdown(net, tax, kingdom.getName());
+    }
+
+    public void applyTax(UUID receiverId, double taxAmount) {
+        if (taxAmount <= 0) return;
+        Kingdom kingdom = getByMember(receiverId);
+        if (kingdom == null) return;
+        kingdom.deposit(taxAmount);
+    }
+
     private void notifyDynmapUpdate(Kingdom kingdom) {
         if (dynmapHook != null) {
             dynmapHook.refreshKingdom(kingdom);
@@ -254,6 +314,10 @@ public class KingdomService {
         if (dynmapHook != null) {
             dynmapHook.removeKingdom(kingdomName);
         }
+    }
+
+    private String toChunkKey(Chunk chunk) {
+        return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
     }
 
     /**
@@ -285,10 +349,7 @@ public class KingdomService {
         Block torchBlock = baseBlock.getRelative(0, 1, 0);
         if (!torchBlock.isEmpty() && !torchBlock.isPassable()) return;
 
-        // Evita substituir uma tocha já existente ou outros blocos específicos.
-        if (torchBlock.getType() != Material.AIR && torchBlock.getType() != Material.CAVE_AIR) return;
-
-        torchBlock.setType(Material.TORCH, false);
+        torchBlock.setType(org.bukkit.Material.TORCH, false);
     }
 
     private Block findSolidGround(Block start) {
