@@ -3,6 +3,9 @@ package mello.kingdoms;
 import mello.common.OperationResult;
 import mello.currency.CurrencyService;
 import org.bukkit.Chunk;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -129,6 +132,7 @@ public class KingdomService {
         kingdom.addClaim(claimedChunk);
         storage.updateChunks(kingdom);
         notifyDynmapUpdate(kingdom);
+        markChunkWithTorches(chunk);
         return OperationResult.ok("Chunk reivindicado para " + kingdom.getName());
     }
 
@@ -185,5 +189,55 @@ public class KingdomService {
         if (dynmapHook != null) {
             dynmapHook.removeKingdom(kingdomName);
         }
+    }
+
+    /**
+     * Destaca visualmente as extremidades do chunk recém-claimado com tochas.
+     * As tochas são colocadas nos quatro cantos do chunk, sempre acima do bloco
+     * sólido mais alto disponível, sem sobrescrever estruturas existentes.
+     */
+    private void markChunkWithTorches(Chunk chunk) {
+        World world = chunk.getWorld();
+        int baseX = chunk.getX() << 4;
+        int baseZ = chunk.getZ() << 4;
+
+        placeTorchAtSurface(world, baseX, baseZ);
+        placeTorchAtSurface(world, baseX + 15, baseZ);
+        placeTorchAtSurface(world, baseX, baseZ + 15);
+        placeTorchAtSurface(world, baseX + 15, baseZ + 15);
+    }
+
+    /**
+     * Coloca uma tocha na superfície do mundo, garantindo que o bloco base seja sólido
+     * e que o espaço para a tocha esteja livre. Não altera o mundo quando não encontra
+     * uma posição segura.
+     */
+    private void placeTorchAtSurface(World world, int blockX, int blockZ) {
+        Block baseBlock = world.getHighestBlockAt(blockX, blockZ);
+        baseBlock = findSolidGround(baseBlock);
+        if (baseBlock == null) return;
+
+        Block torchBlock = baseBlock.getRelative(0, 1, 0);
+        if (!torchBlock.isEmpty() && !torchBlock.isPassable()) return;
+
+        // Evita substituir uma tocha já existente ou outros blocos específicos.
+        if (torchBlock.getType() != Material.AIR && torchBlock.getType() != Material.CAVE_AIR) return;
+
+        torchBlock.setType(Material.TORCH, false);
+    }
+
+    private Block findSolidGround(Block start) {
+        Block current = start;
+        int minY = current.getWorld().getMinHeight();
+
+        while (current.getY() >= minY && !current.getType().isSolid()) {
+            current = current.getRelative(0, -1, 0);
+        }
+
+        if (current.getY() < minY || !current.getType().isSolid()) {
+            return null;
+        }
+
+        return current;
     }
 }
