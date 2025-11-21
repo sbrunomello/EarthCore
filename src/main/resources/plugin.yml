@@ -12,20 +12,20 @@ commands:
     usage: /pay <player> <valor>
   eco:
     description: Comandos administrativos da economia
-    usage: /eco <set|add|remove|check> <player> [amount]
+    usage: /eco <set | add | remove | check> <player> [amount]
     permission: economy.admin
   job:
     description: Comandos do sistema de jobs
-    usage: /job <list|set|info|leave>
+    usage: /job <list | set | info | leave>
   kingdom:
     description: Comandos de reinos (claims, convites e impostos)
-    usage: /kingdom <create|invite|join|claim|unclaim|info|leave>
+    usage: /kingdom <create | invite | join | claim | unclaim | info | leave>
   clan:
     description: Comandos de clãs (convites e banco compartilhado)
-    usage: /clan <create|invite|join|deposit|withdraw|info|leave>
+    usage: /clan <create | invite | join | deposit | withdraw | info | leave>
   chat:
     description: Troca entre canais de chat (global, local, clã, cidade e admin)
-    usage: /chat <global|local|clan|cidade|admin>
+    usage: /chat <global | local | clan | cidade | admin>
   spawn:
     description: Teleporta para o spawn global
     usage: /spawn
