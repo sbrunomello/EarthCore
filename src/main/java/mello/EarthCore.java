@@ -109,10 +109,22 @@ public class EarthCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        currencyService.saveAll();
-        jobService.saveAll();
-        kingdomService.saveAll();
-        clanService.saveAll();
+        if (currencyService != null) {
+            currencyService.saveAll();
+        }
+
+        if (jobService != null) {
+            jobService.saveAll();
+        }
+
+        if (kingdomService != null) {
+            kingdomService.saveAll();
+        }
+
+        if (clanService != null) {
+            clanService.saveAll();
+        }
+
         getLogger().info("MonolitoServidor desligado!");
     }
 
