@@ -20,6 +20,7 @@ import mello.clans.ClanService;
 import mello.clans.ClanStorage;
 import mello.clans.ClansConfig;
 import mello.clans.commands.ClanCommand;
+import mello.clans.ClanDynmapHook;
 import mello.core.commands.PortalCommand;
 import mello.currency.commands.BalanceCommand;
 import mello.currency.commands.EcoCommand;
@@ -80,14 +81,17 @@ public class EarthCore extends JavaPlugin {
         KingdomsConfig kingdomsConfig = new KingdomsConfig(this);
         KingdomStorage kingdomStorage = new KingdomStorage(getDataFolder(), getLogger());
         kingdomService = new KingdomService(currencyService, kingdomStorage, kingdomsConfig, this.getLogger());
-        setupDynmap();
         getLogger().info("Sistema de reinos carregado!");
 
         // Iniciar sistema de clãs
         ClansConfig clansConfig = new ClansConfig(this);
         ClanStorage clanStorage = new ClanStorage(getDataFolder(), getLogger());
         clanService = new ClanService(currencyService, clanStorage, clansConfig, this.getLogger());
+        kingdomService.setClanService(clanService);
+        clanService.setKingdomService(kingdomService);
         getLogger().info("Sistema de clan carregado!");
+
+        setupDynmap();
 
         // Iniciar sistema de chat
         chatService = new ChatService(clanService, kingdomService, this);
@@ -167,9 +171,13 @@ public class EarthCore extends JavaPlugin {
         this.dynmapAPI = api;
 
         try {
-            KingdomDynmapHook dynmapHook = new KingdomDynmapHook(dynmapAPI, getLogger());
-            kingdomService.setDynmapHook(dynmapHook);
-            getLogger().info("Integração com Dynmap habilitada - claims de reinos serão exibidos no mapa.");
+            KingdomDynmapHook kingdomHook = new KingdomDynmapHook(dynmapAPI, getLogger());
+            kingdomService.setDynmapHook(kingdomHook);
+
+            ClanDynmapHook clanHook = new ClanDynmapHook(dynmapAPI, getLogger());
+            clanService.setDynmapHook(clanHook);
+
+            getLogger().info("Integração com Dynmap habilitada - claims de reinos e clãs serão exibidos no mapa.");
         } catch (IllegalStateException ex) {
             getLogger().warning("Falha ao iniciar integração com Dynmap: " + ex.getMessage());
         }

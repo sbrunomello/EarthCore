@@ -1,5 +1,6 @@
 package mello.clans;
 
+import mello.kingdoms.ClaimedChunk;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -20,6 +21,7 @@ public class ClanStorage {
     private final YamlConfiguration config;
     private final Logger logger;
     private final Map<String, Clan> clans = new HashMap<>();
+    private final Map<String, String> chunkToClan = new HashMap<>();
 
     public ClanStorage(File dataFolder, Logger logger) {
         dataFolder.mkdirs();
@@ -37,12 +39,18 @@ public class ClanStorage {
         return clans.get(name.toLowerCase());
     }
 
+    public String getClanByChunk(String chunkKey) {
+        return chunkToClan.get(chunkKey);
+    }
+
     public void addClan(Clan clan) {
         clans.put(clan.getName().toLowerCase(), clan);
+        resyncChunks();
     }
 
     public void removeClan(String name) {
         clans.remove(name.toLowerCase());
+        resyncChunks();
     }
 
     public void saveAll() {
@@ -52,6 +60,7 @@ public class ClanStorage {
             config.set(path + ".tag", clan.getTag());
             config.set(path + ".leader", clan.getLeader().toString());
             config.set(path + ".bank", clan.getBank());
+            config.set(path + ".claim", clan.getClaims().stream().findFirst().map(ClaimedChunk::toStorageKey).orElse(null));
 
             Map<String, String> members = new HashMap<>();
             clan.getMembers().forEach((uuid, role) -> members.put(uuid.toString(), role.name()));
@@ -93,6 +102,22 @@ public class ClanStorage {
             Clan clan = new Clan(nameKey, tag, leader);
             clan.setBank(section.getDouble("bank", 0));
 
+            String claimKey = section.getString("claim");
+            if (claimKey != null && !claimKey.isEmpty()) {
+                String[] parts = claimKey.split(":");
+                if (parts.length == 3) {
+                    try {
+                        int x = Integer.parseInt(parts[1]);
+                        int z = Integer.parseInt(parts[2]);
+                        clan.setClaim(new ClaimedChunk(parts[0], x, z));
+                    } catch (NumberFormatException ex) {
+                        logger.warning("[Clans] Coordenadas inválidas em claim de clã: " + claimKey);
+                    }
+                } else {
+                    logger.warning("[Clans] Claim de clã inválido: " + claimKey);
+                }
+            }
+
             ConfigurationSection membersSection = section.getConfigurationSection("members");
             if (membersSection != null) {
                 for (String memberId : membersSection.getKeys(false)) {
@@ -107,6 +132,22 @@ public class ClanStorage {
             }
 
             clans.put(nameKey.toLowerCase(), clan);
+        }
+
+        resyncChunks();
+    }
+
+    public void updateClaim(Clan clan) {
+        resyncChunks();
+    }
+
+    private void resyncChunks() {
+        chunkToClan.clear();
+        for (Clan clan : clans.values()) {
+            ClaimedChunk claim = clan.getSingleClaim();
+            if (claim != null) {
+                chunkToClan.put(claim.toStorageKey(), clan.getName());
+            }
         }
     }
 }

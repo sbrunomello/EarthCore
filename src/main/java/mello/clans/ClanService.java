@@ -2,6 +2,10 @@ package mello.clans;
 
 import mello.common.OperationResult;
 import mello.currency.CurrencyService;
+import mello.kingdoms.ClaimedChunk;
+import mello.kingdoms.Kingdom;
+import mello.kingdoms.KingdomService;
+import org.bukkit.Chunk;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -16,6 +20,8 @@ public class ClanService {
     private final ClansConfig config;
     private final Logger logger;
     private final Map<UUID, String> invites = new HashMap<>();
+    private KingdomService kingdomService;
+    private ClanDynmapHook dynmapHook;
 
     public ClanService(CurrencyService currencyService, ClanStorage storage, ClansConfig config, Logger logger) {
         this.currencyService = currencyService;
@@ -26,6 +32,15 @@ public class ClanService {
 
     public Collection<Clan> getAll() {
         return storage.getClans();
+    }
+
+    public void setKingdomService(KingdomService kingdomService) {
+        this.kingdomService = kingdomService;
+    }
+
+    public void setDynmapHook(ClanDynmapHook dynmapHook) {
+        this.dynmapHook = dynmapHook;
+        dynmapHook.redrawAll(storage.getClans());
     }
 
     public Clan getByName(String name) {
@@ -94,8 +109,67 @@ public class ClanService {
         if (clan.getMembers().isEmpty()) {
             storage.removeClan(clan.getName());
             logger.info("[Clans] Clã removido por ficar vazio: " + clan.getName());
+            notifyDynmapRemoval(clan.getName());
         }
         return OperationResult.ok("Você saiu do clã " + clan.getName());
+    }
+
+    public OperationResult claimChunk(UUID playerId, Chunk chunk) {
+        if (chunk == null) return OperationResult.fail("Chunk inválido.");
+
+        Clan clan = getByMember(playerId);
+        if (clan == null) return OperationResult.fail("Você precisa estar em um clã para reivindicar terreno.");
+
+        ClanRole role = clan.getRole(playerId);
+        if (role == null || !role.canClaim()) {
+            return OperationResult.fail("Apenas líder ou oficiais podem reivindicar terreno para o clã.");
+        }
+
+        ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
+        String chunkKey = claimedChunk.toStorageKey();
+
+        Kingdom existingKingdom = kingdomService != null ? kingdomService.getByChunk(chunk) : null;
+        if (existingKingdom != null) {
+            return OperationResult.fail("Este chunk já pertence ao reino " + existingKingdom.getName());
+        }
+
+        String existingClan = storage.getClanByChunk(chunkKey);
+        if (existingClan != null && !existingClan.equalsIgnoreCase(clan.getName())) {
+            return OperationResult.fail("Este chunk já pertence ao clã " + existingClan);
+        }
+
+        if (clan.hasClaim()) {
+            return OperationResult.fail("Seu clã já possui um território. Transforme-o em um reino para expandir.");
+        }
+
+        if (!currencyService.withdraw(playerId, config.getClaimCost())) {
+            return OperationResult.fail("Saldo insuficiente para reivindicar este chunk (custo: " + config.getClaimCost() + ")");
+        }
+
+        clan.setClaim(claimedChunk);
+        storage.updateClaim(clan);
+        notifyDynmapUpdate(clan);
+        return OperationResult.ok("Chunk reivindicado para o clã " + clan.getName() + ". Crie um reino para expandir suas terras.");
+    }
+
+    public OperationResult unclaimChunk(UUID playerId, Chunk chunk) {
+        Clan clan = getByMember(playerId);
+        if (clan == null) return OperationResult.fail("Você precisa estar em um clã para remover um claim.");
+
+        ClanRole role = clan.getRole(playerId);
+        if (role == null || !role.canClaim()) {
+            return OperationResult.fail("Apenas líder ou oficiais podem remover o claim do clã.");
+        }
+
+        ClaimedChunk currentClaim = clan.getSingleClaim();
+        if (currentClaim == null || !currentClaim.equals(ClaimedChunk.fromChunk(chunk))) {
+            return OperationResult.fail("Este chunk não pertence ao seu clã.");
+        }
+
+        clan.setClaim(null);
+        storage.updateClaim(clan);
+        notifyDynmapUpdate(clan);
+        return OperationResult.ok("Claim do clã removido.");
     }
 
     public OperationResult deposit(UUID playerId, double amount) {
@@ -133,6 +207,26 @@ public class ClanService {
         return OperationResult.ok("Saque de " + amount + " realizado com sucesso.");
     }
 
+    public ClaimedChunk consumeClaim(String clanName) {
+        Clan clan = storage.getByName(clanName);
+        if (clan == null) {
+            return null;
+        }
+
+        ClaimedChunk claim = clan.getSingleClaim();
+        if (claim != null) {
+            clan.setClaim(null);
+            storage.updateClaim(clan);
+            notifyDynmapUpdate(clan);
+        }
+        return claim;
+    }
+
+    public String getClanByChunk(Chunk chunk) {
+        if (chunk == null) return null;
+        return storage.getClanByChunk(ClaimedChunk.fromChunk(chunk).toStorageKey());
+    }
+
     public TaxResult calculateTax(UUID receiverId, double amount) {
         Clan clan = getByMember(receiverId);
         if (clan == null) {
@@ -154,5 +248,17 @@ public class ClanService {
 
     public void saveAll() {
         storage.saveAll();
+    }
+
+    private void notifyDynmapUpdate(Clan clan) {
+        if (dynmapHook != null) {
+            dynmapHook.refreshClan(clan);
+        }
+    }
+
+    private void notifyDynmapRemoval(String clanName) {
+        if (dynmapHook != null) {
+            dynmapHook.removeClan(clanName);
+        }
     }
 }

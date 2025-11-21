@@ -20,7 +20,7 @@ commands:
     usage: /job <list | set | info | leave>
   kingdom:
     description: Comandos de reinos (claims, convites e impostos)
-    usage: /kingdom <create | invite | join | claim | unclaim | info | leave>
+    usage: /kingdom <create | invite | join | claim | unclaim | info | leave | deposit>
   clan:
     description: Comandos de clãs (convites e banco compartilhado)
     usage: /clan <create | invite | join | deposit | withdraw | info | leave>

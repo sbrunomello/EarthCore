@@ -1,8 +1,8 @@
 package mello.clans;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import mello.kingdoms.ClaimedChunk;
+
+import java.util.*;
 
 /**
  * Representa um clã com membros e banco compartilhado.
@@ -14,6 +14,7 @@ public class Clan {
     private UUID leader;
     private double bank;
     private final Map<UUID, ClanRole> members = new HashMap<>();
+    private final Set<ClaimedChunk> claims = new HashSet<>();
 
     public Clan(String name, String tag, UUID leader) {
         this.name = name;
@@ -40,6 +41,10 @@ public class Clan {
 
     public Map<UUID, ClanRole> getMembers() {
         return members;
+    }
+
+    public Set<ClaimedChunk> getClaims() {
+        return claims;
     }
 
     public void setBank(double bank) {
@@ -75,6 +80,21 @@ public class Clan {
 
     public boolean isMember(UUID uuid) {
         return members.containsKey(uuid);
+    }
+
+    public boolean hasClaim() {
+        return !claims.isEmpty();
+    }
+
+    public ClaimedChunk getSingleClaim() {
+        return claims.stream().findFirst().orElse(null);
+    }
+
+    public void setClaim(ClaimedChunk claim) {
+        claims.clear();
+        if (claim != null) {
+            claims.add(claim);
+        }
     }
 
     private void promoteNewLeader() {
