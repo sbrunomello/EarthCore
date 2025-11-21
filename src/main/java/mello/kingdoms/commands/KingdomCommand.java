@@ -87,6 +87,17 @@ public class KingdomCommand implements CommandExecutor {
                 player.sendMessage(unclaimResult.message());
                 return true;
 
+            case "deposit":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom deposit <valor>");
+                    return true;
+                }
+                double depositAmount = parseAmount(args[1], player);
+                if (depositAmount <= 0) return true;
+                OperationResult depositResult = service.deposit(player.getUniqueId(), depositAmount);
+                player.sendMessage(depositResult.message());
+                return true;
+
             case "info":
                 Kingdom kingdom;
                 if (args.length >= 2) {
@@ -111,6 +122,20 @@ public class KingdomCommand implements CommandExecutor {
         }
     }
 
+    private double parseAmount(String raw, Player player) {
+        try {
+            double value = Double.parseDouble(raw);
+            if (value <= 0) {
+                player.sendMessage("Informe um valor maior que zero.");
+                return -1;
+            }
+            return value;
+        } catch (NumberFormatException ex) {
+            player.sendMessage("Valor inválido.");
+            return -1;
+        }
+    }
+
     private void sendInfo(Player player, Kingdom kingdom) {
         player.sendMessage("§6Reino: §e" + kingdom.getName());
         player.sendMessage("§7Rei: §f" + Bukkit.getOfflinePlayer(kingdom.getKing()).getName());
@@ -132,6 +157,7 @@ public class KingdomCommand implements CommandExecutor {
         player.sendMessage("§7/kingdom join <nome> §f- aceita um convite");
         player.sendMessage("§7/kingdom claim §f- reivindica o chunk atual");
         player.sendMessage("§7/kingdom unclaim §f- remove o claim atual");
+        player.sendMessage("§7/kingdom deposit <valor> §f- deposita no tesouro do reino");
         player.sendMessage("§7/kingdom info [nome] §f- mostra detalhes");
         player.sendMessage("§7/kingdom leave §f- sai do seu reino");
     }

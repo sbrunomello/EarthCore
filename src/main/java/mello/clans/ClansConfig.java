@@ -22,6 +22,7 @@ public class ClansConfig {
 
     private double createCost;
     private double bankTaxRate;
+    private double claimCost;
 
     public ClansConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -38,11 +39,16 @@ public class ClansConfig {
         return bankTaxRate;
     }
 
+    public double getClaimCost() {
+        return claimCost;
+    }
+
     private void load() {
         ensureDefaults();
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
         this.createCost = config.getDouble("create-cost", 2500);
         this.bankTaxRate = normalizeRate(config.getDouble("bank-tax-rate", 0.02));
+        this.claimCost = config.getDouble("chunk-claim-cost", 125);
     }
 
     private double normalizeRate(double value) {
@@ -64,6 +70,7 @@ public class ClansConfig {
         FileConfiguration defaults = new YamlConfiguration();
         defaults.set("create-cost", 2500);
         defaults.set("bank-tax-rate", 0.02);
+        defaults.set("chunk-claim-cost", 125);
 
         try {
             defaults.save(file);

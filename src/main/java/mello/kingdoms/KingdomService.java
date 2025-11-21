@@ -1,5 +1,7 @@
 package mello.kingdoms;
 
+import mello.clans.Clan;
+import mello.clans.ClanService;
 import mello.common.OperationResult;
 import mello.currency.CurrencyService;
 import org.bukkit.Chunk;
@@ -22,6 +24,7 @@ public class KingdomService {
 
     private final Map<UUID, String> invites = new HashMap<>();
     private KingdomDynmapHook dynmapHook;
+    private ClanService clanService;
 
     public KingdomService(CurrencyService currencyService, KingdomStorage storage, KingdomsConfig config, Logger logger) {
         this.currencyService = currencyService;
@@ -33,6 +36,10 @@ public class KingdomService {
     public void setDynmapHook(KingdomDynmapHook dynmapHook) {
         this.dynmapHook = dynmapHook;
         dynmapHook.redrawAll(storage.getKingdoms());
+    }
+
+    public void setClanService(ClanService clanService) {
+        this.clanService = clanService;
     }
 
     public Collection<Kingdom> getAll() {
@@ -64,13 +71,27 @@ public class KingdomService {
             return OperationResult.fail("Já existe um reino com esse nome.");
         }
 
+        Clan clan = clanService != null ? clanService.getByMember(creator) : null;
+        if (clan == null) {
+            return OperationResult.fail("Você precisa estar em um clã para fundar um reino.");
+        }
+
         if (!currencyService.withdraw(creator, config.getCreateCost())) {
             return OperationResult.fail("Saldo insuficiente para criar um reino (custo: " + config.getCreateCost() + ")");
         }
 
         Kingdom kingdom = new Kingdom(name, creator);
+
+        if (clan.hasClaim()) {
+            ClaimedChunk starterClaim = clanService.consumeClaim(clan.getName());
+            if (starterClaim != null) {
+                kingdom.addClaim(starterClaim);
+            }
+        }
+
         storage.addKingdom(kingdom);
         logger.info("[Kingdoms] Novo reino criado: " + name + " por " + creator);
+        notifyDynmapUpdate(kingdom);
         return OperationResult.ok("Reino criado com sucesso! Você agora é rei de " + name + ".");
     }
 
@@ -120,7 +141,12 @@ public class KingdomService {
 
     public OperationResult claim(UUID playerId, Chunk chunk) {
         Kingdom kingdom = getByMember(playerId);
-        if (kingdom == null) return OperationResult.fail("Entre em um reino antes de reivindicar terras.");
+        if (kingdom == null) {
+            if (clanService != null) {
+                return clanService.claimChunk(playerId, chunk);
+            }
+            return OperationResult.fail("Entre em um reino ou clã antes de reivindicar terras.");
+        }
 
         KingdomRole role = kingdom.getRole(playerId);
         if (role == null || !role.canManageClaims()) {
@@ -131,6 +157,13 @@ public class KingdomService {
         String chunkKey = claimedChunk.toStorageKey();
         if (storage.getKingdomByChunk(chunkKey) != null) {
             return OperationResult.fail("Este chunk já pertence a outro reino.");
+        }
+
+        if (clanService != null) {
+            String owningClan = clanService.getClanByChunk(chunk);
+            if (owningClan != null) {
+                return OperationResult.fail("Este chunk já pertence ao clã " + owningClan + ". Converta-o em reino ou libere o terreno.");
+            }
         }
 
         if (!currencyService.withdraw(playerId, config.getClaimCost())) {
@@ -146,7 +179,12 @@ public class KingdomService {
 
     public OperationResult unclaim(UUID playerId, Chunk chunk) {
         Kingdom kingdom = getByMember(playerId);
-        if (kingdom == null) return OperationResult.fail("Entre em um reino antes de remover claims.");
+        if (kingdom == null) {
+            if (clanService != null) {
+                return clanService.unclaimChunk(playerId, chunk);
+            }
+            return OperationResult.fail("Entre em um reino antes de remover claims.");
+        }
 
         KingdomRole role = kingdom.getRole(playerId);
         if (role == null || !role.canManageClaims()) {
@@ -181,6 +219,24 @@ public class KingdomService {
         Kingdom kingdom = getByMember(receiverId);
         if (kingdom == null) return;
         kingdom.deposit(taxAmount);
+    }
+
+    public OperationResult deposit(UUID playerId, double amount) {
+        if (amount <= 0) {
+            return OperationResult.fail("Informe um valor maior que zero.");
+        }
+
+        Kingdom kingdom = getByMember(playerId);
+        if (kingdom == null) {
+            return OperationResult.fail("Você precisa estar em um reino para contribuir com o tesouro.");
+        }
+
+        if (!currencyService.withdraw(playerId, amount)) {
+            return OperationResult.fail("Saldo insuficiente para depositar no tesouro.");
+        }
+
+        kingdom.deposit(amount);
+        return OperationResult.ok("Depositado " + amount + " no tesouro de " + kingdom.getName());
     }
 
     public void saveAll() {

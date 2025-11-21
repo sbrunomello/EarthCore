@@ -157,6 +157,7 @@ public class ClanCommand implements CommandExecutor {
         player.sendMessage("§7/clan join <nome> §f- aceita convite");
         player.sendMessage("§7/clan deposit <valor> §f- deposita no banco do clã");
         player.sendMessage("§7/clan withdraw <valor> §f- saca do banco (apenas líder)");
+        player.sendMessage("§7/kingdom claim §f- reivindica 1 chunk temporário para o clã");
         player.sendMessage("§7/clan info [nome] §f- detalhes do clã");
         player.sendMessage("§7/clan leave §f- sair do clã");
     }
