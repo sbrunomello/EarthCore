@@ -10,6 +10,16 @@ spawn:
   yaw: 0.0
   pitch: 0.0
 
+# Configuração do frontend incorporado que hospeda a experiência web unificada
+# junto ao plugin. O frontend expõe um iframe apontando para o Dynmap já
+# existente, mais uma camada de autenticação simples via nome de usuário que
+# consulta as informações gravadas pelo plugin.
+frontend:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8210
+  dynmapUrl: "http://localhost:8123/"
+
 # Portais de totem (somente interação, sem comando de teleporte):
 # portals:
 #   africa:
