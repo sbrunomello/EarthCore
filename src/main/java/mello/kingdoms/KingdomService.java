@@ -18,12 +18,18 @@ public class KingdomService {
     private final Logger logger;
 
     private final Map<UUID, String> invites = new HashMap<>();
+    private KingdomDynmapHook dynmapHook;
 
     public KingdomService(CurrencyService currencyService, KingdomStorage storage, KingdomsConfig config, Logger logger) {
         this.currencyService = currencyService;
         this.storage = storage;
         this.config = config;
         this.logger = logger;
+    }
+
+    public void setDynmapHook(KingdomDynmapHook dynmapHook) {
+        this.dynmapHook = dynmapHook;
+        dynmapHook.redrawAll(storage.getKingdoms());
     }
 
     public Collection<Kingdom> getAll() {
@@ -96,6 +102,7 @@ public class KingdomService {
         if (kingdom.getMembers().isEmpty()) {
             storage.removeKingdom(kingdom.getName());
             logger.info("[Kingdoms] Reino removido por ficar vazio: " + kingdom.getName());
+            notifyDynmapRemoval(kingdom.getName());
         }
         return OperationResult.ok("Você saiu do reino " + kingdom.getName());
     }
@@ -121,6 +128,7 @@ public class KingdomService {
 
         kingdom.addClaim(claimedChunk);
         storage.updateChunks(kingdom);
+        notifyDynmapUpdate(kingdom);
         return OperationResult.ok("Chunk reivindicado para " + kingdom.getName());
     }
 
@@ -140,6 +148,7 @@ public class KingdomService {
 
         kingdom.removeClaim(claimedChunk);
         storage.updateChunks(kingdom);
+        notifyDynmapUpdate(kingdom);
         return OperationResult.ok("Claim removido em " + chunk.getX() + ", " + chunk.getZ());
     }
 
@@ -164,5 +173,17 @@ public class KingdomService {
 
     public void saveAll() {
         storage.saveAll();
+    }
+
+    private void notifyDynmapUpdate(Kingdom kingdom) {
+        if (dynmapHook != null) {
+            dynmapHook.refreshKingdom(kingdom);
+        }
+    }
+
+    private void notifyDynmapRemoval(String kingdomName) {
+        if (dynmapHook != null) {
+            dynmapHook.removeKingdom(kingdomName);
+        }
     }
 }
