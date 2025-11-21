@@ -9,3 +9,19 @@ spawn:
   z: 0.5
   yaw: 0.0
   pitch: 0.0
+
+# Portais de totem (somente interação, sem comando de teleporte):
+# portals:
+#   africa:
+#     target:
+#       world: world
+#       x: 1500.5
+#       y: 70.0
+#       z: -200.5
+#       yaw: 180.0
+#       pitch: 0.0
+#     totem:
+#       world: world
+#       x: 10
+#       y: 65
+#       z: 5

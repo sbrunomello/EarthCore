@@ -34,6 +34,10 @@ commands:
     description: Define o spawn global na posição atual
     usage: /setspawn
     permission: core.setspawn
+  portal:
+    description: Configura portais de totem para continentes
+    usage: /portal <settarget|settotem> <nome>
+    permission: core.portal
   home:
     description: Teleporta para seu home ou define um
     usage: /home [set]
@@ -53,4 +57,7 @@ commands:
 permissions:
   economy.admin:
     description: Acesso aos comandos administrativos da economia
+    default: op
+  core.portal:
+    description: Permissão administrativa para criar e vincular totems/portais
     default: op

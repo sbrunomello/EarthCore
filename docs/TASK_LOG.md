@@ -25,3 +25,10 @@ Este documento registra, em ordem cronológica, o que foi feito em cada tarefa, 
 > - Descrever o impacto e o motivo de cada mudança.
 > - Anotar comandos de teste executados, incluindo flags relevantes.
 > - Registrar riscos mitigados ou pendências.
+
+## 2025-11-21 – Guia de portais por totem
+- **Contexto:** Usuários precisavam de instruções claras para configurar portais continentais e teletransportes administrativos.
+- **Ações executadas:**
+  - Adicionada documentação em `/docs/portais-tutorial.md` com passo a passo de criação de portais e teleporte como OP.
+- **Riscos mitigados:** Redução de erros de configuração (totens em conflito, destinos em mundos não carregados) e clareza sobre uso de `/portal settarget`.
+- **Validação:** Revisão textual; nenhuma alteração de código exigiu execução de testes.
