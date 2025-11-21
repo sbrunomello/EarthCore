@@ -58,26 +58,31 @@ public class EarthCore extends JavaPlugin {
         // Criar storage + service
         CurrencyStorage storage = new CurrencyStorage(getDataFolder());
         currencyService = new CurrencyService(storage);
+        getLogger().info("Sistema de moeda carregado!");
 
         // Iniciar sistema de jobs
         JobsConfig jobsConfig = new JobsConfig(this);
         JobStorage jobStorage = new JobStorage(getDataFolder());
         jobService = new JobService(currencyService, jobStorage, jobsConfig, this.getLogger());
         getServer().getPluginManager().registerEvents(new JobListener(jobService), this);
+        getLogger().info("Sistema de jobs carregado!");
 
         // Iniciar sistema de reinos
         KingdomsConfig kingdomsConfig = new KingdomsConfig(this);
         KingdomStorage kingdomStorage = new KingdomStorage(getDataFolder(), getLogger());
         kingdomService = new KingdomService(currencyService, kingdomStorage, kingdomsConfig, this.getLogger());
         setupDynmap();
+        getLogger().info("Sistema de reinos carregado!");
 
         // Iniciar sistema de clãs
         ClansConfig clansConfig = new ClansConfig(this);
         ClanStorage clanStorage = new ClanStorage(getDataFolder(), getLogger());
         clanService = new ClanService(currencyService, clanStorage, clansConfig, this.getLogger());
+        getLogger().info("Sistema de clan carregado!");
 
         // Iniciar sistema de chat
         chatService = new ChatService(clanService, kingdomService, this);
+        getLogger().info("Sistema de chat carregado!");
 
         // Serviços básicos de teleporte e mensagens privadas
         spawnService = new SpawnService(this);
@@ -104,7 +109,6 @@ public class EarthCore extends JavaPlugin {
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
 
-        getLogger().info("Sistema de moeda carregado!");
     }
 
     @Override
