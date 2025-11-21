@@ -26,6 +26,28 @@ commands:
   chat:
     description: Troca entre canais de chat (global, local, clã, cidade e admin)
     usage: /chat <global|local|clan|cidade|admin>
+  spawn:
+    description: Teleporta para o spawn global
+    usage: /spawn
+  setspawn:
+    description: Define o spawn global na posição atual
+    usage: /setspawn
+    permission: core.setspawn
+  home:
+    description: Teleporta para seu home ou define um
+    usage: /home [set]
+  tpa:
+    description: Envia um pedido para teleportar até outro jogador
+    usage: /tpa <player>
+  tphere:
+    description: Envia um pedido para puxar um jogador até você
+    usage: /tphere <player>
+  msg:
+    description: Envia mensagem privada para um jogador
+    usage: /msg <player> <mensagem>
+  reply:
+    description: Responde para o último jogador que você enviou /msg
+    usage: /reply <mensagem>
 
 permissions:
   economy.admin:
