@@ -15,6 +15,7 @@ import mello.kingdoms.KingdomService;
 import mello.kingdoms.KingdomStorage;
 import mello.kingdoms.KingdomsConfig;
 import mello.kingdoms.commands.KingdomCommand;
+import mello.kingdoms.listeners.KingdomListener;
 import mello.clans.ClanService;
 import mello.clans.ClanStorage;
 import mello.clans.ClansConfig;
@@ -109,6 +110,7 @@ public class EarthCore extends JavaPlugin {
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
+        getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService), this);
 
     }
 

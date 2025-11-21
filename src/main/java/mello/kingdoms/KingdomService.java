@@ -43,6 +43,14 @@ public class KingdomService {
         return storage.getByName(name);
     }
 
+    public Kingdom getByChunk(Chunk chunk) {
+        if (chunk == null) return null;
+
+        ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
+        String kingdomName = storage.getKingdomByChunk(claimedChunk.toStorageKey());
+        return kingdomName == null ? null : storage.getByName(kingdomName);
+    }
+
     public Kingdom getByMember(UUID uuid) {
         return storage.getKingdoms().stream()
                 .filter(k -> k.isMember(uuid))
