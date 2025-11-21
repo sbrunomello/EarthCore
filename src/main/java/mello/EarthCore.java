@@ -20,6 +20,7 @@ import mello.clans.ClanService;
 import mello.clans.ClanStorage;
 import mello.clans.ClansConfig;
 import mello.clans.commands.ClanCommand;
+import mello.core.commands.PortalCommand;
 import mello.currency.commands.BalanceCommand;
 import mello.currency.commands.EcoCommand;
 import mello.currency.commands.PayCommand;
@@ -33,6 +34,8 @@ import mello.core.commands.SetSpawnCommand;
 import mello.core.commands.SpawnCommand;
 import mello.core.commands.TpaCommand;
 import mello.core.commands.TphereCommand;
+import mello.core.listeners.PortalListener;
+import mello.core.portals.PortalService;
 import mello.core.services.HomeService;
 import mello.core.services.PrivateMessageService;
 import mello.core.services.SpawnService;
@@ -46,6 +49,7 @@ public class EarthCore extends JavaPlugin {
     private ClanService clanService;
     private ChatService chatService;
     private SpawnService spawnService;
+    private PortalService portalService;
     private HomeService homeService;
     private TeleportRequestService teleportRequestService;
     private PrivateMessageService privateMessageService;
@@ -88,6 +92,7 @@ public class EarthCore extends JavaPlugin {
 
         // Serviços básicos de teleporte e mensagens privadas
         spawnService = new SpawnService(this);
+        portalService = new PortalService(this);
         homeService = new HomeService(this);
         teleportRequestService = new TeleportRequestService();
         privateMessageService = new PrivateMessageService();
@@ -102,6 +107,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
         getCommand("spawn").setExecutor(new SpawnCommand(spawnService));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(spawnService));
+        getCommand("portal").setExecutor(new PortalCommand(portalService));
         getCommand("home").setExecutor(new HomeCommand(homeService));
         getCommand("tpa").setExecutor(new TpaCommand(teleportRequestService));
         getCommand("tphere").setExecutor(new TphereCommand(teleportRequestService));
@@ -110,6 +116,7 @@ public class EarthCore extends JavaPlugin {
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
+        getServer().getPluginManager().registerEvents(new PortalListener(portalService), this);
         getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService), this);
 
     }
