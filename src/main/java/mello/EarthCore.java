@@ -10,6 +10,7 @@ import mello.jobs.JobStorage;
 import mello.jobs.JobsConfig;
 import mello.jobs.commands.JobCommand;
 import mello.jobs.listeners.JobListener;
+import mello.kingdoms.KingdomDynmapHook;
 import mello.kingdoms.KingdomService;
 import mello.kingdoms.KingdomStorage;
 import mello.kingdoms.KingdomsConfig;
@@ -22,6 +23,8 @@ import mello.currency.commands.BalanceCommand;
 import mello.currency.commands.EcoCommand;
 import mello.currency.commands.PayCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
+import org.dynmap.DynmapAPI;
 import mello.core.commands.HomeCommand;
 import mello.core.commands.MsgCommand;
 import mello.core.commands.ReplyCommand;
@@ -66,6 +69,7 @@ public class EarthCore extends JavaPlugin {
         KingdomsConfig kingdomsConfig = new KingdomsConfig(this);
         KingdomStorage kingdomStorage = new KingdomStorage(getDataFolder(), getLogger());
         kingdomService = new KingdomService(currencyService, kingdomStorage, kingdomsConfig, this.getLogger());
+        setupDynmap();
 
         // Iniciar sistema de clãs
         ClansConfig clansConfig = new ClansConfig(this);
@@ -110,5 +114,21 @@ public class EarthCore extends JavaPlugin {
         kingdomService.saveAll();
         clanService.saveAll();
         getLogger().info("MonolitoServidor desligado!");
+    }
+
+    private void setupDynmap() {
+        Plugin dynmapPlugin = getServer().getPluginManager().getPlugin("dynmap");
+        if (!(dynmapPlugin instanceof DynmapAPI dynmapAPI)) {
+            getLogger().info("Dynmap não encontrado - integração de claims desativada.");
+            return;
+        }
+
+        try {
+            KingdomDynmapHook dynmapHook = new KingdomDynmapHook(dynmapAPI, getLogger());
+            kingdomService.setDynmapHook(dynmapHook);
+            getLogger().info("Integração com Dynmap habilitada - claims de reinos serão exibidos no mapa.");
+        } catch (IllegalStateException ex) {
+            getLogger().warning("Falha ao iniciar integração com Dynmap: " + ex.getMessage());
+        }
     }
 }
