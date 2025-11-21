@@ -23,6 +23,9 @@ commands:
   clan:
     description: Comandos de clãs (convites e banco compartilhado)
     usage: /clan <create|invite|join|deposit|withdraw|info|leave>
+  chat:
+    description: Troca entre canais de chat (global, local, clã, cidade e admin)
+    usage: /chat <global|local|clan|cidade|admin>
 
 permissions:
   economy.admin:
