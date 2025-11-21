@@ -3,7 +3,6 @@ package mello.kingdoms.commands;
 import mello.common.OperationResult;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomService;
-import mello.kingdoms.TaxBreakdown;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -77,6 +76,11 @@ public class KingdomCommand implements CommandExecutor {
                 player.sendMessage(leaveResult.message());
                 return true;
 
+            case "upgrade":
+                OperationResult upgradeResult = service.upgrade(player.getUniqueId());
+                player.sendMessage(upgradeResult.message());
+                return true;
+
             case "claim":
                 OperationResult claimResult = service.claim(player.getUniqueId(), player.getLocation().getChunk());
                 player.sendMessage(claimResult.message());
@@ -116,6 +120,11 @@ public class KingdomCommand implements CommandExecutor {
                 sendInfo(player, kingdom);
                 return true;
 
+            case "disband":
+                OperationResult disbandResult = service.disband(player.getUniqueId());
+                player.sendMessage(disbandResult.message());
+                return true;
+
             default:
                 sendHelp(player);
                 return true;
@@ -139,15 +148,10 @@ public class KingdomCommand implements CommandExecutor {
     private void sendInfo(Player player, Kingdom kingdom) {
         player.sendMessage("§6Reino: §e" + kingdom.getName());
         player.sendMessage("§7Rei: §f" + Bukkit.getOfflinePlayer(kingdom.getKing()).getName());
+        player.sendMessage("§7Tier: §f" + kingdom.getTier());
         player.sendMessage("§7Membros: §f" + kingdom.getMembers().size());
-        player.sendMessage("§7Claims: §f" + kingdom.getClaims().size());
+        player.sendMessage("§7Claims: §f" + (kingdom.getClaims().size() + 1));
         player.sendMessage("§7Tesouraria: §a" + kingdom.getTreasury());
-
-        TaxBreakdown tax = service.calculateTax(player.getUniqueId(), 1000);
-        if (tax.collectorName() != null) {
-            double rate = 1 - (tax.netAmount() / 1000);
-            player.sendMessage("§7Imposto padrão sobre transações: §f" + String.format(Locale.US, "%.2f%%", rate * 100));
-        }
     }
 
     private void sendHelp(Player player) {
@@ -157,8 +161,10 @@ public class KingdomCommand implements CommandExecutor {
         player.sendMessage("§7/kingdom join <nome> §f- aceita um convite");
         player.sendMessage("§7/kingdom claim §f- reivindica o chunk atual");
         player.sendMessage("§7/kingdom unclaim §f- remove o claim atual");
+        player.sendMessage("§7/kingdom upgrade §f- evolui o reino");
         player.sendMessage("§7/kingdom deposit <valor> §f- deposita no tesouro do reino");
         player.sendMessage("§7/kingdom info [nome] §f- mostra detalhes");
+        player.sendMessage("§7/kingdom disband §f- dissolve o reino");
         player.sendMessage("§7/kingdom leave §f- sai do seu reino");
     }
 }

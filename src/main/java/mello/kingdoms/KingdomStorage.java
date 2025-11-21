@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,14 +49,25 @@ public class KingdomStorage {
 
         for (Kingdom kingdom : kingdoms.values()) {
             String path = "kingdoms." + kingdom.getName().toLowerCase();
+            config.set(path + ".id", kingdom.getId().toString());
             config.set(path + ".king", kingdom.getKing().toString());
             config.set(path + ".treasury", kingdom.getTreasury());
+            config.set(path + ".tag", kingdom.getTag());
+            config.set(path + ".tier", kingdom.getTier().name());
+            config.set(path + ".clan", kingdom.getClanName());
+            config.set(path + ".capital_claim", kingdom.getCapitalClaimId());
+            config.set(path + ".created_at", kingdom.getCreatedAt().toEpochMilli());
+            config.set(path + ".at_risk_until", kingdom.getAtRiskUntil() == null ? null : kingdom.getAtRiskUntil().toEpochMilli());
 
             Map<String, String> membersSection = new HashMap<>();
             kingdom.getMembers().forEach((uuid, role) -> membersSection.put(uuid.toString(), role.name()));
             config.createSection(path + ".members", membersSection);
 
-            config.set(path + ".claims", kingdom.getClaims().stream().map(ClaimedChunk::toStorageKey).toList());
+            Map<String, Object> claimsSection = new HashMap<>();
+            for (KingdomClaim claim : kingdom.getClaims()) {
+                claimsSection.put(claim.getId(), claim.toStorageKey());
+            }
+            config.createSection(path + ".claims", claimsSection);
         }
 
         try {
@@ -103,15 +115,27 @@ public class KingdomStorage {
                 continue;
             }
 
-            Kingdom kingdom = new Kingdom(nameKey, kingUuid);
+            UUID kingdomId = UUID.fromString(section.getString("id", UUID.randomUUID().toString()));
+            KingdomTier tier = KingdomTier.fromConfig(section.getString("tier", KingdomTier.VILLAGE.name()));
+            if (tier == null) tier = KingdomTier.VILLAGE;
+
+            String clanName = section.getString("clan", "");
+            String capitalClaim = section.getString("capital_claim", "");
+            Kingdom kingdom = new Kingdom(kingdomId, nameKey, section.getString("tag", null), tier, clanName, capitalClaim, kingUuid);
             kingdom.setTreasury(section.getDouble("treasury", 0));
+
+            long risk = section.getLong("at_risk_until", -1);
+            if (risk > 0) {
+                kingdom.setAtRiskUntil(Instant.ofEpochMilli(risk));
+            }
+            // createdAt is final with now(); cannot set old value
 
             ConfigurationSection membersSection = section.getConfigurationSection("members");
             if (membersSection != null) {
                 for (String memberId : membersSection.getKeys(false)) {
                     try {
                         UUID uuid = UUID.fromString(memberId);
-                        KingdomRole role = KingdomRole.valueOf(membersSection.getString(memberId, KingdomRole.MEMBER.name()));
+                        KingdomRole role = KingdomRole.valueOf(membersSection.getString(memberId, KingdomRole.CITIZEN.name()));
                         kingdom.addMember(uuid, role);
                     } catch (IllegalArgumentException ex) {
                         logger.warning("[Kingdoms] UUID ou cargo inválido em kingdoms-data: " + memberId);
@@ -119,20 +143,24 @@ public class KingdomStorage {
                 }
             }
 
-            List<String> claims = section.getStringList("claims");
-            for (String claimKey : claims) {
-                String[] parts = claimKey.split(":");
-                if (parts.length != 3) {
-                    logger.warning("[Kingdoms] Claim inválido: " + claimKey);
-                    continue;
-                }
-                String world = parts[0];
-                try {
-                    int x = Integer.parseInt(parts[1]);
-                    int z = Integer.parseInt(parts[2]);
-                    kingdom.addClaim(new ClaimedChunk(world, x, z));
-                } catch (NumberFormatException ex) {
-                    logger.warning("[Kingdoms] Coordenadas inválidas em claim: " + claimKey);
+            ConfigurationSection claimsSection = section.getConfigurationSection("claims");
+            if (claimsSection != null) {
+                for (String claimId : claimsSection.getKeys(false)) {
+                    String raw = claimsSection.getString(claimId);
+                    if (raw == null) continue;
+                    String[] parts = raw.split(":");
+                    if (parts.length != 3) {
+                        logger.warning("[Kingdoms] Claim inválido: " + raw);
+                        continue;
+                    }
+                    try {
+                        int x = Integer.parseInt(parts[1]);
+                        int z = Integer.parseInt(parts[2]);
+                        KingdomClaim claim = new KingdomClaim(claimId, parts[0], x, z, Instant.ofEpochMilli(section.getLong("created_at", System.currentTimeMillis())));
+                        kingdom.addClaim(claim);
+                    } catch (NumberFormatException ex) {
+                        logger.warning("[Kingdoms] Coordenadas inválidas em claim: " + raw);
+                    }
                 }
             }
 
@@ -145,7 +173,10 @@ public class KingdomStorage {
     private void resyncChunks() {
         chunkToKingdom.clear();
         for (Kingdom kingdom : kingdoms.values()) {
-            for (ClaimedChunk claim : kingdom.getClaims()) {
+            if (kingdom.getCapitalClaimId() != null) {
+                chunkToKingdom.put(kingdom.getCapitalClaimId(), kingdom.getName());
+            }
+            for (KingdomClaim claim : kingdom.getClaims()) {
                 chunkToKingdom.put(claim.toStorageKey(), kingdom.getName());
             }
         }

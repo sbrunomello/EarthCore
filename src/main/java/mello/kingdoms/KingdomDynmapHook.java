@@ -6,6 +6,7 @@ import org.dynmap.markers.AreaMarker;
 import org.dynmap.markers.MarkerAPI;
 import org.dynmap.markers.MarkerSet;
 
+
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.logging.Logger;
@@ -70,12 +71,12 @@ public class KingdomDynmapHook {
         Set<String> expectedIds = new HashSet<>();
         String prefix = markerPrefix(kingdom.getName());
 
-        for (ClaimedChunk claim : kingdom.getClaims()) {
+        for (KingdomClaim claim : kingdom.getClaims()) {
             String markerId = buildMarkerId(kingdom.getName(), claim);
             expectedIds.add(markerId);
 
-            double[] x = chunkXSides(claim.getX());
-            double[] z = chunkZSides(claim.getZ());
+            double[] x = chunkXSides(claim.getChunkX());
+            double[] z = chunkZSides(claim.getChunkZ());
             AreaMarker marker = markerSet.findAreaMarker(markerId);
 
             if (marker == null) {
@@ -126,7 +127,7 @@ public class KingdomDynmapHook {
         }
     }
 
-    private String buildMarkerId(String kingdomName, ClaimedChunk claimedChunk) {
+    private String buildMarkerId(String kingdomName, KingdomClaim claimedChunk) {
         return markerPrefix(kingdomName) + claimedChunk.toStorageKey();
     }
 
@@ -159,12 +160,12 @@ public class KingdomDynmapHook {
         String kingName = resolvePlayerName(kingdom.getKing());
         int totalMembers = kingdom.getMembers().size();
         long advisors = kingdom.getMembers().values().stream()
-                .filter(role -> role == KingdomRole.ADVISOR)
+                .filter(role -> role == KingdomRole.NOBLE)
                 .count();
         int claimCount = kingdom.getClaims().size();
 
         Map<String, Long> claimsByWorld = kingdom.getClaims().stream()
-                .collect(Collectors.groupingBy(ClaimedChunk::getWorld, Collectors.counting()));
+                .collect(Collectors.groupingBy(KingdomClaim::getWorld, Collectors.counting()));
 
         String claimsSummary = claimsByWorld.isEmpty()
                 ? "Nenhum claim registrado"

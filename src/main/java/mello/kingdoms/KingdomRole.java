@@ -5,8 +5,8 @@ package mello.kingdoms;
  */
 public enum KingdomRole {
     KING(true, true, true),
-    ADVISOR(true, true, false),
-    MEMBER(false, false, false);
+    NOBLE(true, true, false),
+    CITIZEN(false, false, false);
 
     private final boolean canManageMembers;
     private final boolean canManageClaims;
