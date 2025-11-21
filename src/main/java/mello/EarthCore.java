@@ -22,6 +22,17 @@ import mello.currency.commands.BalanceCommand;
 import mello.currency.commands.EcoCommand;
 import mello.currency.commands.PayCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+import mello.core.commands.HomeCommand;
+import mello.core.commands.MsgCommand;
+import mello.core.commands.ReplyCommand;
+import mello.core.commands.SetSpawnCommand;
+import mello.core.commands.SpawnCommand;
+import mello.core.commands.TpaCommand;
+import mello.core.commands.TphereCommand;
+import mello.core.services.HomeService;
+import mello.core.services.PrivateMessageService;
+import mello.core.services.SpawnService;
+import mello.core.services.TeleportRequestService;
 
 public class EarthCore extends JavaPlugin {
 
@@ -30,10 +41,16 @@ public class EarthCore extends JavaPlugin {
     private KingdomService kingdomService;
     private ClanService clanService;
     private ChatService chatService;
+    private SpawnService spawnService;
+    private HomeService homeService;
+    private TeleportRequestService teleportRequestService;
+    private PrivateMessageService privateMessageService;
 
     @Override
     public void onEnable() {
         getLogger().info("MonolitoServidor iniciado!");
+
+        saveDefaultConfig();
 
         // Criar storage + service
         CurrencyStorage storage = new CurrencyStorage(getDataFolder());
@@ -58,6 +75,12 @@ public class EarthCore extends JavaPlugin {
         // Iniciar sistema de chat
         chatService = new ChatService(clanService, kingdomService, this);
 
+        // Serviços básicos de teleporte e mensagens privadas
+        spawnService = new SpawnService(this);
+        homeService = new HomeService(this);
+        teleportRequestService = new TeleportRequestService();
+        privateMessageService = new PrivateMessageService();
+
         // Registrar comandos
         getCommand("bal").setExecutor(new BalanceCommand(currencyService));
         getCommand("pay").setExecutor(new PayCommand(currencyService, kingdomService, clanService));
@@ -66,6 +89,13 @@ public class EarthCore extends JavaPlugin {
         getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService));
         getCommand("clan").setExecutor(new ClanCommand(clanService));
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
+        getCommand("spawn").setExecutor(new SpawnCommand(spawnService));
+        getCommand("setspawn").setExecutor(new SetSpawnCommand(spawnService));
+        getCommand("home").setExecutor(new HomeCommand(homeService));
+        getCommand("tpa").setExecutor(new TpaCommand(teleportRequestService));
+        getCommand("tphere").setExecutor(new TphereCommand(teleportRequestService));
+        getCommand("msg").setExecutor(new MsgCommand(privateMessageService));
+        getCommand("reply").setExecutor(new ReplyCommand(privateMessageService));
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
