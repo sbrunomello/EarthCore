@@ -6,14 +6,15 @@ author: Mello
 softdepend: [dynmap]
 
 commands:
-  bal:
+  balance:
     description: Mostra seu saldo
+    aliases: [money]
   pay:
     description: Envia dinheiro para outro jogador
     usage: /pay <player> <valor>
-  eco:
+  economy:
     description: Comandos administrativos da economia
-    usage: /eco <set | add | remove | check> <player> [amount]
+    usage: /economy <give | take | set | top> [player] [amount]
     permission: economy.admin
   job:
     description: Comandos do sistema de jobs

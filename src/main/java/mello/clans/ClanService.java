@@ -1,7 +1,8 @@
 package mello.clans;
 
 import mello.common.OperationResult;
-import mello.currency.CurrencyService;
+import mello.economy.EconomyService;
+import mello.economy.MoneyTransactionType;
 import mello.kingdoms.ClaimedChunk;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomService;
@@ -15,7 +16,7 @@ import java.util.logging.Logger;
  */
 public class ClanService {
 
-    private final CurrencyService currencyService;
+    private final EconomyService economyService;
     private final ClanStorage storage;
     private final ClansConfig config;
     private final Logger logger;
@@ -23,8 +24,8 @@ public class ClanService {
     private KingdomService kingdomService;
     private ClanDynmapHook dynmapHook;
 
-    public ClanService(CurrencyService currencyService, ClanStorage storage, ClansConfig config, Logger logger) {
-        this.currencyService = currencyService;
+    public ClanService(EconomyService economyService, ClanStorage storage, ClansConfig config, Logger logger) {
+        this.economyService = economyService;
         this.storage = storage;
         this.config = config;
         this.logger = logger;
@@ -60,7 +61,7 @@ public class ClanService {
             return OperationResult.fail("Já existe um clã com esse nome.");
         }
 
-        if (!currencyService.withdraw(creator, config.getCreateCost())) {
+        if (!economyService.withdraw(creator, config.getCreateCost(), MoneyTransactionType.SYSTEM_EVENT, "Criação de clã")) {
             return OperationResult.fail("Saldo insuficiente para criar o clã (custo: " + config.getCreateCost() + ")");
         }
 
@@ -142,7 +143,7 @@ public class ClanService {
             return OperationResult.fail("Seu clã já possui um território. Transforme-o em um reino para expandir.");
         }
 
-        if (!currencyService.withdraw(playerId, config.getClaimCost())) {
+        if (!economyService.withdraw(playerId, config.getClaimCost(), MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para clã")) {
             return OperationResult.fail("Saldo insuficiente para reivindicar este chunk (custo: " + config.getClaimCost() + ")");
         }
 
@@ -178,7 +179,7 @@ public class ClanService {
         Clan clan = getByMember(playerId);
         if (clan == null) return OperationResult.fail("Você precisa estar em um clã para depositar.");
 
-        if (!currencyService.withdraw(playerId, amount)) {
+        if (!economyService.withdraw(playerId, amount, MoneyTransactionType.PLAYER_TRADE, "Depósito no banco do clã")) {
             return OperationResult.fail("Saldo insuficiente.");
         }
 
@@ -203,7 +204,7 @@ public class ClanService {
             return OperationResult.fail("Banco do clã não possui esse valor.");
         }
 
-        currencyService.deposit(playerId, amount);
+        economyService.deposit(playerId, amount, MoneyTransactionType.PLAYER_TRADE, "Saque do banco do clã");
         return OperationResult.ok("Saque de " + amount + " realizado com sucesso.");
     }
 

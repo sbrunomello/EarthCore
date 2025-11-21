@@ -1,6 +1,7 @@
 package mello.jobs;
 
-import mello.currency.CurrencyService;
+import mello.economy.EconomyService;
+import mello.economy.MoneyTransactionType;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
@@ -13,13 +14,13 @@ import java.util.logging.Logger;
  */
 public class JobService {
 
-    private final CurrencyService currencyService;
+    private final EconomyService economyService;
     private final JobStorage storage;
     private final JobsConfig config;
     private final Logger logger;
 
-    public JobService(CurrencyService currencyService, JobStorage storage, JobsConfig config, Logger logger) {
-        this.currencyService = currencyService;
+    public JobService(EconomyService economyService, JobStorage storage, JobsConfig config, Logger logger) {
+        this.economyService = economyService;
         this.storage = storage;
         this.config = config;
         this.logger = logger;
@@ -55,7 +56,7 @@ public class JobService {
         Double reward = payout.getBlockBreakPayouts().get(material);
         if (reward == null || reward <= 0) return;
 
-        currencyService.deposit(playerId, reward);
+        economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Pagamento por quebrar " + material.name());
         logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por quebrar " + material + "");
     }
 
@@ -69,7 +70,7 @@ public class JobService {
         Double reward = payout.getEntityKillPayouts().get(entityType);
         if (reward == null || reward <= 0) return;
 
-        currencyService.deposit(playerId, reward);
+        economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Pagamento por matar " + entityType.name());
         logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por matar " + entityType + "");
     }
 

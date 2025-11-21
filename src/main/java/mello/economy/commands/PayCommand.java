@@ -1,12 +1,15 @@
-package mello.currency.commands;
+package mello.economy.commands;
 
 import mello.clans.ClanService;
 import mello.clans.TaxResult;
-import mello.currency.CurrencyService;
+import mello.economy.EconomyService;
+import mello.economy.MoneyTransactionType;
 import mello.kingdoms.KingdomService;
 import mello.kingdoms.TaxBreakdown;
 import org.bukkit.Bukkit;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
@@ -14,12 +17,12 @@ import org.bukkit.entity.Player;
  */
 public class PayCommand implements CommandExecutor {
 
-    private final CurrencyService service;
+    private final EconomyService economyService;
     private final KingdomService kingdomService;
     private final ClanService clanService;
 
-    public PayCommand(CurrencyService service, KingdomService kingdomService, ClanService clanService) {
-        this.service = service;
+    public PayCommand(EconomyService economyService, KingdomService kingdomService, ClanService clanService) {
+        this.economyService = economyService;
         this.kingdomService = kingdomService;
         this.clanService = clanService;
     }
@@ -61,27 +64,28 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
-        // Pré-calcula taxas para evitar inconsistências financeiras em caso de erro.
         TaxBreakdown kingdomTax = kingdomService != null ? kingdomService.calculateTax(target.getUniqueId(), amount) : new TaxBreakdown(amount, 0, null);
         TaxResult clanTax = clanService != null ? clanService.calculateTax(target.getUniqueId(), kingdomTax.netAmount()) : new TaxResult(kingdomTax.netAmount(), 0, null);
 
         double netAmount = clanTax.netAmount();
         double totalTax = (amount - netAmount);
 
-        boolean ok;
         try {
-            ok = service.withdraw(player.getUniqueId(), amount);
-        } catch (IllegalArgumentException ex) {
+            if (!economyService.withdraw(player.getUniqueId(), amount, MoneyTransactionType.PLAYER_TRADE, "Pagamento para " + target.getName())) {
+                player.sendMessage("Você não tem saldo suficiente!");
+                return true;
+            }
+        } catch (IllegalStateException ex) {
             player.sendMessage("Operação cancelada: " + ex.getMessage());
             return true;
         }
 
-        if (!ok) {
-            player.sendMessage("Você não tem saldo suficiente!");
+        try {
+            economyService.deposit(target.getUniqueId(), netAmount, MoneyTransactionType.PLAYER_TRADE, "Pagamento recebido de " + player.getName());
+        } catch (IllegalStateException ex) {
+            player.sendMessage("Operação cancelada: " + ex.getMessage());
             return true;
         }
-
-        service.deposit(target.getUniqueId(), netAmount);
         if (kingdomTax.taxAmount() > 0) {
             kingdomService.applyTax(target.getUniqueId(), kingdomTax.taxAmount());
         }
