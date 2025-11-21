@@ -1,5 +1,8 @@
 package mello;
 
+import mello.chat.ChatService;
+import mello.chat.commands.ChatCommand;
+import mello.chat.listeners.ChatListener;
 import mello.currency.CurrencyService;
 import mello.currency.CurrencyStorage;
 import mello.jobs.JobService;
@@ -26,6 +29,7 @@ public class EarthCore extends JavaPlugin {
     private JobService jobService;
     private KingdomService kingdomService;
     private ClanService clanService;
+    private ChatService chatService;
 
     @Override
     public void onEnable() {
@@ -51,6 +55,9 @@ public class EarthCore extends JavaPlugin {
         ClanStorage clanStorage = new ClanStorage(getDataFolder(), getLogger());
         clanService = new ClanService(currencyService, clanStorage, clansConfig, this.getLogger());
 
+        // Iniciar sistema de chat
+        chatService = new ChatService(clanService, kingdomService, this);
+
         // Registrar comandos
         getCommand("bal").setExecutor(new BalanceCommand(currencyService));
         getCommand("pay").setExecutor(new PayCommand(currencyService, kingdomService, clanService));
@@ -58,9 +65,10 @@ public class EarthCore extends JavaPlugin {
         getCommand("job").setExecutor(new JobCommand(jobService));
         getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService));
         getCommand("clan").setExecutor(new ClanCommand(clanService));
+        getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
 
         // Auto-save no desligamento
-        getServer().getPluginManager().registerEvents(new org.bukkit.event.Listener() {}, this);
+        getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
 
         getLogger().info("Sistema de moeda carregado!");
     }
