@@ -40,6 +40,8 @@ import mello.core.services.HomeService;
 import mello.core.services.PrivateMessageService;
 import mello.core.services.SpawnService;
 import mello.core.services.TeleportRequestService;
+import mello.web.FrontendServer;
+import mello.web.FrontendSettings;
 
 public class EarthCore extends JavaPlugin {
 
@@ -54,6 +56,7 @@ public class EarthCore extends JavaPlugin {
     private TeleportRequestService teleportRequestService;
     private PrivateMessageService privateMessageService;
     private DynmapAPI dynmapAPI;
+    private FrontendServer frontendServer;
 
     @Override
     public void onEnable() {
@@ -119,6 +122,8 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PortalListener(portalService), this);
         getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService), this);
 
+        startFrontend();
+
     }
 
     @Override
@@ -137,6 +142,10 @@ public class EarthCore extends JavaPlugin {
 
         if (clanService != null) {
             clanService.saveAll();
+        }
+
+        if (frontendServer != null) {
+            frontendServer.stop();
         }
 
         getLogger().info("MonolitoServidor desligado!");
@@ -164,5 +173,11 @@ public class EarthCore extends JavaPlugin {
         } catch (IllegalStateException ex) {
             getLogger().warning("Falha ao iniciar integração com Dynmap: " + ex.getMessage());
         }
+    }
+
+    private void startFrontend() {
+        FrontendSettings settings = FrontendSettings.fromConfig(getConfig(), getLogger());
+        frontendServer = new FrontendServer(this, currencyService, kingdomService, clanService, settings);
+        frontendServer.start();
     }
 }

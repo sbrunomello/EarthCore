@@ -74,6 +74,11 @@ EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem
 - Dependências recomendadas/esperadas: Dynmap, LuckPerms, EssentialsX.
 - Instalação: colocar o `EarthCore.jar` em `plugins/`, iniciar o servidor para gerar configs e reiniciar após ajustes.
 
+### Frontend web embutido (Dynmap + login simples)
+- O plugin sobe um servidor HTTP integrado que embeda o Dynmap em `http://<host>:<port>/` e oferece login por nome de usuário para exibir saldo, clã e reino.
+- Configure `frontend.host`, `frontend.port` e `frontend.dynmapUrl` em `plugins/EarthCore/config.yml` (padrão: `0.0.0.0:8210` apontando para `http://localhost:8123/`).
+- Veja `docs/frontend.md` para detalhes de uso, endpoints (`/api/user`) e boas práticas de exposição.
+
 ## Configuração Básica
 Exemplos ilustrativos (valores fictícios):
 
