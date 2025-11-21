@@ -3,7 +3,8 @@ package mello.kingdoms;
 import mello.clans.Clan;
 import mello.clans.ClanService;
 import mello.common.OperationResult;
-import mello.currency.CurrencyService;
+import mello.economy.EconomyService;
+import mello.economy.MoneyTransactionType;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -17,7 +18,7 @@ import java.util.logging.Logger;
  */
 public class KingdomService {
 
-    private final CurrencyService currencyService;
+    private final EconomyService economyService;
     private final KingdomStorage storage;
     private final KingdomsConfig config;
     private final Logger logger;
@@ -26,8 +27,8 @@ public class KingdomService {
     private KingdomDynmapHook dynmapHook;
     private ClanService clanService;
 
-    public KingdomService(CurrencyService currencyService, KingdomStorage storage, KingdomsConfig config, Logger logger) {
-        this.currencyService = currencyService;
+    public KingdomService(EconomyService economyService, KingdomStorage storage, KingdomsConfig config, Logger logger) {
+        this.economyService = economyService;
         this.storage = storage;
         this.config = config;
         this.logger = logger;
@@ -76,7 +77,7 @@ public class KingdomService {
             return OperationResult.fail("Você precisa estar em um clã para fundar um reino.");
         }
 
-        if (!currencyService.withdraw(creator, config.getCreateCost())) {
+        if (!economyService.withdraw(creator, config.getCreateCost(), MoneyTransactionType.SYSTEM_EVENT, "Criação de reino")) {
             return OperationResult.fail("Saldo insuficiente para criar um reino (custo: " + config.getCreateCost() + ")");
         }
 
@@ -166,7 +167,7 @@ public class KingdomService {
             }
         }
 
-        if (!currencyService.withdraw(playerId, config.getClaimCost())) {
+        if (!economyService.withdraw(playerId, config.getClaimCost(), MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para reino")) {
             return OperationResult.fail("Saldo insuficiente para claim. Custo: " + config.getClaimCost());
         }
 
@@ -231,7 +232,7 @@ public class KingdomService {
             return OperationResult.fail("Você precisa estar em um reino para contribuir com o tesouro.");
         }
 
-        if (!currencyService.withdraw(playerId, amount)) {
+        if (!economyService.withdraw(playerId, amount, MoneyTransactionType.CITY_TAX, "Depósito no tesouro do reino")) {
             return OperationResult.fail("Saldo insuficiente para depositar no tesouro.");
         }
 

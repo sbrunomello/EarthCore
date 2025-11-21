@@ -8,7 +8,7 @@ import com.sun.net.httpserver.HttpServer;
 import mello.clans.Clan;
 import mello.clans.ClanRole;
 import mello.clans.ClanService;
-import mello.currency.CurrencyService;
+import mello.economy.EconomyService;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomRole;
 import mello.kingdoms.KingdomService;
@@ -46,7 +46,7 @@ public class FrontendServer {
     private static final Duration SYNC_TIMEOUT = Duration.ofSeconds(2);
 
     private final JavaPlugin plugin;
-    private final CurrencyService currencyService;
+    private final EconomyService economyService;
     private final KingdomService kingdomService;
     private final ClanService clanService;
     private final FrontendSettings settings;
@@ -58,12 +58,12 @@ public class FrontendServer {
     private volatile String cachedScript;
 
     public FrontendServer(JavaPlugin plugin,
-                          CurrencyService currencyService,
+                          EconomyService economyService,
                           KingdomService kingdomService,
                           ClanService clanService,
                           FrontendSettings settings) {
         this.plugin = plugin;
-        this.currencyService = currencyService;
+        this.economyService = economyService;
         this.kingdomService = kingdomService;
         this.clanService = clanService;
         this.settings = settings;
@@ -175,7 +175,7 @@ public class FrontendServer {
     }
 
     private UserProfile buildProfile(String username, UUID playerId) {
-        double balance = currencyService.getBalance(playerId);
+        double balance = economyService.getBalance(playerId);
         Clan clan = clanService.getByMember(playerId);
         Kingdom kingdom = kingdomService.getByMember(playerId);
 

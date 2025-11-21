@@ -3,8 +3,12 @@ package mello;
 import mello.chat.ChatService;
 import mello.chat.commands.ChatCommand;
 import mello.chat.listeners.ChatListener;
-import mello.currency.CurrencyService;
-import mello.currency.CurrencyStorage;
+import mello.economy.EconomyListener;
+import mello.economy.EconomyRepository;
+import mello.economy.EconomyService;
+import mello.economy.commands.BalanceCommand;
+import mello.economy.commands.EconomyCommand;
+import mello.economy.commands.PayCommand;
 import mello.jobs.JobService;
 import mello.jobs.JobStorage;
 import mello.jobs.JobsConfig;
@@ -22,9 +26,6 @@ import mello.clans.ClansConfig;
 import mello.clans.commands.ClanCommand;
 import mello.clans.ClanDynmapHook;
 import mello.core.commands.PortalCommand;
-import mello.currency.commands.BalanceCommand;
-import mello.currency.commands.EcoCommand;
-import mello.currency.commands.PayCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.Plugin;
 import org.dynmap.DynmapAPI;
@@ -46,7 +47,7 @@ import mello.web.FrontendSettings;
 
 public class EarthCore extends JavaPlugin {
 
-    private CurrencyService currencyService;
+    private EconomyService economyService;
     private JobService jobService;
     private KingdomService kingdomService;
     private ClanService clanService;
@@ -66,27 +67,27 @@ public class EarthCore extends JavaPlugin {
         saveDefaultConfig();
 
         // Criar storage + service
-        CurrencyStorage storage = new CurrencyStorage(getDataFolder());
-        currencyService = new CurrencyService(storage);
+        EconomyRepository economyRepository = new EconomyRepository(getDataFolder(), getLogger());
+        economyService = new EconomyService(economyRepository);
         getLogger().info("Sistema de moeda carregado!");
 
         // Iniciar sistema de jobs
         JobsConfig jobsConfig = new JobsConfig(this);
         JobStorage jobStorage = new JobStorage(getDataFolder());
-        jobService = new JobService(currencyService, jobStorage, jobsConfig, this.getLogger());
+        jobService = new JobService(economyService, jobStorage, jobsConfig, this.getLogger());
         getServer().getPluginManager().registerEvents(new JobListener(jobService), this);
         getLogger().info("Sistema de jobs carregado!");
 
         // Iniciar sistema de reinos
         KingdomsConfig kingdomsConfig = new KingdomsConfig(this);
         KingdomStorage kingdomStorage = new KingdomStorage(getDataFolder(), getLogger());
-        kingdomService = new KingdomService(currencyService, kingdomStorage, kingdomsConfig, this.getLogger());
+        kingdomService = new KingdomService(economyService, kingdomStorage, kingdomsConfig, this.getLogger());
         getLogger().info("Sistema de reinos carregado!");
 
         // Iniciar sistema de clãs
         ClansConfig clansConfig = new ClansConfig(this);
         ClanStorage clanStorage = new ClanStorage(getDataFolder(), getLogger());
-        clanService = new ClanService(currencyService, clanStorage, clansConfig, this.getLogger());
+        clanService = new ClanService(economyService, clanStorage, clansConfig, this.getLogger());
         kingdomService.setClanService(clanService);
         clanService.setKingdomService(kingdomService);
         getLogger().info("Sistema de clan carregado!");
@@ -105,9 +106,9 @@ public class EarthCore extends JavaPlugin {
         privateMessageService = new PrivateMessageService();
 
         // Registrar comandos
-        getCommand("bal").setExecutor(new BalanceCommand(currencyService));
-        getCommand("pay").setExecutor(new PayCommand(currencyService, kingdomService, clanService));
-        getCommand("eco").setExecutor(new EcoCommand(currencyService));
+        getCommand("balance").setExecutor(new BalanceCommand(economyService));
+        getCommand("pay").setExecutor(new PayCommand(economyService, kingdomService, clanService));
+        getCommand("economy").setExecutor(new EconomyCommand(economyService));
         getCommand("job").setExecutor(new JobCommand(jobService));
         getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService));
         getCommand("clan").setExecutor(new ClanCommand(clanService));
@@ -120,6 +121,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("tphere").setExecutor(new TphereCommand(teleportRequestService));
         getCommand("msg").setExecutor(new MsgCommand(privateMessageService));
         getCommand("reply").setExecutor(new ReplyCommand(privateMessageService));
+        getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
@@ -132,8 +134,8 @@ public class EarthCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (currencyService != null) {
-            currencyService.saveAll();
+        if (economyService != null) {
+            economyService.saveAll();
         }
 
         if (jobService != null) {
@@ -185,7 +187,7 @@ public class EarthCore extends JavaPlugin {
 
     private void startFrontend() {
         FrontendSettings settings = FrontendSettings.fromConfig(getConfig(), getLogger());
-        frontendServer = new FrontendServer(this, currencyService, kingdomService, clanService, settings);
+        frontendServer = new FrontendServer(this, economyService, kingdomService, clanService, settings);
         frontendServer.start();
     }
 }
