@@ -48,6 +48,7 @@ public class EarthCore extends JavaPlugin {
     private HomeService homeService;
     private TeleportRequestService teleportRequestService;
     private PrivateMessageService privateMessageService;
+    private DynmapAPI dynmapAPI;
 
     @Override
     public void onEnable() {
@@ -134,10 +135,18 @@ public class EarthCore extends JavaPlugin {
 
     private void setupDynmap() {
         Plugin dynmapPlugin = getServer().getPluginManager().getPlugin("dynmap");
-        if (!(dynmapPlugin instanceof DynmapAPI dynmapAPI)) {
-            getLogger().info("Dynmap não encontrado - integração de claims desativada.");
+
+        if (dynmapPlugin == null) {
+            getLogger().warning("Dynmap não encontrado (plugin não carregado). Integração de claims desativada.");
             return;
         }
+
+        if (!(dynmapPlugin instanceof DynmapAPI api)) {
+            getLogger().warning("Dynmap encontrado, mas não expõe DynmapAPI compatível. Classe: " + dynmapPlugin.getClass().getName());
+            return;
+        }
+
+        this.dynmapAPI = api;
 
         try {
             KingdomDynmapHook dynmapHook = new KingdomDynmapHook(dynmapAPI, getLogger());

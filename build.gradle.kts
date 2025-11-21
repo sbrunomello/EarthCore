@@ -20,8 +20,7 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.3-R0.1-SNAPSHOT")
-    // Dependência Dynmap API para compilar integrações sem empacotar o plugin inteiro
-    implementation("org.dynmap:dynmap-api:1.9")
+    compileOnly("org.dynmap:dynmap-api:1.9")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
