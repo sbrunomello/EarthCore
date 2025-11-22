@@ -26,6 +26,10 @@ import mello.clans.ClanStorage;
 import mello.clans.ClansConfig;
 import mello.clans.commands.ClanCommand;
 import mello.clans.ClanDynmapHook;
+import mello.core.claims.ClaimMessages;
+import mello.core.claims.ClaimProtectionListener;
+import mello.core.claims.ClaimProtectionSettings;
+import mello.core.claims.ClaimService;
 import mello.core.commands.PortalCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.Plugin;
@@ -60,6 +64,7 @@ public class EarthCore extends JavaPlugin {
     private PrivateMessageService privateMessageService;
     private DynmapAPI dynmapAPI;
     private FrontendServer frontendServer;
+    private ClaimService claimService;
 
     @Override
     public void onEnable() {
@@ -101,6 +106,13 @@ public class EarthCore extends JavaPlugin {
         // Iniciar sistema de chat
         chatService = new ChatService(clanService, kingdomService, this);
         getLogger().info("Sistema de chat carregado!");
+
+        // Proteção de claims (clãs e reinos)
+        ClaimProtectionSettings claimProtectionSettings = ClaimProtectionSettings.fromConfig(this);
+        claimService = new ClaimService(kingdomService, clanService);
+        ClaimMessages claimMessages = new ClaimMessages(this);
+        getServer().getPluginManager().registerEvents(new ClaimProtectionListener(claimService, claimMessages, claimProtectionSettings), this);
+        getLogger().info("Proteção de claims carregada!");
 
         // Serviços básicos de teleporte e mensagens privadas
         spawnService = new SpawnService(this);
