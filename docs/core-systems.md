@@ -76,6 +76,12 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Pedidos de teleporte**: `/tpa` e `/tphere` armazenam solicitações em memória (`TeleportRequestService`) mapeadas por alvo; cada novo pedido sobrescreve o anterior para o mesmo alvo.
 - **Mensagens privadas**: `/msg` registra o último contato bilateral em `PrivateMessageService` para habilitar `/reply` imediato.
 
+## Kit inicial
+- **Entrega automática**: o `StarterKitListener` concede o kit apenas para jogadores realmente novos (que nunca entraram no servidor). Jogadores antigos são ignorados, mas marcados em cache para não serem processados a cada login.
+- **Configuração** (`starter-kit.yml`): ativa/desativa o sistema (`enabled`), define mensagens e lista de itens com material, quantidade e encantamentos. O arquivo é criado no primeiro start com exemplos e é regravado preservando correções básicas.
+- **Comando** (`/starterkit`): depende da permissão `core.starterkit` (true por padrão) e respeita cooldown configurável (`command.cooldown-seconds`). As mensagens de sucesso/bloqueio são parametrizadas com `%time%` e reutilizam o mesmo kit do fluxo automático.
+- **Persistência e auditoria**: `starter-kit-data.yml` guarda quem já recebeu o kit e o último uso do comando por UUID. Sempre que um kit é entregue, sobram itens são dropados aos pés do jogador e mensagens opcionais orientam sobre o drop.
+
 ## Frontend embutido e Dynmap
 - **Inicialização**: `FrontendServer` sobe automaticamente se `frontend.enabled` estiver `true`, usando host/porta da config e apontando o iframe para `frontend.dynmapUrl`.
 - **Dados expostos**: endpoint `/api/user?username=<nick>` retorna saldo, reino e clã consultando os serviços internos; ideal para painel informativo.
