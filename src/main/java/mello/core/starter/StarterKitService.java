@@ -45,11 +45,32 @@ public class StarterKitService {
             return;
         }
 
+        applyKit(player, settings.getReceivedMessage());
+        storage.markReceived(playerId);
+    }
+
+    /**
+     * Concede o kit sob demanda, independente de o jogador já ter recebido automaticamente.
+     *
+     * @return true se o kit foi entregue com sucesso; false caso o kit esteja desabilitado ou vazio.
+     */
+    public boolean grantOnCommand(Player player) {
+        if (!settings.isEnabled()) {
+            return false;
+        }
+
+        boolean delivered = applyKit(player, settings.getCommandReceivedMessage());
+        if (delivered) {
+            storage.markReceived(player.getUniqueId());
+        }
+        return delivered;
+    }
+
+    private boolean applyKit(Player player, String successMessage) {
         List<ItemStack> items = settings.getItems();
         if (items.isEmpty()) {
             logger.warning("Kit inicial está vazio. Ajuste starter-kit.yml para configurar itens.");
-            storage.markReceived(playerId);
-            return;
+            return false;
         }
 
         Map<Integer, ItemStack> leftovers = new HashMap<>();
@@ -59,11 +80,10 @@ public class StarterKitService {
             dropLeftovers(player, new ArrayList<>(leftovers.values()));
         }
 
-        if (settings.getReceivedMessage() != null && !settings.getReceivedMessage().isEmpty()) {
-            player.sendMessage(settings.getReceivedMessage());
+        if (successMessage != null && !successMessage.isEmpty()) {
+            player.sendMessage(successMessage);
         }
-
-        storage.markReceived(playerId);
+        return true;
     }
 
     private void dropLeftovers(Player player, List<ItemStack> leftovers) {

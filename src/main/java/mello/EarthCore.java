@@ -53,6 +53,7 @@ import mello.core.services.HomeService;
 import mello.core.services.PrivateMessageService;
 import mello.core.services.SpawnService;
 import mello.core.services.TeleportRequestService;
+import mello.core.starter.StarterKitCommand;
 import mello.core.starter.StarterKitListener;
 import mello.core.starter.StarterKitService;
 import mello.core.starter.StarterKitSettings;
@@ -79,6 +80,8 @@ public class EarthCore extends JavaPlugin {
     private ClaimService claimService;
     private GuiManager guiManager;
     private GuiMessages guiMessages;
+    private StarterKitSettings starterKitSettings;
+    private StarterKitStorage starterKitStorage;
     private StarterKitService starterKitService;
 
     @Override
@@ -141,8 +144,8 @@ public class EarthCore extends JavaPlugin {
         homeService = new HomeService(this);
         teleportRequestService = new TeleportRequestService();
         privateMessageService = new PrivateMessageService();
-        StarterKitSettings starterKitSettings = StarterKitSettings.fromConfig(this);
-        StarterKitStorage starterKitStorage = new StarterKitStorage(getDataFolder(), getLogger());
+        starterKitSettings = StarterKitSettings.fromConfig(this);
+        starterKitStorage = new StarterKitStorage(getDataFolder(), getLogger());
         starterKitService = new StarterKitService(starterKitSettings, starterKitStorage, getLogger());
         NotificationMessages notificationMessages = new NotificationMessages(this);
         notificationService = new NotificationService(notificationMessages, getLogger());
@@ -163,6 +166,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("tphere").setExecutor(new TphereCommand(teleportRequestService));
         getCommand("msg").setExecutor(new MsgCommand(privateMessageService));
         getCommand("reply").setExecutor(new ReplyCommand(privateMessageService));
+        getCommand("starterkit").setExecutor(new StarterKitCommand(starterKitService, starterKitSettings, starterKitStorage));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
 

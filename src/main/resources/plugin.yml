@@ -54,6 +54,9 @@ commands:
   reply:
     description: Responde para o último jogador que você enviou /msg
     usage: /reply <mensagem>
+  starterkit:
+    description: Recebe o kit inicial manualmente caso tenha perdido os itens
+    usage: /starterkit
 
 permissions:
   economy.admin:
@@ -62,3 +65,6 @@ permissions:
   core.portal:
     description: Permissão administrativa para criar e vincular totems/portais
     default: op
+  core.starterkit:
+    description: Autoriza o jogador a resgatar o kit inicial pelo comando /starterkit
+    default: true

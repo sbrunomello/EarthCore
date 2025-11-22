@@ -5,6 +5,13 @@ enabled: true
 messages:
   received: "&aVocê recebeu o kit inicial. Boa aventura!"
   dropped: "&eSeu inventário estava cheio, alguns itens foram dropados aos seus pés."
+command:
+  enabled: true
+  cooldown-seconds: 600
+  messages:
+    received: "&aKit inicial entregue novamente. Boa sorte!"
+    cooldown: "&cAguarde %time% para usar o comando /starterkit novamente."
+    disabled: "&cO comando /starterkit está temporariamente indisponível."
 items:
   - material: STONE_SWORD
     amount: 1
