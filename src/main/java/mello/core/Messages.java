@@ -25,19 +25,23 @@ public final class Messages {
     public static final String INVALID_PLAYER = ChatColor.RED + "Player not found.";
     public static final String CANNOT_TARGET_SELF = ChatColor.RED + "You cannot target yourself.";
 
-    public static final String PORTAL_USAGE = ChatColor.YELLOW + "Use /portal <settarget|settotem> <nome>.";
-    public static final String PORTAL_TARGET_SET = ChatColor.GREEN + "Destino do portal '%s' salvo. Totem já vinculado.";
+    public static final String PORTAL_USAGE = ChatColor.YELLOW + "Use /portal <settarget|settotem|list> <nome>.";
+    public static final String PORTAL_TARGET_SET = ChatColor.GREEN + "Destino do portal '%s' salvo. Aldeão já vinculado.";
     public static final String PORTAL_TARGET_SET_NEEDS_TOTEM = ChatColor.GREEN
-            + "Destino do portal '%s' salvo. Vincule um totem com /portal settotem <nome>.";
-    public static final String PORTAL_TOTEM_SET = ChatColor.GREEN + "Totem do portal '%s' vinculado.";
+            + "Destino do portal '%s' salvo. Defina a posição do aldeão com /portal settotem <nome>.";
+    public static final String PORTAL_TOTEM_SET = ChatColor.GREEN + "Aldeão do portal '%s' posicionado.";
     public static final String PORTAL_TOTEM_SET_NEEDS_TARGET = ChatColor.GREEN
-            + "Totem vinculado, defina o destino com /portal settarget %s.";
-    public static final String PORTAL_NO_BLOCK = ChatColor.RED + "Olhe para o totem que deseja vincular (bloco sólido).";
+            + "Aldeão posicionado, defina o destino com /portal settarget %s.";
+    public static final String PORTAL_NO_BLOCK = ChatColor.RED
+            + "Olhe para o bloco onde o aldeão ficará ou use sua posição atual para registrar o portal.";
     public static final String PORTAL_GENERIC_ERROR = ChatColor.RED + "Não foi possível salvar o portal agora. Tente novamente.";
-    public static final String PORTAL_USED = ChatColor.AQUA + "Totem '%s' conectado. Boa viagem!";
+    public static final String PORTAL_USED = ChatColor.AQUA + "Portal '%s' conectado. Boa viagem!";
     public static final String PORTAL_INCOMPLETE = ChatColor.RED + "Portal ainda não possui destino configurado.";
     public static final String PORTAL_TOTEM_IN_USE = ChatColor.RED
-            + "Este bloco já pertence ao portal '%s'. Escolha outro totem ou remova o portal existente.";
+            + "Este ponto já possui um portal registrado. Escolha outro local para o aldeão.";
+    public static final String PORTAL_TARGET_MISSING = ChatColor.RED + "Portal '%s' ainda não possui destino configurado.";
+    public static final String PORTAL_LIST_HEADER = ChatColor.YELLOW + "Portais configurados:";
+    public static final String PORTAL_LIST_EMPTY = ChatColor.RED + "Nenhum portal configurado ainda.";
 
     public static final String TPA_REQUEST_SENT = ChatColor.GREEN + "Teleport request sent.";
     public static final String TPA_REQUEST_RECEIVED = ChatColor.YELLOW + "%s wants to teleport to you. Use /tpacept or /tpdeny.";

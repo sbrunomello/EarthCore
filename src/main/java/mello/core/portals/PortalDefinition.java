@@ -28,4 +28,12 @@ public class PortalDefinition {
     public Location getTotem() {
         return totem;
     }
+
+    public String getDisplayName() {
+        if (name == null || name.isEmpty()) {
+            return "Portal";
+        }
+
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+    }
 }

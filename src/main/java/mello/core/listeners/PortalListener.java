@@ -1,17 +1,19 @@
 package mello.core.listeners;
 
-import java.util.Optional;
 import mello.core.Messages;
 import mello.core.portals.PortalDefinition;
 import mello.core.portals.PortalService;
-import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.ItemStack;
 
 /**
- * Listens for player interactions with portal totems and teleports accordingly.
+ * Handles interactions with portal villagers and GUI navigation.
  */
 public class PortalListener implements Listener {
 
@@ -22,28 +24,47 @@ public class PortalListener implements Listener {
     }
 
     @EventHandler
-    public void onInteract(PlayerInteractEvent event) {
-        if (event.getClickedBlock() == null) {
+    public void onVillagerInteract(PlayerInteractEntityEvent event) {
+        if (!(event.getRightClicked() instanceof Villager villager)) {
             return;
         }
 
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_BLOCK && action != Action.LEFT_CLICK_BLOCK) {
-            return;
-        }
+        portalService.findByVillager(villager.getUniqueId()).ifPresent(portal -> {
+            event.setCancelled(true);
+            portalService.openPortalGui(event.getPlayer(), portal);
+        });
+    }
 
-        Location blockLocation = event.getClickedBlock().getLocation();
-        Optional<PortalDefinition> portal = portalService.findByBlock(blockLocation);
-        if (portal.isEmpty()) {
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!portalService.isPortalInventory(event.getInventory())) {
             return;
         }
 
         event.setCancelled(true);
-        if (portal.get().getTarget() == null) {
-            event.getPlayer().sendMessage(Messages.PORTAL_INCOMPLETE);
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
-        event.getPlayer().teleport(portal.get().getTarget());
-        event.getPlayer().sendMessage(String.format(Messages.PORTAL_USED, portal.get().getName()));
+
+        ItemStack clickedItem = event.getCurrentItem();
+        portalService.findPortalFromItem(clickedItem).ifPresent(destination -> handleTeleport(player, destination));
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (portalService.isPortalInventory(event.getInventory())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private void handleTeleport(Player player, PortalDefinition destination) {
+        if (destination.getTarget() == null || destination.getTarget().getWorld() == null) {
+            player.sendMessage(String.format(Messages.PORTAL_TARGET_MISSING, destination.getDisplayName()));
+            return;
+        }
+
+        player.closeInventory();
+        player.teleport(destination.getTarget());
+        player.sendMessage(String.format(Messages.PORTAL_USED, destination.getDisplayName()));
     }
 }

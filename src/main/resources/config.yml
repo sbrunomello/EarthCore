@@ -20,19 +20,33 @@ frontend:
   port: 8210
   dynmapUrl: "http://localhost:8123/"
 
-# Portais de totem (somente interação, sem comando de teleporte):
+# Portais de viagem por aldeão: cada entrada representa um hub de continente.
+# O aldeão aparece no ponto "totem" e abre uma GUI com os demais portais configurados.
 # portals:
 #   africa:
-#     target:
+#     target:  # onde o jogador pousa ao clicar neste destino na GUI
 #       world: world
 #       x: 1500.5
 #       y: 70.0
 #       z: -200.5
 #       yaw: 180.0
 #       pitch: 0.0
-#     totem:
+#     totem:   # posição do aldeão de viagem
 #       world: world
 #       x: 10
+#       y: 65
+#       z: 5
+#   europa:
+#     target:
+#       world: world
+#       x: -2200.5
+#       y: 68.0
+#       z: 340.5
+#       yaw: 0.0
+#       pitch: 0.0
+#     totem:
+#       world: world
+#       x: 20
 #       y: 65
 #       z: 5
 
