@@ -6,6 +6,9 @@ Plugin monolítico de gameplay para servidores Minecraft estilo Earth, focado em
 
 EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem reinos, disputam território e desenvolvem personagens em um ambiente persistente. O plugin atua como o "cérebro de gameplay" do servidor, orquestrando dinheiro, progressão, interações políticas e integrações externas (Dynmap e um futuro cliente web estilo RTS).
 
+### Documentação detalhada do que já está pronto
+- [Sistemas implementados](docs/core-systems.md): proteção de claims, economia, jobs, chat, portais, utilidades de teleporte/mensagens e frontend/Dynmap.
+
 ## Principais Funcionalidades
 
 ### Economia / Moeda
