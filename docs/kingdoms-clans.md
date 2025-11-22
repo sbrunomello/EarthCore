@@ -24,6 +24,27 @@ Este módulo adiciona gerenciamento político e social nativo ao plugin. Reinos 
 - **Reinos**: toda transferência via `/pay` destina uma porcentagem para a tesouraria do reino do recebedor, definida em `kingdoms.yml` (`transaction-tax-rate`).
 - **Clãs**: depósitos voluntários e recebimentos via `/pay` podem direcionar uma fração para o banco do clã (`bank-tax-rate` em `clans.yml`).
 
+## Tesouraria dos reinos (banco + impostos)
+- **Habilitação**: controlada por `kingdom_bank.enabled` em `kingdoms.yml` (gera o arquivo na pasta de dados na primeira execução).
+- **Imposto automático**: `kingdom_bank.tax.enabled`, `rate` e `min_amount` definem quanto do `/pay` recebido pelos membros é enviado ao banco do reino antes de o jogador receber o valor líquido.
+- **Uso nos comandos**:
+  - `/kingdom deposit <valor>` desconta do saldo pessoal (com `MoneyTransactionType.KINGDOM_DEPOSIT`) e credita no banco do reino.
+  - `/kingdom withdraw <valor>` só pode ser usado pelo rei; saca do banco do reino para o jogador.
+- **Top balances**: o banco é usado como fonte de verdade para custos de manutenção e exibição de saldo interno; falhas geram mensagens formatadas via `KingdomMessages`.
+
+## Upkeep automático dos reinos
+- **Scheduler**: iniciado no `onEnable` (`KingdomService.startUpkeepScheduler`), roda a cada `upkeep.check_interval_minutes` minutos.
+- **Cálculo**: `base_cost_per_claim` multiplicado pelo total de claims (inclui capital) e pelo multiplicador do tier (`upkeep.tier_multipliers.<TIER>`).
+- **Cobrança**: tenta usar primeiro o banco do reino; faltando saldo, desconta do rei (`MoneyTransactionType.KINGDOM_UPKEEP`). Upkeeps parciais são revertidos se o saque do rei falhar.
+- **Dívida e penalidades**:
+  - Incrementa `debtDays` e marca `atRiskSince` ao falhar uma cobrança.
+  - Após `grace_days_before_penalty`, remove o claim mais recente a cada 24h sem pagamento (`kingdom.upkeep.claim_lost`).
+  - Após `grace_days_before_disband`, dissolve automaticamente o reino e remove markers do Dynmap (`kingdom.upkeep.disbanded`).
+
+## Marcação visual e Dynmap
+- **Tochas nos claims**: sempre que um chunk é claimado pelo reino, o serviço coloca tochas nos quatro cantos da superfície do chunk para feedback imediato sem GUIs.
+- **Dynmap**: hooks de reinos e clãs são carregados automaticamente se o plugin Dynmap estiver presente; claims são redesenhados após depósitos, claims/unclaims e disband, ou removidos junto ao reino/clã.
+
 ## Configuração
 
 ### kingdoms.yml
