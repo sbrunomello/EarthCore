@@ -19,6 +19,27 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Limite antiflood**: até 5 transações por tick por jogador (`MAX_TRANSACTIONS_PER_TICK`); exceder lança exceção de operação.
 - **Auditoria**: as últimas 500 transações ficam em um deque em memória para inspeção e para disparar eventos Bukkit (`PlayerMoneyReceiveEvent`/`PlayerMoneySpendEvent`).
 - **Eventos e integrações**: depósitos e saques disparam eventos com o motivo (`reason`) e o tipo de transação (`MoneyTransactionType`), permitindo hooks externos.
+- **Top e ajustes**: o repositório interno oferece ranking (`getTopBalances`) e localização do jogador mais rico, além de operações de ajuste direto de saldo para admins (`setBalance`).
+
+## Clãs
+- **Criação e convites**: `/clan create <nome> <tag>` cobra o custo configurado e define o criador como líder. Convites são geridos em memória e aceitos via `/clan join`.
+- **Cargos e permissões**: líderes podem convidar, reivindicar território e sacar do banco; oficiais podem convidar/claimar se a role permitir (`ClanRole.canInvite/canClaim`).
+- **Claim inicial único**: cada clã só mantém um `ClaimedChunk` e precisa dele para evoluir a reino. Claims existentes impedem reclaims de outros clãs/reinos.
+- **Banco e impostos internos**: depósitos sofrem imposto configurável (`bankTaxRate`) antes de entrar no cofre; apenas líder saca. O cálculo de imposto (`calculateTax`) permite que ganhos externos direcionem parte ao banco do clã.
+- **Dynmap**: quando habilitado, o hook redesenha claims e remove marcadores ao dissolver o clã.
+
+## Reinos
+- **Requisito de clã**: apenas o líder de um clã com claim ativo e mínimo de membros pode fundar um reino; o claim vira a capital e os membros do clã são copiados como cidadãos.
+- **Claims e custos**: roles que podem gerenciar territórios adicionam/removem claims com custo crescente (`baseClaimCost` + multiplicador por claim existente). Claims de clãs terceiros ou capitais não podem ser sobrescritos/desfeitos. Claims são marcados visualmente com tochas nos cantos do chunk.
+- **Evolução de tier**: `/kingdom upgrade` verifica requisitos por tier (`minMembers`, `minClaimsUsed`, custo) e atualiza o nível com feedback de mensagem/GUI.
+- **Banco e impostos automáticos**: depósitos/saques usam `KingdomBankService` (somente líder saca) e podem aplicar imposto automático sobre ganhos de membros (config `kingdom_bank.tax`). A função `calculateTax/applyTax` separa valor líquido do tributo para o reino.
+- **Upkeep agendado**: um scheduler periódico cobra manutenção baseada em claims e multiplicadores por tier. Usa saldo do banco, depois do rei; se falhar, acumula dívida, remove claims periodicamente e dissolve após dias de carência.
+- **Dynmap**: claims de reino são desenhados/atualizados pelo `KingdomDynmapHook`, sincronizando exclusões ao disband.
+
+## GUIs embutidos
+- **Sistema base**: `GuiManager` registra inventários controlados, cancela cliques externos e entrega eventos para GUIs concretas, protegendo o jogador com mensagens de erro seguras.
+- **Seleção de Jobs**: `JobSelectGui` lista empregos configurados, exibindo ganhos e permitindo troca via clique.
+- **Painéis de clã/reino**: `ClanMainGui` e `KingdomMainGui` mostram saldo, claims, membros e atalhos para ações comuns (banco, upgrade, detalhes de claim), reutilizando mensagens centralizadas.
 
 ## Jobs
 - **Seleção**: cada jogador mantém **um job ativo** salvo em `jobs-data.yml`; trocar usa `/job join <job>`.
