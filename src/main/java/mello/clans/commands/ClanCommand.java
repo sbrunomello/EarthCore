@@ -4,6 +4,9 @@ import mello.clans.Clan;
 import mello.clans.ClanService;
 import mello.clans.TaxResult;
 import mello.common.OperationResult;
+import mello.core.gui.GuiManager;
+import mello.core.gui.GuiMessages;
+import mello.clans.gui.ClanMainGui;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -18,9 +21,13 @@ import java.util.Locale;
 public class ClanCommand implements CommandExecutor {
 
     private final ClanService service;
+    private final GuiManager guiManager;
+    private final GuiMessages guiMessages;
 
-    public ClanCommand(ClanService service) {
+    public ClanCommand(ClanService service, GuiManager guiManager, GuiMessages guiMessages) {
         this.service = service;
+        this.guiManager = guiManager;
+        this.guiMessages = guiMessages;
     }
 
     @Override
@@ -31,7 +38,12 @@ public class ClanCommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            sendHelp(player);
+            Clan clan = service.getByMember(player.getUniqueId());
+            if (clan == null) {
+                player.sendMessage(guiMessages.format("gui.clan.no_clan"));
+                return true;
+            }
+            new ClanMainGui(player, guiManager, service, service.getKingdomService(), guiMessages).open();
             return true;
         }
 

@@ -1,9 +1,12 @@
 package mello.jobs.commands;
 
+import mello.core.gui.GuiManager;
+import mello.core.gui.GuiMessages;
 import mello.jobs.JobMessages;
 import mello.jobs.JobPayout;
 import mello.jobs.JobService;
 import mello.jobs.JobType;
+import mello.jobs.gui.JobSelectGui;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -22,10 +25,14 @@ public class JobCommand implements CommandExecutor {
 
     private final JobService service;
     private final JobMessages messages;
+    private final GuiManager guiManager;
+    private final GuiMessages guiMessages;
 
-    public JobCommand(JobService service, JobMessages messages) {
+    public JobCommand(JobService service, JobMessages messages, GuiManager guiManager, GuiMessages guiMessages) {
         this.service = service;
         this.messages = messages;
+        this.guiManager = guiManager;
+        this.guiMessages = guiMessages;
     }
 
     @Override
@@ -35,7 +42,12 @@ public class JobCommand implements CommandExecutor {
             return true;
         }
 
-        if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
+        if (args.length == 0) {
+            new JobSelectGui(player, guiManager, service, guiMessages).open();
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("help")) {
             sendHelp(player);
             return true;
         }

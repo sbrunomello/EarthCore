@@ -39,6 +39,10 @@ public class ClanService {
         this.kingdomService = kingdomService;
     }
 
+    public KingdomService getKingdomService() {
+        return kingdomService;
+    }
+
     public void setDynmapHook(ClanDynmapHook dynmapHook) {
         this.dynmapHook = dynmapHook;
         dynmapHook.redrawAll(storage.getClans());
