@@ -34,8 +34,13 @@ public class PortalCommand implements CommandExecutor {
             return true;
         }
 
+        if (args.length >= 1 && "help".equalsIgnoreCase(args[0])) {
+            sendHelp(player);
+            return true;
+        }
+
         if (args.length < 2) {
-            player.sendMessage(Messages.PORTAL_USAGE);
+            sendHelp(player);
             return true;
         }
 
@@ -48,7 +53,7 @@ public class PortalCommand implements CommandExecutor {
             case "settotem":
                 return handleSetTotem(player, name);
             default:
-                player.sendMessage(Messages.PORTAL_USAGE);
+                sendHelp(player);
                 return true;
         }
     }
@@ -89,5 +94,11 @@ public class PortalCommand implements CommandExecutor {
 
         player.sendMessage(String.format(Messages.PORTAL_TOTEM_SET, name));
         return true;
+    }
+
+    private void sendHelp(Player player) {
+        player.sendMessage(Messages.PORTAL_USAGE);
+        player.sendMessage("§7/portal settarget <nome> §f- salva o destino do portal");
+        player.sendMessage("§7/portal settotem <nome> §f- vincula o totem físico ao portal");
     }
 }

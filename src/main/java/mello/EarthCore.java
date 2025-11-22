@@ -50,6 +50,10 @@ import mello.core.services.HomeService;
 import mello.core.services.PrivateMessageService;
 import mello.core.services.SpawnService;
 import mello.core.services.TeleportRequestService;
+import mello.core.starter.StarterKitListener;
+import mello.core.starter.StarterKitService;
+import mello.core.starter.StarterKitSettings;
+import mello.core.starter.StarterKitStorage;
 import mello.web.FrontendServer;
 import mello.web.FrontendSettings;
 
@@ -71,6 +75,7 @@ public class EarthCore extends JavaPlugin {
     private ClaimService claimService;
     private GuiManager guiManager;
     private GuiMessages guiMessages;
+    private StarterKitService starterKitService;
 
     @Override
     public void onEnable() {
@@ -132,6 +137,9 @@ public class EarthCore extends JavaPlugin {
         homeService = new HomeService(this);
         teleportRequestService = new TeleportRequestService();
         privateMessageService = new PrivateMessageService();
+        StarterKitSettings starterKitSettings = StarterKitSettings.fromConfig(this);
+        StarterKitStorage starterKitStorage = new StarterKitStorage(getDataFolder(), getLogger());
+        starterKitService = new StarterKitService(starterKitSettings, starterKitStorage, getLogger());
 
         // Registrar comandos
         getCommand("balance").setExecutor(new BalanceCommand(economyService));
@@ -155,6 +163,7 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
         getServer().getPluginManager().registerEvents(new PortalListener(portalService), this);
         getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService), this);
+        getServer().getPluginManager().registerEvents(new StarterKitListener(starterKitService), this);
 
         startFrontend();
 

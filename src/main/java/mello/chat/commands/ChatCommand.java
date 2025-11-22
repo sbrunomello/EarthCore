@@ -42,6 +42,9 @@ public class ChatCommand implements CommandExecutor {
 
         String option = args[0].toLowerCase(Locale.ROOT);
         switch (option) {
+            case "help":
+                sendHelp(player);
+                return true;
             case "g":
             case "global":
                 setChannel(player, ChatChannel.GLOBAL, "Você agora está falando no chat global.");
@@ -75,7 +78,7 @@ public class ChatCommand implements CommandExecutor {
                 setChannel(player, ChatChannel.ADMIN, "Você agora está falando no chat admin.");
                 return true;
             default:
-                player.sendMessage(ChatColor.RED + "Canal desconhecido. Opções: global, local, clan, cidade, admin.");
+                sendHelp(player);
                 return true;
         }
     }
@@ -83,5 +86,14 @@ public class ChatCommand implements CommandExecutor {
     private void setChannel(Player player, ChatChannel channel, String confirmation) {
         chatService.setChannel(player.getUniqueId(), channel);
         player.sendMessage(ChatColor.GREEN + confirmation);
+    }
+
+    private void sendHelp(Player player) {
+        player.sendMessage(ChatColor.YELLOW + "Canais disponíveis:");
+        player.sendMessage(ChatColor.GRAY + "/chat global " + ChatColor.WHITE + "- falar com todo servidor");
+        player.sendMessage(ChatColor.GRAY + "/chat local " + ChatColor.WHITE + "- conversar em raio curto");
+        player.sendMessage(ChatColor.GRAY + "/chat clan " + ChatColor.WHITE + "- canal restrito ao clã");
+        player.sendMessage(ChatColor.GRAY + "/chat cidade " + ChatColor.WHITE + "- canal do reino/cidade");
+        player.sendMessage(ChatColor.GRAY + "/chat admin " + ChatColor.WHITE + "- canal reservado para staff");
     }
 }
