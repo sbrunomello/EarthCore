@@ -28,6 +28,12 @@ public class KingdomsConfig {
                                  Map<KingdomTier, Double> tierMultipliers) {
     }
 
+    public record BankSettings(boolean enabled, TaxSettings taxSettings) {
+    }
+
+    public record TaxSettings(boolean enabled, double rate, double minAmount) {
+    }
+
     private final JavaPlugin plugin;
     private final Logger logger;
     private final File file;
@@ -38,6 +44,7 @@ public class KingdomsConfig {
     private double costPerExistingClaim;
     private final Map<KingdomTier, TierSettings> tierSettings = new EnumMap<>(KingdomTier.class);
     private UpkeepSettings upkeepSettings;
+    private BankSettings bankSettings;
 
     public KingdomsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -74,6 +81,10 @@ public class KingdomsConfig {
         return upkeepSettings;
     }
 
+    public BankSettings getBankSettings() {
+        return bankSettings;
+    }
+
     private void load() {
         ensureDefaults();
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -102,6 +113,22 @@ public class KingdomsConfig {
             );
         } else {
             upkeepSettings = new UpkeepSettings(true, 10, 3, 7, 500, multipliers);
+        }
+
+        ConfigurationSection bankSection = config.getConfigurationSection("kingdom_bank");
+        if (bankSection == null) {
+            bankSettings = new BankSettings(true, new TaxSettings(true, 0.05, 1.0));
+        } else {
+            ConfigurationSection taxSection = bankSection.getConfigurationSection("tax");
+            TaxSettings taxSettings = new TaxSettings(
+                    taxSection != null && taxSection.getBoolean("enabled", true),
+                    taxSection != null ? taxSection.getDouble("rate", 0.05) : 0.05,
+                    taxSection != null ? taxSection.getDouble("min_amount", 1.0) : 1.0
+            );
+            bankSettings = new BankSettings(
+                    bankSection.getBoolean("enabled", true),
+                    taxSettings
+            );
         }
 
         for (KingdomTier tier : KingdomTier.values()) {
@@ -147,6 +174,13 @@ public class KingdomsConfig {
         tierMultipliers.set(KingdomTier.CITY.name(), 1.5);
         tierMultipliers.set(KingdomTier.STATE.name(), 2.0);
         tierMultipliers.set(KingdomTier.KINGDOM.name(), 3.0);
+
+        ConfigurationSection bankSection = defaults.createSection("kingdom_bank");
+        bankSection.set("enabled", true);
+        ConfigurationSection taxSection = bankSection.createSection("tax");
+        taxSection.set("enabled", true);
+        taxSection.set("rate", 0.05);
+        taxSection.set("min_amount", 1.0);
 
         ConfigurationSection tiersSection = defaults.createSection("tiers");
         setTierDefaults(tiersSection, KingdomTier.VILLAGE, "Vila", 5, 1, 3, 10000, 1.0);

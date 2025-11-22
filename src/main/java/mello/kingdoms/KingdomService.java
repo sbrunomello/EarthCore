@@ -27,6 +27,7 @@ public class KingdomService {
     private final KingdomStorage storage;
     private final KingdomsConfig config;
     private final Logger logger;
+    private final KingdomBankService bankService;
     private KingdomMessages messages;
 
     private final Map<UUID, String> invites = new HashMap<>();
@@ -38,6 +39,7 @@ public class KingdomService {
         this.storage = storage;
         this.config = config;
         this.logger = logger;
+        this.bankService = new KingdomBankService(config, logger);
     }
 
     public void setDynmapHook(KingdomDynmapHook dynmapHook) {
@@ -51,6 +53,10 @@ public class KingdomService {
 
     public void setMessages(KingdomMessages messages) {
         this.messages = messages;
+    }
+
+    public KingdomBankService getBankService() {
+        return bankService;
     }
 
     public Collection<Kingdom> getAll() {
@@ -275,20 +281,63 @@ public class KingdomService {
 
     public OperationResult deposit(UUID playerId, double amount) {
         if (amount <= 0) {
-            return OperationResult.fail("Informe um valor maior que zero.");
+            return OperationResult.fail(formatBankMessage("kingdom.bank.deposit.invalid_amount", null, 0));
+        }
+
+        if (!bankService.isEnabled()) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.feature_disabled", null, 0));
         }
 
         Kingdom kingdom = getByMember(playerId);
         if (kingdom == null) {
-            return OperationResult.fail("Você precisa estar em um reino para contribuir com o tesouro.");
+            return OperationResult.fail(formatBankMessage("kingdom.bank.deposit.not_in_kingdom", null, 0));
         }
 
-        if (!economyService.withdraw(playerId, amount, MoneyTransactionType.CITY_TAX, "Depósito no tesouro do reino")) {
-            return OperationResult.fail("Saldo insuficiente para depositar no tesouro.");
+        if (!economyService.withdraw(playerId, amount, MoneyTransactionType.KINGDOM_DEPOSIT, "Depósito no banco do reino")) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.deposit.not_enough_money", kingdom, amount));
         }
 
-        kingdom.deposit(amount);
-        return OperationResult.ok("Depositado " + amount + " no tesouro de " + kingdom.getName());
+        bankService.deposit(kingdom, amount, "Depósito manual de jogador");
+        notifyDynmapUpdate(kingdom);
+        return OperationResult.ok(formatBankMessage("kingdom.bank.deposit.success", kingdom, amount));
+    }
+
+    public OperationResult withdraw(UUID playerId, double amount) {
+        if (amount <= 0) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.deposit.invalid_amount", null, 0));
+        }
+
+        if (!bankService.isEnabled()) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.feature_disabled", null, 0));
+        }
+
+        Kingdom kingdom = getByMember(playerId);
+        if (kingdom == null) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.deposit.not_in_kingdom", null, 0));
+        }
+
+        if (!kingdom.getKing().equals(playerId)) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.withdraw.not_leader", kingdom, amount));
+        }
+
+        if (!bankService.withdraw(kingdom, amount, "Saque manual do líder")) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.withdraw.insufficient_funds", kingdom, amount));
+        }
+
+        economyService.deposit(playerId, amount, MoneyTransactionType.KINGDOM_WITHDRAW, "Saque do banco do reino");
+        notifyDynmapUpdate(kingdom);
+        return OperationResult.ok(formatBankMessage("kingdom.bank.withdraw.success", kingdom, amount));
+    }
+
+    public OperationResult showBankBalance(UUID playerId) {
+        if (!bankService.isEnabled()) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.feature_disabled", null, 0));
+        }
+        Kingdom kingdom = getByMember(playerId);
+        if (kingdom == null) {
+            return OperationResult.fail(formatBankMessage("kingdom.bank.deposit.not_in_kingdom", null, 0));
+        }
+        return OperationResult.ok(formatBankMessage("kingdom.bank.balance", kingdom, bankService.getBalance(kingdom)));
     }
 
     public void saveAll() {
@@ -315,21 +364,30 @@ public class KingdomService {
 
     public TaxBreakdown calculateTax(UUID receiverId, double amount) {
         Kingdom kingdom = getByMember(receiverId);
-        if (kingdom == null) {
+        KingdomsConfig.BankSettings bankSettings = config.getBankSettings();
+        if (kingdom == null || bankSettings == null || !bankSettings.enabled()) {
             return new TaxBreakdown(amount, 0, null);
         }
 
-        double tax = 0;
-        double net = amount - tax;
-        if (net < 0) net = 0;
+        KingdomsConfig.TaxSettings taxSettings = bankSettings.taxSettings();
+        if (taxSettings == null || !taxSettings.enabled() || amount <= 0) {
+            return new TaxBreakdown(amount, 0, kingdom.getName());
+        }
+
+        if (amount < taxSettings.minAmount()) {
+            return new TaxBreakdown(amount, 0, kingdom.getName());
+        }
+
+        double tax = Math.max(0, amount * taxSettings.rate());
+        double net = Math.max(0, amount - tax);
         return new TaxBreakdown(net, tax, kingdom.getName());
     }
 
     public void applyTax(UUID receiverId, double taxAmount) {
-        if (taxAmount <= 0) return;
+        if (taxAmount <= 0 || !bankService.isEnabled()) return;
         Kingdom kingdom = getByMember(receiverId);
         if (kingdom == null) return;
-        kingdom.deposit(taxAmount);
+        bankService.deposit(kingdom, taxAmount, "Imposto automático");
     }
 
     private void runUpkeepCycle(KingdomsConfig.UpkeepSettings settings) {
@@ -424,24 +482,30 @@ public class KingdomService {
             return true;
         }
 
-        double treasury = kingdom.getTreasury();
-        if (treasury >= cost) {
-            kingdom.withdraw(cost);
+        double withdrawnFromBank = 0;
+        double bankBalance = bankService.isEnabled() ? bankService.getBalance(kingdom) : 0;
+
+        if (bankBalance >= cost && bankService.withdraw(kingdom, cost, "Upkeep do reino")) {
             return true;
         }
 
-        double remaining = cost - treasury;
-        if (treasury > 0 && !economyService.hasEnough(kingdom.getKing(), remaining)) {
+        if (bankBalance > 0 && bankService.isEnabled()) {
+            if (bankService.withdraw(kingdom, bankBalance, "Upkeep parcial do reino")) {
+                withdrawnFromBank = bankBalance;
+                cost -= withdrawnFromBank;
+            }
+        }
+
+        if (!economyService.hasEnough(kingdom.getKing(), cost)) {
+            if (withdrawnFromBank > 0) {
+                bankService.deposit(kingdom, withdrawnFromBank, "Rollback de upkeep falho");
+            }
             return false;
         }
 
-        if (treasury > 0) {
-            kingdom.withdraw(treasury);
-        }
-        boolean playerPaid = economyService.withdraw(kingdom.getKing(), remaining, MoneyTransactionType.CLAIM_UPKEEP, "Upkeep do reino");
-        if (!playerPaid && treasury > 0) {
-            // rollback treasury withdraw if player failed to cover remainder
-            kingdom.deposit(treasury);
+        boolean playerPaid = economyService.withdraw(kingdom.getKing(), cost, MoneyTransactionType.KINGDOM_UPKEEP, "Upkeep do reino");
+        if (!playerPaid && withdrawnFromBank > 0) {
+            bankService.deposit(kingdom, withdrawnFromBank, "Rollback de upkeep falho");
         }
         return playerPaid;
     }
@@ -453,6 +517,17 @@ public class KingdomService {
         placeholders.put("debt_days", String.valueOf(kingdom.getDebtDays()));
         if (messages == null) {
             return key;
+        }
+        return messages.format(key, placeholders);
+    }
+
+    private String formatBankMessage(String key, Kingdom kingdom, double amount) {
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("kingdom", kingdom != null ? kingdom.getName() : "");
+        placeholders.put("amount", String.format(Locale.US, "%.2f", amount));
+        placeholders.put("tax", String.format(Locale.US, "%.2f", amount));
+        if (messages == null) {
+            return key + (kingdom != null ? " [" + kingdom.getName() + "]" : "");
         }
         return messages.format(key, placeholders);
     }

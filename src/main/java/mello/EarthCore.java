@@ -92,6 +92,7 @@ public class EarthCore extends JavaPlugin {
         KingdomStorage kingdomStorage = new KingdomStorage(getDataFolder(), getLogger());
         kingdomService = new KingdomService(economyService, kingdomStorage, kingdomsConfig, this.getLogger());
         kingdomService.setMessages(new KingdomMessages(this));
+        jobService.setKingdomService(kingdomService);
         getLogger().info("Sistema de reinos carregado!");
 
         // Iniciar sistema de clãs

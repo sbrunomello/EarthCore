@@ -191,7 +191,7 @@ public class FrontendServer {
             kingdomSummary = new KingdomSummary(
                     kingdom.getName(),
                     role == null ? "UNKNOWN" : role.name(),
-                    kingdom.getTreasury(),
+                    kingdom.getBankBalance(),
                     kingdom.getClaims().size());
         }
 
@@ -260,7 +260,7 @@ public class FrontendServer {
     private record ClanSummary(String name, String tag, String role, double bank) {
     }
 
-    private record KingdomSummary(String name, String role, double treasury, int claims) {
+    private record KingdomSummary(String name, String role, double bank, int claims) {
     }
 
     private record UserProfile(String username, String uuid, double balance, ClanSummary clan, KingdomSummary kingdom) {
