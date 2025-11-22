@@ -50,6 +50,15 @@ public class NotificationService {
         sendActionBarWithChatFallback(player, formatted);
     }
 
+    /**
+     * Exibe o dono do claim quando o jogador entra em um território diferente,
+     * usando ação bar para evitar poluir o chat.
+     */
+    public void notifyClaimEntered(Player player, String owner) {
+        String formatted = messages.format("notifications.claim.enter", Map.of("owner", owner));
+        sendActionBarWithChatFallback(player, formatted);
+    }
+
     private void sendActionBarWithChatFallback(Player player, String message) {
         try {
             player.sendActionBar(message);
