@@ -22,3 +22,5 @@ gui.kingdom.no_kingdom: "&cVocê não pertence a um reino. Crie um com /kingdom 
 gui.clan.no_clan: "&cVocê não pertence a um clã."
 gui.job.selected: "&aVocê agora é {job}."
 gui.open.error: "&cNão foi possível abrir o menu agora. Tente novamente mais tarde."
+notifications.money.receive: "&a+{amount} ⛁ &7({source})"
+notifications.important: "&6⚠ {message}"

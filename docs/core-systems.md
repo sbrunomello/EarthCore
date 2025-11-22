@@ -21,6 +21,12 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Eventos e integrações**: depósitos e saques disparam eventos com o motivo (`reason`) e o tipo de transação (`MoneyTransactionType`), permitindo hooks externos.
 - **Top e ajustes**: o repositório interno oferece ranking (`getTopBalances`) e localização do jogador mais rico, além de operações de ajuste direto de saldo para admins (`setBalance`).
 
+## Notificações in-game
+- **Escopo**: mensagens curtas para ganhos financeiros e avisos críticos são entregues via action bar para aumentar a visibilidade sem poluir o chat.
+- **Origem do ganho**: `NotificationListener` escuta `PlayerMoneyReceiveEvent` e chama `NotificationService#notifyMoneyReceived`, que resolve a origem com base no `MoneyTransactionType` (job, impostos, banco do reino, etc.).
+- **Fallbacks**: se `Player#sendActionBar` não existir na versão do servidor, o serviço tenta o método do Spigot (`player.spigot().sendMessage`); em último caso envia no chat e registra aviso no log.
+- **Personalização**: os textos ficam em `messages.yml` (`notifications.money.receive` e `notifications.important`), com placeholders `{amount}` e `{source}` formatados com separador brasileiro.
+
 ## Clãs
 - **Criação e convites**: `/clan create <nome> <tag>` cobra o custo configurado e define o criador como líder. Convites são geridos em memória e aceitos via `/clan join`.
 - **Cargos e permissões**: líderes podem convidar, reivindicar território e sacar do banco; oficiais podem convidar/claimar se a role permitir (`ClanRole.canInvite/canClaim`).
