@@ -102,6 +102,23 @@ public class KingdomCommand implements CommandExecutor {
                 player.sendMessage(depositResult.message());
                 return true;
 
+            case "withdraw":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom withdraw <valor>");
+                    return true;
+                }
+                double withdrawAmount = parseAmount(args[1], player);
+                if (withdrawAmount <= 0) return true;
+                OperationResult withdrawResult = service.withdraw(player.getUniqueId(), withdrawAmount);
+                player.sendMessage(withdrawResult.message());
+                return true;
+
+            case "bank":
+            case "balance":
+                OperationResult balance = service.showBankBalance(player.getUniqueId());
+                player.sendMessage(balance.message());
+                return true;
+
             case "info":
                 Kingdom kingdom;
                 if (args.length >= 2) {
@@ -151,7 +168,7 @@ public class KingdomCommand implements CommandExecutor {
         player.sendMessage("§7Tier: §f" + kingdom.getTier());
         player.sendMessage("§7Membros: §f" + kingdom.getMembers().size());
         player.sendMessage("§7Claims: §f" + (kingdom.getClaims().size() + 1));
-        player.sendMessage("§7Tesouraria: §a" + kingdom.getTreasury());
+        player.sendMessage("§7Banco do reino: §a" + kingdom.getBankBalance());
     }
 
     private void sendHelp(Player player) {
@@ -162,7 +179,9 @@ public class KingdomCommand implements CommandExecutor {
         player.sendMessage("§7/kingdom claim §f- reivindica o chunk atual");
         player.sendMessage("§7/kingdom unclaim §f- remove o claim atual");
         player.sendMessage("§7/kingdom upgrade §f- evolui o reino");
-        player.sendMessage("§7/kingdom deposit <valor> §f- deposita no tesouro do reino");
+        player.sendMessage("§7/kingdom deposit <valor> §f- deposita no banco do reino");
+        player.sendMessage("§7/kingdom withdraw <valor> §f- rei saca do banco do reino");
+        player.sendMessage("§7/kingdom bank §f- mostra o saldo do banco do reino");
         player.sendMessage("§7/kingdom info [nome] §f- mostra detalhes");
         player.sendMessage("§7/kingdom disband §f- dissolve o reino");
         player.sendMessage("§7/kingdom leave §f- sai do seu reino");

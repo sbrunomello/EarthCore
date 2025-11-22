@@ -24,7 +24,7 @@ public class JobListener implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         if (player.getGameMode() == GameMode.CREATIVE) return; // evita exploits
-        service.handleBlockBreak(player.getUniqueId(), event.getBlock());
+        service.handleBlockBreak(player, event.getBlock());
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -39,6 +39,6 @@ public class JobListener implements Listener {
         if (event.getEntity().getKiller() == null) return;
         Player killer = event.getEntity().getKiller();
         if (killer.getGameMode() == GameMode.CREATIVE) return;
-        service.handleEntityKill(killer.getUniqueId(), event.getEntityType());
+        service.handleEntityKill(killer, event.getEntityType());
     }
 }

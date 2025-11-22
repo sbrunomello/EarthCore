@@ -175,7 +175,7 @@ public class KingdomDynmapHook {
                 .collect(Collectors.joining(", "));
 
         NumberFormat currency = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-        String treasury = currency.format(kingdom.getTreasury());
+        String treasury = currency.format(kingdom.getBankBalance());
 
         return """
                 <div class=\"kingdom-info\">

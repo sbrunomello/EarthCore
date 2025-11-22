@@ -51,7 +51,8 @@ public class KingdomStorage {
             String path = "kingdoms." + kingdom.getName().toLowerCase();
             config.set(path + ".id", kingdom.getId().toString());
             config.set(path + ".king", kingdom.getKing().toString());
-            config.set(path + ".treasury", kingdom.getTreasury());
+            config.set(path + ".bank_balance", kingdom.getBankBalance());
+            config.set(path + ".treasury", kingdom.getBankBalance());
             config.set(path + ".tag", kingdom.getTag());
             config.set(path + ".tier", kingdom.getTier().name());
             config.set(path + ".clan", kingdom.getClanName());
@@ -125,7 +126,8 @@ public class KingdomStorage {
             String clanName = section.getString("clan", "");
             String capitalClaim = section.getString("capital_claim", "");
             Kingdom kingdom = new Kingdom(kingdomId, nameKey, section.getString("tag", null), tier, clanName, capitalClaim, kingUuid);
-            kingdom.setTreasury(section.getDouble("treasury", 0));
+            double storedBalance = section.getDouble("bank_balance", section.getDouble("treasury", 0));
+            kingdom.setBankBalance(storedBalance);
 
             long risk = section.getLong("at_risk_until", -1);
             if (risk > 0) {

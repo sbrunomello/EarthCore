@@ -21,6 +21,15 @@ public class KingdomMessages {
         this.defaults.put("kingdom.upkeep.failed", "&c{kingdom} não conseguiu pagar o upkeep de &f{cost}&c. Dias em dívida: {debt_days}");
         this.defaults.put("kingdom.upkeep.claim_lost", "&e{kingdom} perdeu um claim por falta de pagamento. Dias em dívida: {debt_days}");
         this.defaults.put("kingdom.upkeep.disbanded", "&c{kingdom} foi dissolvido por falta de pagamento após {debt_days} dias em dívida.");
+        this.defaults.put("kingdom.bank.balance", "&eSaldo do banco do reino {kingdom}: &a{amount} ⛁");
+        this.defaults.put("kingdom.bank.deposit.success", "&aVocê depositou {amount} ⛁ no banco do reino {kingdom}.");
+        this.defaults.put("kingdom.bank.deposit.invalid_amount", "&cInforme um valor maior que zero para depositar.");
+        this.defaults.put("kingdom.bank.deposit.not_enough_money", "&cVocê não tem saldo suficiente para depositar esse valor.");
+        this.defaults.put("kingdom.bank.deposit.not_in_kingdom", "&cVocê precisa estar em um reino para usar o banco.");
+        this.defaults.put("kingdom.bank.withdraw.success", "&aVocê sacou {amount} ⛁ do banco do reino {kingdom}.");
+        this.defaults.put("kingdom.bank.withdraw.insufficient_funds", "&cO banco do reino não possui esse valor disponível.");
+        this.defaults.put("kingdom.bank.withdraw.not_leader", "&cApenas o rei pode sacar do banco do reino.");
+        this.defaults.put("kingdom.bank.feature_disabled", "&cO banco de reinos está desativado no momento.");
 
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {

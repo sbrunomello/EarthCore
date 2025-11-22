@@ -21,7 +21,7 @@ public class Kingdom {
     private int debtDays;
 
     private UUID king;
-    private double treasury;
+    private double bankBalance;
     private final Map<UUID, KingdomRole> members = new HashMap<>();
     private final Set<KingdomClaim> claims = new HashSet<>();
 
@@ -105,10 +105,6 @@ public class Kingdom {
         return king;
     }
 
-    public double getTreasury() {
-        return treasury;
-    }
-
     public Map<UUID, KingdomRole> getMembers() {
         return members;
     }
@@ -117,18 +113,35 @@ public class Kingdom {
         return claims;
     }
 
-    public void setTreasury(double treasury) {
-        this.treasury = Math.max(0, treasury);
+    public double getBankBalance() {
+        return bankBalance;
     }
 
-    public void deposit(double amount) {
-        if (amount <= 0) return;
-        this.treasury += amount;
+    public void setBankBalance(double bankBalance) {
+        this.bankBalance = Math.max(0, bankBalance);
     }
 
-    public void withdraw(double amount) {
+    public void depositToBank(double amount) {
         if (amount <= 0) return;
-        this.treasury = Math.max(0, treasury - amount);
+        this.bankBalance += amount;
+    }
+
+    public boolean withdrawFromBank(double amount) {
+        if (amount <= 0) return false;
+        if (bankBalance < amount) {
+            return false;
+        }
+        this.bankBalance -= amount;
+        return true;
+    }
+
+    /**
+     * Mantém compatibilidade com chamadas antigas que ainda utilizam o termo
+     * "tesouraria". O saldo real é armazenado em {@link #bankBalance}.
+     */
+    @Deprecated
+    public double getTreasury() {
+        return getBankBalance();
     }
 
     public int getDebtDays() {

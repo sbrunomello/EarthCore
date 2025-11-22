@@ -2,11 +2,15 @@ package mello.jobs;
 
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
+import mello.kingdoms.Kingdom;
+import mello.kingdoms.KingdomBankService;
+import mello.kingdoms.KingdomService;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +27,7 @@ public class JobService {
     private final JobStorage storage;
     private final JobsConfig config;
     private final Logger logger;
+    private KingdomService kingdomService;
     private final Map<UUID, Long> lastRewardReceived = new HashMap<>();
     private final Map<BlockPosition, PlacedBlock> placedBlocks = new HashMap<>();
 
@@ -31,6 +36,10 @@ public class JobService {
         this.storage = storage;
         this.config = config;
         this.logger = logger;
+    }
+
+    public void setKingdomService(KingdomService kingdomService) {
+        this.kingdomService = kingdomService;
     }
 
     public JobsConfig getConfig() {
@@ -57,7 +66,8 @@ public class JobService {
         storage.setJob(uuid, null);
     }
 
-    public void handleBlockBreak(UUID playerId, Block block) {
+    public void handleBlockBreak(Player player, Block block) {
+        UUID playerId = player.getUniqueId();
         Optional<JobPayout> payoutOpt = storage.getJob(playerId).flatMap(config::getPayout);
         if (payoutOpt.isEmpty()) {
             return;
@@ -89,12 +99,13 @@ public class JobService {
             return;
         }
 
-        economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
+        payJobReward(player, reward);
         lastRewardReceived.put(playerId, System.currentTimeMillis());
         logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por quebrar " + material + ".");
     }
 
-    public void handleEntityKill(UUID playerId, EntityType entityType) {
+    public void handleEntityKill(Player player, EntityType entityType) {
+        UUID playerId = player.getUniqueId();
         Optional<JobPayout> payoutOpt = storage.getJob(playerId).flatMap(config::getPayout);
         if (payoutOpt.isEmpty()) {
             return;
@@ -113,9 +124,47 @@ public class JobService {
             return;
         }
 
-        economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
+        payJobReward(player, reward);
         lastRewardReceived.put(playerId, System.currentTimeMillis());
         logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por matar " + entityType + ".");
+    }
+
+    private void payJobReward(Player player, double reward) {
+        if (reward <= 0) {
+            return;
+        }
+
+        UUID playerId = player.getUniqueId();
+        KingdomBankService bankService = kingdomService != null ? kingdomService.getBankService() : null;
+        boolean bankEnabled = bankService != null && bankService.isEnabled();
+
+        if (!bankEnabled) {
+            economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
+            return;
+        }
+
+        Kingdom kingdom = kingdomService.getByMember(playerId);
+        if (kingdom == null) {
+            economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
+            return;
+        }
+
+        var taxSettings = bankService.getSettings() != null ? bankService.getSettings().taxSettings() : null;
+        boolean taxEnabled = taxSettings != null && taxSettings.enabled();
+        double tax = 0;
+        if (taxEnabled && reward >= taxSettings.minAmount()) {
+            tax = Math.max(0, reward * taxSettings.rate());
+            if (tax < 0.0001) {
+                tax = 0;
+            }
+        }
+
+        double net = Math.max(0, reward - tax);
+        economyService.deposit(playerId, net, MoneyTransactionType.JOB_REWARD, tax > 0 ? "Job reward (líquido)" : "Job reward");
+        if (tax > 0) {
+            bankService.deposit(kingdom, tax, "Taxa de job de " + player.getName());
+            logger.fine("[Jobs] Imposto de " + tax + " destinado ao reino " + kingdom.getName() + " para o jogador " + player.getName());
+        }
     }
 
     public void registerBlockPlacement(Block block, UUID playerId) {
