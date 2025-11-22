@@ -62,13 +62,16 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Entrega**: resolução de destinatários é feita pelo `ChatService` conforme o canal escolhido; admins recebem apenas operadores, clã/reino dependem da associação ativa e o local filtra por distância.
 - **Comando**: `/chat <global|local|clan|cidade|admin>` alterna o canal do jogador.
 
-## Portais de totem
-- **Propósito**: permitir teleporte ao clicar em um bloco/totem específico, sem comando de jogador.
+## Portais de viagem por aldeão
+- **Propósito**: hubs de viagem entre continentes via NPC aldeão, abrindo uma GUI para escolher o destino.
 - **Configuração em jogo** (`/portal`, permissão `core.portal`):
-  - `/portal settarget <nome>` define o destino usando a posição atual do executor.
-  - `/portal settotem <nome>` vincula o bloco focado (até 6 blocos de distância) como totem do portal.
-- **Persistência**: cada portal é salvo em `config.yml` na raiz `portals.<nome>.{target,totem}`; recarregados no start do plugin.
-- **Uso**: ao clicar no totem configurado, o jogador é teleportado para o destino correspondente; portais incompletos avisam o usuário.
+  - `/portal settarget <nome>` salva o ponto de chegada daquele portal usando a posição atual do executor.
+  - `/portal settotem <nome>` define onde o aldeão do portal ficará (bloco em foco ou posição atual) e respawna o NPC.
+  - `/portal list` mostra o status de todos os portais configurados (destino e aldeão presentes ou não).
+- **Persistência**: cada portal é salvo em `config.yml` na raiz `portals.<nome>.{target,totem}`; ao iniciar/recarregar, o serviço remove aldeões antigos marcados e respawna NPCs em cada `totem` registrado.
+- **Uso**:
+  - Interagir com o aldeão abre a GUI “Portais de Viagem” listando todos os outros portais ativos.
+  - Clicar em um item teleporta para o `target` configurado do destino; portais sem destino exibem mensagem de erro amigável.
 
 ## Utilidades de teleporte e sociais
 - **Spawn global**: armazenado em `config.yml` (`spawn.*`); `/setspawn` grava, `/spawn` teleporta. Logs alertam se o mundo não estiver carregado.

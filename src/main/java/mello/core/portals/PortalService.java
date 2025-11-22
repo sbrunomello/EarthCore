@@ -2,29 +2,49 @@ package mello.core.portals;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Material;
 
 /**
- * Handles persistence and lookup for interactive portals (totems).
+ * Handles persistence, GUI rendering and NPC binding for interactive portals.
  */
 public class PortalService {
 
     private final JavaPlugin plugin;
     private final Logger logger;
     private final Map<String, PortalDefinition> portalsByName = new HashMap<>();
-    private final Map<String, PortalDefinition> portalsByBlock = new HashMap<>();
+    private final Map<String, PortalDefinition> portalsByTotem = new HashMap<>();
+    private final Map<UUID, PortalDefinition> portalsByVillager = new HashMap<>();
+    private final Map<String, UUID> villagerIdsByPortal = new HashMap<>();
+    private final NamespacedKey portalKey;
+
+    private static final String PORTAL_GUI_TITLE = "Portais de Viagem";
 
     public PortalService(JavaPlugin plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
+        this.portalKey = new NamespacedKey(plugin, "continent_portal");
         reload();
     }
 
@@ -33,7 +53,11 @@ public class PortalService {
      */
     public final void reload() {
         portalsByName.clear();
-        portalsByBlock.clear();
+        portalsByTotem.clear();
+        portalsByVillager.clear();
+        villagerIdsByPortal.clear();
+
+        removeExistingPortalVillagers();
 
         FileConfiguration config = plugin.getConfig();
         ConfigurationSection portalSection = config.getConfigurationSection("portals");
@@ -42,6 +66,7 @@ public class PortalService {
         }
 
         for (String name : portalSection.getKeys(false)) {
+            String normalizedName = name.toLowerCase();
             ConfigurationSection section = portalSection.getConfigurationSection(name);
             if (section == null) {
                 continue;
@@ -49,17 +74,30 @@ public class PortalService {
 
             Location target = readLocation(section.getConfigurationSection("target"));
             Location totem = readBlockLocation(section.getConfigurationSection("totem"));
-            if (target == null || totem == null) {
-                logger.warning("Ignorando portal '" + name + "' porque destino ou totem estão incompletos no config.");
-                continue;
+            if (target == null) {
+                logger.warning("Ignorando destino ausente para portal '" + normalizedName + "' - configure com /portal settarget "
+                        + normalizedName);
+            }
+            if (totem == null) {
+                logger.warning("Ignorando totem ausente para portal '" + normalizedName + "' - configure com /portal settotem "
+                        + normalizedName);
             }
 
-            registerPortal(new PortalDefinition(name, target, totem));
+            registerPortal(new PortalDefinition(normalizedName, target, totem));
         }
+
+        spawnVillagers();
     }
 
     public Map<String, PortalDefinition> getPortals() {
         return Collections.unmodifiableMap(portalsByName);
+    }
+
+    public Optional<PortalDefinition> findByName(String name) {
+        if (name == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(portalsByName.get(name.toLowerCase()));
     }
 
     public PortalDefinition setTarget(String name, Location target) {
@@ -69,13 +107,20 @@ public class PortalService {
         PortalDefinition updated = new PortalDefinition(normalizedName, target, totem);
         registerPortal(updated);
         persistPortal(updated);
+        if (totem != null) {
+            spawnVillagerForPortal(updated);
+        }
         return updated;
     }
 
     public Optional<PortalDefinition> setTotem(String name, Location totem) {
         String normalizedName = name.toLowerCase();
+        if (totem == null || totem.getWorld() == null) {
+            return Optional.empty();
+        }
+
         String key = blockKey(totem);
-        PortalDefinition currentOwner = portalsByBlock.get(key);
+        PortalDefinition currentOwner = portalsByTotem.get(key);
         if (currentOwner != null && !currentOwner.getName().equalsIgnoreCase(normalizedName)) {
             return Optional.empty();
         }
@@ -85,23 +130,25 @@ public class PortalService {
         PortalDefinition updated = new PortalDefinition(normalizedName, target, totem);
         registerPortal(updated);
         persistPortal(updated);
+        spawnVillagerForPortal(updated);
         return Optional.of(updated);
     }
 
-    public Optional<PortalDefinition> findByBlock(Location blockLocation) {
-        if (blockLocation == null || blockLocation.getWorld() == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(portalsByBlock.get(blockKey(blockLocation)));
+    public Optional<PortalDefinition> findByVillager(UUID uniqueId) {
+        return Optional.ofNullable(portalsByVillager.get(uniqueId));
     }
 
     private void registerPortal(PortalDefinition portal) {
-        portalsByName.put(portal.getName(), portal);
+        String normalizedName = portal.getName().toLowerCase();
+        PortalDefinition normalizedPortal = portal.getName().equals(normalizedName) ? portal
+                : new PortalDefinition(normalizedName, portal.getTarget(), portal.getTotem());
 
-        portalsByBlock.entrySet().removeIf(entry -> entry.getValue().getName().equalsIgnoreCase(portal.getName()));
+        portalsByName.put(normalizedName, normalizedPortal);
 
-        if (portal.getTotem() != null) {
-            portalsByBlock.put(blockKey(portal.getTotem()), portal);
+        portalsByTotem.entrySet().removeIf(entry -> entry.getValue().getName().equalsIgnoreCase(normalizedName));
+
+        if (normalizedPortal.getTotem() != null) {
+            portalsByTotem.put(blockKey(normalizedPortal.getTotem()), normalizedPortal);
         }
     }
 
@@ -118,6 +165,162 @@ public class PortalService {
         }
 
         plugin.saveConfig();
+    }
+
+    public void openPortalGui(Player player, PortalDefinition currentPortal) {
+        Inventory inventory = Bukkit.createInventory(new PortalGuiHolder(currentPortal.getName()), 27,
+                PORTAL_GUI_TITLE + " - " + currentPortal.getDisplayName());
+
+        int slot = 10;
+        for (PortalDefinition portal : portalsByName.values()) {
+            if (portal.getName().equalsIgnoreCase(currentPortal.getName())) {
+                continue;
+            }
+
+            ItemStack item = buildPortalItem(portal);
+            inventory.setItem(slot, item);
+            slot++;
+            if (slot == 17) {
+                slot = 19; // skip middle row edges for cleaner layout
+            }
+        }
+
+        player.openInventory(inventory);
+    }
+
+    public boolean isPortalInventory(Inventory inventory) {
+        return inventory != null && inventory.getHolder() instanceof PortalGuiHolder;
+    }
+
+    public Optional<PortalDefinition> findPortalFromItem(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return Optional.empty();
+        }
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return Optional.empty();
+        }
+
+        String portalName = meta.getPersistentDataContainer().get(portalKey, PersistentDataType.STRING);
+        if (portalName == null) {
+            return Optional.empty();
+        }
+
+        return findByName(portalName);
+    }
+
+    private ItemStack buildPortalItem(PortalDefinition portal) {
+        ItemStack item = new ItemStack(Material.ENDER_PEARL);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName("§b" + portal.getDisplayName());
+        meta.setLore(java.util.List.of("§7Clique para viajar"));
+        meta.getPersistentDataContainer().set(portalKey, PersistentDataType.STRING, portal.getName());
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private void spawnVillagers() {
+        for (PortalDefinition portal : portalsByName.values()) {
+            spawnVillagerForPortal(portal);
+        }
+    }
+
+    private void spawnVillagerForPortal(PortalDefinition portal) {
+        if (portal.getTotem() == null || portal.getTotem().getWorld() == null) {
+            return;
+        }
+
+        removeTrackedVillager(portal.getName());
+
+        Location spawnLocation = portal.getTotem().clone().add(0.5, 0, 0.5);
+        World world = spawnLocation.getWorld();
+        Chunk chunk = world.getChunkAt(spawnLocation);
+        if (!chunk.isLoaded()) {
+            chunk.load();
+        }
+
+        Villager villager = findExistingVillager(portal).orElseGet(() -> world.spawn(spawnLocation, Villager.class, spawned -> {
+        }));
+        configureVillager(portal, villager, spawnLocation);
+    }
+
+    private void configureVillager(PortalDefinition portal, Villager villager, Location spawnLocation) {
+        villager.teleport(spawnLocation);
+        villager.setCustomName("§aPortal: " + portal.getDisplayName());
+        villager.setCustomNameVisible(true);
+        villager.setAI(false);
+        villager.setInvulnerable(true);
+        villager.setCollidable(false);
+        villager.setPersistent(true);
+        villager.setRemoveWhenFarAway(false);
+        villager.setCanPickupItems(false);
+        villager.setProfession(Villager.Profession.NONE);
+        villager.setVillagerType(Villager.Type.PLAINS);
+        villager.getPersistentDataContainer().set(portalKey, PersistentDataType.STRING, portal.getName());
+
+        portalsByVillager.put(villager.getUniqueId(), portal);
+        villagerIdsByPortal.put(portal.getName(), villager.getUniqueId());
+    }
+
+    private Optional<Villager> findExistingVillager(PortalDefinition portal) {
+        String portalName = portal.getName();
+        if (villagerIdsByPortal.containsKey(portalName)) {
+            UUID uuid = villagerIdsByPortal.get(portalName);
+            var entity = Bukkit.getEntity(uuid);
+            if (entity instanceof Villager villager) {
+                return Optional.of(villager);
+            }
+        }
+
+        if (portal.getTotem() == null || portal.getTotem().getWorld() == null) {
+            return Optional.empty();
+        }
+
+        return portal.getTotem().getWorld().getNearbyEntities(portal.getTotem(), 2, 2, 2, entity -> entity.getType() == EntityType.VILLAGER)
+                .stream()
+                .map(Villager.class::cast)
+                .filter(villager -> portalName.equalsIgnoreCase(villager.getPersistentDataContainer().get(portalKey, PersistentDataType.STRING)))
+                .findFirst();
+    }
+
+    private void removeExistingPortalVillagers() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Villager villager : world.getEntitiesByClass(Villager.class)) {
+                PersistentDataContainer data = villager.getPersistentDataContainer();
+                if (data.has(portalKey, PersistentDataType.STRING)) {
+                    villager.remove();
+                }
+            }
+        }
+    }
+
+    private void removeTrackedVillager(String portalName) {
+        UUID uuid = villagerIdsByPortal.remove(portalName);
+        if (uuid != null) {
+            portalsByVillager.remove(uuid);
+            var entity = Bukkit.getEntity(uuid);
+            if (entity != null) {
+                entity.remove();
+            }
+        }
+    }
+
+    private static final class PortalGuiHolder implements InventoryHolder {
+        private final String portalName;
+
+        private PortalGuiHolder(String portalName) {
+            this.portalName = portalName;
+        }
+
+        public String getPortalName() {
+            return portalName;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return null; // Inventory provided by Bukkit#createInventory
+        }
     }
 
     private Location readLocation(ConfigurationSection section) {
