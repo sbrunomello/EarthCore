@@ -27,6 +27,8 @@ import mello.clans.ClanStorage;
 import mello.clans.ClansConfig;
 import mello.clans.commands.ClanCommand;
 import mello.clans.ClanDynmapHook;
+import mello.core.gui.GuiManager;
+import mello.core.gui.GuiMessages;
 import mello.core.claims.ClaimMessages;
 import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
@@ -67,6 +69,8 @@ public class EarthCore extends JavaPlugin {
     private DynmapAPI dynmapAPI;
     private FrontendServer frontendServer;
     private ClaimService claimService;
+    private GuiManager guiManager;
+    private GuiMessages guiMessages;
 
     @Override
     public void onEnable() {
@@ -86,6 +90,10 @@ public class EarthCore extends JavaPlugin {
         jobService = new JobService(economyService, jobStorage, jobsConfig, this.getLogger());
         getServer().getPluginManager().registerEvents(new JobListener(jobService), this);
         getLogger().info("Sistema de jobs carregado!");
+
+        guiMessages = new GuiMessages(this);
+        guiManager = new GuiManager(guiMessages, getLogger());
+        getServer().getPluginManager().registerEvents(guiManager, this);
 
         // Iniciar sistema de reinos
         KingdomsConfig kingdomsConfig = new KingdomsConfig(this);
@@ -129,9 +137,9 @@ public class EarthCore extends JavaPlugin {
         getCommand("balance").setExecutor(new BalanceCommand(economyService));
         getCommand("pay").setExecutor(new PayCommand(economyService, kingdomService, clanService));
         getCommand("economy").setExecutor(new EconomyCommand(economyService));
-        getCommand("job").setExecutor(new JobCommand(jobService, jobMessages));
-        getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService));
-        getCommand("clan").setExecutor(new ClanCommand(clanService));
+        getCommand("job").setExecutor(new JobCommand(jobService, jobMessages, guiManager, guiMessages));
+        getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService, guiManager, guiMessages));
+        getCommand("clan").setExecutor(new ClanCommand(clanService, guiManager, guiMessages));
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
         getCommand("spawn").setExecutor(new SpawnCommand(spawnService));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(spawnService));

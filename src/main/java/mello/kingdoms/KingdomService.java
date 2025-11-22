@@ -59,6 +59,10 @@ public class KingdomService {
         return bankService;
     }
 
+    public KingdomsConfig getConfig() {
+        return config;
+    }
+
     public Collection<Kingdom> getAll() {
         return storage.getKingdoms();
     }
@@ -72,6 +76,16 @@ public class KingdomService {
 
         String kingdomName = storage.getKingdomByChunk(toChunkKey(chunk));
         return kingdomName == null ? null : storage.getByName(kingdomName);
+    }
+
+    public Kingdom getByClanName(String clanName) {
+        if (clanName == null) {
+            return null;
+        }
+        return storage.getKingdoms().stream()
+                .filter(k -> clanName.equalsIgnoreCase(k.getClanName()))
+                .findFirst()
+                .orElse(null);
     }
 
     public Kingdom getByMember(UUID uuid) {

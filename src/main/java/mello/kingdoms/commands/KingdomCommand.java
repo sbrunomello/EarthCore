@@ -2,7 +2,10 @@ package mello.kingdoms.commands;
 
 import mello.common.OperationResult;
 import mello.kingdoms.Kingdom;
+import mello.core.gui.GuiManager;
+import mello.core.gui.GuiMessages;
 import mello.kingdoms.KingdomService;
+import mello.kingdoms.gui.KingdomMainGui;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -17,9 +20,13 @@ import java.util.Locale;
 public class KingdomCommand implements CommandExecutor {
 
     private final KingdomService service;
+    private final GuiManager guiManager;
+    private final GuiMessages guiMessages;
 
-    public KingdomCommand(KingdomService service) {
+    public KingdomCommand(KingdomService service, GuiManager guiManager, GuiMessages guiMessages) {
         this.service = service;
+        this.guiManager = guiManager;
+        this.guiMessages = guiMessages;
     }
 
     @Override
@@ -30,7 +37,12 @@ public class KingdomCommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            sendHelp(player);
+            Kingdom kingdom = service.getByMember(player.getUniqueId());
+            if (kingdom == null) {
+                player.sendMessage(guiMessages.format("gui.kingdom.no_kingdom"));
+                return true;
+            }
+            new KingdomMainGui(player, guiManager, service, guiMessages).open();
             return true;
         }
 
