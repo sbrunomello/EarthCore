@@ -1,0 +1,4 @@
+kingdom.upkeep.paid: "&a{kingdom} pagou o upkeep de &f{cost}&a. Dívida zerada!"
+kingdom.upkeep.failed: "&c{kingdom} não conseguiu pagar o upkeep de &f{cost}&c. Dias em dívida: {debt_days}"
+kingdom.upkeep.claim_lost: "&e{kingdom} perdeu um claim por falta de pagamento. Dias em dívida: {debt_days}"
+kingdom.upkeep.disbanded: "&c{kingdom} foi dissolvido por falta de pagamento após {debt_days} dias em dívida."

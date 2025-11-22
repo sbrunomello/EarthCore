@@ -15,6 +15,7 @@ import mello.jobs.JobsConfig;
 import mello.jobs.commands.JobCommand;
 import mello.jobs.listeners.JobListener;
 import mello.kingdoms.KingdomDynmapHook;
+import mello.kingdoms.KingdomMessages;
 import mello.kingdoms.KingdomService;
 import mello.kingdoms.KingdomStorage;
 import mello.kingdoms.KingdomsConfig;
@@ -82,6 +83,7 @@ public class EarthCore extends JavaPlugin {
         KingdomsConfig kingdomsConfig = new KingdomsConfig(this);
         KingdomStorage kingdomStorage = new KingdomStorage(getDataFolder(), getLogger());
         kingdomService = new KingdomService(economyService, kingdomStorage, kingdomsConfig, this.getLogger());
+        kingdomService.setMessages(new KingdomMessages(this));
         getLogger().info("Sistema de reinos carregado!");
 
         // Iniciar sistema de clãs
@@ -91,6 +93,8 @@ public class EarthCore extends JavaPlugin {
         kingdomService.setClanService(clanService);
         clanService.setKingdomService(kingdomService);
         getLogger().info("Sistema de clan carregado!");
+
+        kingdomService.startUpkeepScheduler(this);
 
         setupDynmap();
 

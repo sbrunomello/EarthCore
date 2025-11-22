@@ -7,9 +7,14 @@ import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
 import mello.kingdoms.TaxBreakdown;
 import org.bukkit.Chunk;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -22,6 +27,7 @@ public class KingdomService {
     private final KingdomStorage storage;
     private final KingdomsConfig config;
     private final Logger logger;
+    private KingdomMessages messages;
 
     private final Map<UUID, String> invites = new HashMap<>();
     private KingdomDynmapHook dynmapHook;
@@ -41,6 +47,10 @@ public class KingdomService {
 
     public void setClanService(ClanService clanService) {
         this.clanService = clanService;
+    }
+
+    public void setMessages(KingdomMessages messages) {
+        this.messages = messages;
     }
 
     public Collection<Kingdom> getAll() {
@@ -285,6 +295,24 @@ public class KingdomService {
         storage.saveAll();
     }
 
+    public void startUpkeepScheduler(JavaPlugin plugin) {
+        KingdomsConfig.UpkeepSettings settings = config.getUpkeepSettings();
+        if (settings == null || !settings.enabled()) {
+            logger.info("[Kingdoms] Upkeep desativado nas configurações.");
+            return;
+        }
+
+        long intervalTicks = Math.max(1, settings.checkIntervalMinutes()) * 60L * 20L;
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            try {
+                runUpkeepCycle(settings);
+            } catch (Exception ex) {
+                logger.warning("[Kingdoms] Falha ao processar upkeep: " + ex.getMessage());
+            }
+        }, intervalTicks, intervalTicks);
+        logger.info("[Kingdoms] Scheduler de upkeep iniciado a cada " + settings.checkIntervalMinutes() + " minutos.");
+    }
+
     public TaxBreakdown calculateTax(UUID receiverId, double amount) {
         Kingdom kingdom = getByMember(receiverId);
         if (kingdom == null) {
@@ -302,6 +330,143 @@ public class KingdomService {
         Kingdom kingdom = getByMember(receiverId);
         if (kingdom == null) return;
         kingdom.deposit(taxAmount);
+    }
+
+    private void runUpkeepCycle(KingdomsConfig.UpkeepSettings settings) {
+        List<Kingdom> toDisband = new ArrayList<>();
+
+        for (Kingdom kingdom : new ArrayList<>(storage.getKingdoms())) {
+            try {
+                double upkeepCost = calculateUpkeepCost(kingdom, settings);
+                if (tryChargeUpkeep(kingdom, upkeepCost)) {
+                    resetDebt(kingdom);
+                    notifyMembers(kingdom, formatMessage("kingdom.upkeep.paid", kingdom, upkeepCost));
+                    continue;
+                }
+
+                updateDebt(kingdom);
+                notifyMembers(kingdom, formatMessage("kingdom.upkeep.failed", kingdom, upkeepCost));
+                if (kingdom.getDebtDays() >= settings.graceDaysBeforeDisband()) {
+                    toDisband.add(kingdom);
+                    continue;
+                }
+                if (kingdom.getDebtDays() >= settings.graceDaysBeforePenalty()) {
+                    applyClaimPenalty(kingdom);
+                }
+            } catch (Exception ex) {
+                logger.warning("[Kingdoms] Erro ao processar upkeep de " + kingdom.getName() + ": " + ex.getMessage());
+            }
+        }
+
+        if (!toDisband.isEmpty()) {
+            for (Kingdom kingdom : toDisband) {
+                disbandForDebt(kingdom);
+            }
+        }
+
+        storage.saveAll();
+    }
+
+    private void resetDebt(Kingdom kingdom) {
+        kingdom.setDebtDays(0);
+        kingdom.setAtRiskSince(null);
+        kingdom.setLastClaimLossAt(null);
+    }
+
+    private void updateDebt(Kingdom kingdom) {
+        Instant now = Instant.now();
+        if (kingdom.getAtRiskSince() == null) {
+            kingdom.setAtRiskSince(now);
+            kingdom.setDebtDays(1);
+            return;
+        }
+
+        long daysInDebt = Math.max(1, Duration.between(kingdom.getAtRiskSince(), now).toDays() + 1);
+        kingdom.setDebtDays((int) Math.max(kingdom.getDebtDays(), daysInDebt));
+    }
+
+    private void applyClaimPenalty(Kingdom kingdom) {
+        Instant now = Instant.now();
+        if (kingdom.getLastClaimLossAt() != null && Duration.between(kingdom.getLastClaimLossAt(), now).toHours() < 24) {
+            return;
+        }
+
+        KingdomClaim latestClaim = kingdom.getClaims().stream()
+                .max(Comparator.comparing(KingdomClaim::getCreatedAt))
+                .orElse(null);
+        if (latestClaim == null) {
+            return;
+        }
+
+        kingdom.removeClaim(latestClaim);
+        kingdom.setLastClaimLossAt(now);
+        storage.updateChunks(kingdom);
+        notifyDynmapUpdate(kingdom);
+        notifyMembers(kingdom, formatMessage("kingdom.upkeep.claim_lost", kingdom, 0));
+        logger.info("[Kingdoms] Claim " + latestClaim.getId() + " removido por dívida do reino " + kingdom.getName());
+    }
+
+    private void disbandForDebt(Kingdom kingdom) {
+        storage.removeKingdom(kingdom.getName());
+        notifyDynmapRemoval(kingdom.getName());
+        notifyMembers(kingdom, formatMessage("kingdom.upkeep.disbanded", kingdom, 0));
+        logger.info("[Kingdoms] Reino dissolvido por dívida: " + kingdom.getName());
+    }
+
+    private double calculateUpkeepCost(Kingdom kingdom, KingdomsConfig.UpkeepSettings settings) {
+        int totalClaims = kingdom.getClaims().size() + (kingdom.getCapitalClaimId() != null ? 1 : 0);
+        double multiplier = settings.tierMultipliers().getOrDefault(kingdom.getTier(), 1.0);
+        return totalClaims * settings.baseCostPerClaim() * multiplier;
+    }
+
+    private boolean tryChargeUpkeep(Kingdom kingdom, double cost) {
+        if (cost <= 0) {
+            return true;
+        }
+
+        double treasury = kingdom.getTreasury();
+        if (treasury >= cost) {
+            kingdom.withdraw(cost);
+            return true;
+        }
+
+        double remaining = cost - treasury;
+        if (treasury > 0 && !economyService.hasEnough(kingdom.getKing(), remaining)) {
+            return false;
+        }
+
+        if (treasury > 0) {
+            kingdom.withdraw(treasury);
+        }
+        boolean playerPaid = economyService.withdraw(kingdom.getKing(), remaining, MoneyTransactionType.CLAIM_UPKEEP, "Upkeep do reino");
+        if (!playerPaid && treasury > 0) {
+            // rollback treasury withdraw if player failed to cover remainder
+            kingdom.deposit(treasury);
+        }
+        return playerPaid;
+    }
+
+    private String formatMessage(String key, Kingdom kingdom, double cost) {
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("kingdom", kingdom.getName());
+        placeholders.put("cost", String.format(Locale.US, "%.2f", cost));
+        placeholders.put("debt_days", String.valueOf(kingdom.getDebtDays()));
+        if (messages == null) {
+            return key;
+        }
+        return messages.format(key, placeholders);
+    }
+
+    private void notifyMembers(Kingdom kingdom, String message) {
+        if (message == null || message.isEmpty()) {
+            return;
+        }
+        for (UUID memberId : kingdom.getMembers().keySet()) {
+            Player player = Bukkit.getPlayer(memberId);
+            if (player != null && player.isOnline()) {
+                player.sendMessage(message);
+            }
+        }
     }
 
     private void notifyDynmapUpdate(Kingdom kingdom) {

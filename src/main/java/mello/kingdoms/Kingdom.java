@@ -16,6 +16,9 @@ public class Kingdom {
     private String capitalClaimId;
     private final Instant createdAt;
     private Instant atRiskUntil;
+    private Instant atRiskSince;
+    private Instant lastClaimLossAt;
+    private int debtDays;
 
     private UUID king;
     private double treasury;
@@ -82,6 +85,22 @@ public class Kingdom {
         this.atRiskUntil = atRiskUntil;
     }
 
+    public Instant getAtRiskSince() {
+        return atRiskSince;
+    }
+
+    public void setAtRiskSince(Instant atRiskSince) {
+        this.atRiskSince = atRiskSince;
+    }
+
+    public Instant getLastClaimLossAt() {
+        return lastClaimLossAt;
+    }
+
+    public void setLastClaimLossAt(Instant lastClaimLossAt) {
+        this.lastClaimLossAt = lastClaimLossAt;
+    }
+
     public UUID getKing() {
         return king;
     }
@@ -110,6 +129,14 @@ public class Kingdom {
     public void withdraw(double amount) {
         if (amount <= 0) return;
         this.treasury = Math.max(0, treasury - amount);
+    }
+
+    public int getDebtDays() {
+        return debtDays;
+    }
+
+    public void setDebtDays(int debtDays) {
+        this.debtDays = Math.max(0, debtDays);
     }
 
     public void addMember(UUID uuid, KingdomRole role) {

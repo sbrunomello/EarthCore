@@ -58,6 +58,9 @@ public class KingdomStorage {
             config.set(path + ".capital_claim", kingdom.getCapitalClaimId());
             config.set(path + ".created_at", kingdom.getCreatedAt().toEpochMilli());
             config.set(path + ".at_risk_until", kingdom.getAtRiskUntil() == null ? null : kingdom.getAtRiskUntil().toEpochMilli());
+            config.set(path + ".at_risk_since", kingdom.getAtRiskSince() == null ? null : kingdom.getAtRiskSince().toEpochMilli());
+            config.set(path + ".last_claim_loss_at", kingdom.getLastClaimLossAt() == null ? null : kingdom.getLastClaimLossAt().toEpochMilli());
+            config.set(path + ".debt_days", kingdom.getDebtDays());
 
             Map<String, String> membersSection = new HashMap<>();
             kingdom.getMembers().forEach((uuid, role) -> membersSection.put(uuid.toString(), role.name()));
@@ -128,6 +131,15 @@ public class KingdomStorage {
             if (risk > 0) {
                 kingdom.setAtRiskUntil(Instant.ofEpochMilli(risk));
             }
+            long atRiskSince = section.getLong("at_risk_since", -1);
+            if (atRiskSince > 0) {
+                kingdom.setAtRiskSince(Instant.ofEpochMilli(atRiskSince));
+            }
+            long lastClaimLoss = section.getLong("last_claim_loss_at", -1);
+            if (lastClaimLoss > 0) {
+                kingdom.setLastClaimLossAt(Instant.ofEpochMilli(lastClaimLoss));
+            }
+            kingdom.setDebtDays(section.getInt("debt_days", 0));
             // createdAt is final with now(); cannot set old value
 
             ConfigurationSection membersSection = section.getConfigurationSection("members");
