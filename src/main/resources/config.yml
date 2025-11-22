@@ -35,3 +35,7 @@ frontend:
 #       x: 10
 #       y: 65
 #       z: 5
+
+claims:
+  protection_enabled: true
+  deny_message_cooldown_ticks: 20
