@@ -9,6 +9,7 @@ import mello.economy.EconomyService;
 import mello.economy.commands.BalanceCommand;
 import mello.economy.commands.EconomyCommand;
 import mello.economy.commands.PayCommand;
+import mello.jobs.JobMessages;
 import mello.jobs.JobService;
 import mello.jobs.JobStorage;
 import mello.jobs.JobsConfig;
@@ -54,6 +55,7 @@ public class EarthCore extends JavaPlugin {
 
     private EconomyService economyService;
     private JobService jobService;
+    private JobMessages jobMessages;
     private KingdomService kingdomService;
     private ClanService clanService;
     private ChatService chatService;
@@ -79,6 +81,7 @@ public class EarthCore extends JavaPlugin {
 
         // Iniciar sistema de jobs
         JobsConfig jobsConfig = new JobsConfig(this);
+        jobMessages = new JobMessages(this);
         JobStorage jobStorage = new JobStorage(getDataFolder());
         jobService = new JobService(economyService, jobStorage, jobsConfig, this.getLogger());
         getServer().getPluginManager().registerEvents(new JobListener(jobService), this);
@@ -125,7 +128,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("balance").setExecutor(new BalanceCommand(economyService));
         getCommand("pay").setExecutor(new PayCommand(economyService, kingdomService, clanService));
         getCommand("economy").setExecutor(new EconomyCommand(economyService));
-        getCommand("job").setExecutor(new JobCommand(jobService));
+        getCommand("job").setExecutor(new JobCommand(jobService, jobMessages));
         getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService));
         getCommand("clan").setExecutor(new ClanCommand(clanService));
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));

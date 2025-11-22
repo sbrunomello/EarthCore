@@ -7,19 +7,31 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * Representa os valores de pagamento para um job específico.
+ * Encapsulates the reward configuration for a specific job.
  */
 public class JobPayout {
-    private final String name;
+    private final JobType jobType;
+    private final String displayName;
+    private final boolean enabled;
     private final Map<Material, Double> blockBreakPayouts = new EnumMap<>(Material.class);
     private final Map<EntityType, Double> entityKillPayouts = new EnumMap<>(EntityType.class);
 
-    public JobPayout(String name) {
-        this.name = name;
+    public JobPayout(JobType jobType, String displayName, boolean enabled) {
+        this.jobType = jobType;
+        this.displayName = displayName;
+        this.enabled = enabled;
     }
 
-    public String getName() {
-        return name;
+    public JobType getJobType() {
+        return jobType;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public Map<Material, Double> getBlockBreakPayouts() {

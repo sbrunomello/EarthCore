@@ -18,7 +18,7 @@ commands:
     permission: economy.admin
   job:
     description: Comandos do sistema de jobs
-    usage: /job <list | set | info | leave>
+    usage: /job <list | join | info>
   kingdom:
     description: Comandos de reinos (claims, convites e impostos)
     usage: /kingdom <create | invite | join | claim | unclaim | info | leave | deposit>

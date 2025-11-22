@@ -8,110 +8,106 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * Lê e persiste as configurações de payouts para cada job.
- * Mantém um cache simples de payouts para evitar re-leituras constantes.
+ * Reads the jobs.yml configuration and exposes typed settings for the jobs module.
  */
 public class JobsConfig {
 
     private static final String FILE_NAME = "jobs.yml";
 
-    private final File file;
     private final JavaPlugin plugin;
     private final Logger logger;
-
-    private FileConfiguration config;
-    private final Map<String, JobPayout> payouts = new HashMap<>();
+    private final Map<JobType, JobPayout> payouts = new HashMap<>();
+    private AntiExploitSettings antiExploitSettings;
 
     public JobsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
-        this.file = new File(plugin.getDataFolder(), FILE_NAME);
         load();
     }
 
-    public JobPayout getPayout(String jobName) {
-        return payouts.get(jobName.toLowerCase());
+    public Optional<JobPayout> getPayout(JobType jobType) {
+        return Optional.ofNullable(payouts.get(jobType));
     }
 
-    public Map<String, JobPayout> getAllPayouts() {
+    public Map<JobType, JobPayout> getAllPayouts() {
         return payouts;
+    }
+
+    public AntiExploitSettings getAntiExploitSettings() {
+        return antiExploitSettings;
+    }
+
+    public void reload() {
+        payouts.clear();
+        load();
     }
 
     private void load() {
         ensureDefaults();
-        this.config = YamlConfiguration.loadConfiguration(file);
-        payouts.clear();
+
+        File file = new File(plugin.getDataFolder(), FILE_NAME);
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        ConfigurationSection antiExploit = config.getConfigurationSection("anti_exploit");
+        long minBetweenRewards = antiExploit != null ? antiExploit.getLong("min_millis_between_rewards", 200L) : 200L;
+        long placedBlockTtl = antiExploit != null ? antiExploit.getLong("placed_block_ttl_millis", 300_000L) : 300_000L;
+        antiExploitSettings = new AntiExploitSettings(minBetweenRewards, placedBlockTtl);
 
         ConfigurationSection jobsSection = config.getConfigurationSection("jobs");
         if (jobsSection == null) {
-            logger.warning("[Jobs] Nenhuma seção de jobs encontrada no config. Usando vazio.");
+            logger.warning("[Jobs] Nenhum job configurado em jobs.yml.");
             return;
         }
 
-        for (String jobKey : jobsSection.getKeys(false)) {
-            ConfigurationSection section = jobsSection.getConfigurationSection(jobKey);
-            if (section == null) continue;
+        for (String rawJob : jobsSection.getKeys(false)) {
+            JobType jobType = JobType.fromString(rawJob);
+            if (jobType == null) {
+                logger.warning("[Jobs] Tipo de job desconhecido: " + rawJob);
+                continue;
+            }
 
-            JobPayout payout = new JobPayout(jobKey);
-            // Blocos
-            ConfigurationSection blocks = section.getConfigurationSection("block-break");
-            if (blocks != null) {
-                for (String matName : blocks.getKeys(false)) {
-                    Material material = Material.matchMaterial(matName);
-                    if (material == null) {
-                        logger.warning("[Jobs] Material desconhecido em job " + jobKey + ": " + matName);
+            ConfigurationSection jobSection = jobsSection.getConfigurationSection(rawJob);
+            if (jobSection == null) {
+                continue;
+            }
+
+            String displayName = jobSection.getString("display_name", jobType.name());
+            boolean enabled = jobSection.getBoolean("enabled", true);
+            JobPayout payout = new JobPayout(jobType, displayName, enabled);
+
+            ConfigurationSection rewards = jobSection.getConfigurationSection("rewards");
+            if (rewards != null) {
+                for (String key : rewards.getKeys(false)) {
+                    double value = rewards.getDouble(key, 0D);
+                    Material material = Material.matchMaterial(key);
+                    if (material != null) {
+                        payout.getBlockBreakPayouts().put(material, value);
                         continue;
                     }
-                    payout.getBlockBreakPayouts().put(material, blocks.getDouble(matName));
-                }
-            }
-
-            // Entidades
-            ConfigurationSection entities = section.getConfigurationSection("entity-kill");
-            if (entities != null) {
-                for (String entName : entities.getKeys(false)) {
                     try {
-                        EntityType type = EntityType.valueOf(entName.toUpperCase());
-                        payout.getEntityKillPayouts().put(type, entities.getDouble(entName));
+                        EntityType entityType = EntityType.valueOf(key.toUpperCase());
+                        payout.getEntityKillPayouts().put(entityType, value);
                     } catch (IllegalArgumentException ex) {
-                        logger.warning("[Jobs] Entidade desconhecida em job " + jobKey + ": " + entName);
+                        logger.warning("[Jobs] Item desconhecido na seção rewards de " + rawJob + ": " + key);
                     }
                 }
             }
 
-            payouts.put(jobKey.toLowerCase(), payout);
+            payouts.put(jobType, payout);
         }
-
-        logger.info("[Jobs] Configurações de jobs carregadas: " + payouts.size());
     }
 
     private void ensureDefaults() {
-        if (file.exists()) return;
-
-        plugin.getDataFolder().mkdirs();
-        FileConfiguration defaults = new YamlConfiguration();
-
-        // Job minerador
-        defaults.set("jobs.miner.block-break.COAL_ORE", 5.0);
-        defaults.set("jobs.miner.block-break.IRON_ORE", 8.0);
-        defaults.set("jobs.miner.block-break.DIAMOND_ORE", 25.0);
-
-        // Job caçador
-        defaults.set("jobs.hunter.entity-kill.ZOMBIE", 6.0);
-        defaults.set("jobs.hunter.entity-kill.SKELETON", 7.5);
-        defaults.set("jobs.hunter.entity-kill.CREEPER", 10.0);
-
-        try {
-            defaults.save(file);
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Não foi possível criar o jobs.yml", e);
+        File file = new File(plugin.getDataFolder(), FILE_NAME);
+        if (file.exists()) {
+            return;
         }
+        plugin.saveResource(FILE_NAME, false);
     }
 }

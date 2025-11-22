@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,7 +20,7 @@ public class JobStorage {
 
     private final File file;
     private final YamlConfiguration config;
-    private final Map<UUID, String> cache = new HashMap<>();
+    private final Map<UUID, JobType> cache = new HashMap<>();
     private final Logger logger;
 
     public JobStorage(File dataFolder) {
@@ -30,20 +31,20 @@ public class JobStorage {
         load();
     }
 
-    public String getJob(UUID uuid) {
-        return cache.get(uuid);
+    public Optional<JobType> getJob(UUID uuid) {
+        return Optional.ofNullable(cache.get(uuid));
     }
 
-    public void setJob(UUID uuid, String jobName) {
-        if (jobName == null) {
+    public void setJob(UUID uuid, JobType jobType) {
+        if (jobType == null) {
             cache.remove(uuid);
         } else {
-            cache.put(uuid, jobName.toLowerCase());
+            cache.put(uuid, jobType);
         }
     }
 
     public void saveAll() {
-        cache.forEach((uuid, job) -> config.set(uuid.toString(), job));
+        cache.forEach((uuid, job) -> config.set(uuid.toString(), job.name()));
         try {
             config.save(file);
         } catch (IOException e) {
@@ -57,7 +58,10 @@ public class JobStorage {
             try {
                 UUID uuid = UUID.fromString(key);
                 String job = config.getString(key);
-                if (job != null) cache.put(uuid, job.toLowerCase());
+                JobType jobType = JobType.fromString(job);
+                if (jobType != null) {
+                    cache.put(uuid, jobType);
+                }
             } catch (IllegalArgumentException ex) {
                 logger.warning("[Jobs] UUID inválido no jobs-data.yml: " + key);
             }

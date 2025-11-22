@@ -1,0 +1,34 @@
+jobs:
+  MINER:
+    display_name: "Minerador"
+    enabled: true
+    rewards:
+      STONE: 1.0
+      COBBLESTONE: 1.0
+      COAL_ORE: 5.0
+      IRON_ORE: 8.0
+      GOLD_ORE: 10.0
+      DIAMOND_ORE: 20.0
+  FARMER:
+    display_name: "Fazendeiro"
+    enabled: true
+    rewards:
+      WHEAT: 2.0
+      CARROTS: 2.0
+      POTATOES: 2.0
+  HUNTER:
+    display_name: "Caçador"
+    enabled: true
+    rewards:
+      COW: 5.0
+      PIG: 5.0
+      ZOMBIE: 3.0
+  LUMBERJACK:
+    display_name: "Lenhador"
+    enabled: true
+    rewards:
+      OAK_LOG: 2.0
+      SPRUCE_LOG: 2.0
+anti_exploit:
+  min_millis_between_rewards: 200
+  placed_block_ttl_millis: 300000
