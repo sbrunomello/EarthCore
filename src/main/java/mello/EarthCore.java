@@ -30,9 +30,14 @@ import mello.clans.ClanDynmapHook;
 import mello.core.gui.GuiManager;
 import mello.core.gui.GuiMessages;
 import mello.core.claims.ClaimMessages;
+import mello.core.claims.ClaimPreviewManager;
+import mello.core.claims.ClaimSettings;
+import mello.core.claims.ClaimFlowService;
+import mello.core.claims.commands.ClaimCommand;
 import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
 import mello.core.claims.ClaimService;
+import mello.core.claims.ClaimListener;
 import mello.core.commands.PortalCommand;
 import mello.core.notifications.NotificationListener;
 import mello.core.notifications.NotificationMessages;
@@ -78,6 +83,9 @@ public class EarthCore extends JavaPlugin {
     private DynmapAPI dynmapAPI;
     private FrontendServer frontendServer;
     private ClaimService claimService;
+    private ClaimPreviewManager claimPreviewManager;
+    private ClaimSettings claimSettings;
+    private ClaimFlowService claimFlowService;
     private GuiManager guiManager;
     private GuiMessages guiMessages;
     private StarterKitSettings starterKitSettings;
@@ -138,6 +146,10 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ClaimProtectionListener(claimService, claimMessages, claimProtectionSettings), this);
         getLogger().info("Proteção de claims carregada!");
 
+        claimSettings = ClaimSettings.fromConfig(this);
+        claimPreviewManager = new ClaimPreviewManager(this, claimSettings, null);
+        claimFlowService = new ClaimFlowService(claimPreviewManager, claimSettings, kingdomService, clanService);
+
         // Serviços básicos de teleporte e mensagens privadas
         spawnService = new SpawnService(this);
         portalService = new PortalService(this);
@@ -150,6 +162,9 @@ public class EarthCore extends JavaPlugin {
         NotificationMessages notificationMessages = new NotificationMessages(this);
         notificationService = new NotificationService(notificationMessages, getLogger());
 
+        ClaimCommand claimCommand = new ClaimCommand(this, kingdomService, clanService, kingdomsConfig, clansConfig, claimPreviewManager, claimSettings, guiManager, claimFlowService);
+        claimPreviewManager.setCleanupCallback(claimCommand::removeClaimStick);
+
         // Registrar comandos
         getCommand("balance").setExecutor(new BalanceCommand(economyService));
         getCommand("pay").setExecutor(new PayCommand(economyService, kingdomService, clanService));
@@ -157,6 +172,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("job").setExecutor(new JobCommand(jobService, jobMessages, guiManager, guiMessages));
         getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService, guiManager, guiMessages));
         getCommand("clan").setExecutor(new ClanCommand(clanService, guiManager, guiMessages));
+        getCommand("claim").setExecutor(claimCommand);
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
         getCommand("spawn").setExecutor(new SpawnCommand(spawnService));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(spawnService));
@@ -169,6 +185,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("starterkit").setExecutor(new StarterKitCommand(starterKitService, starterKitSettings, starterKitStorage));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
+        getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);

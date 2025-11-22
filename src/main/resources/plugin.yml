@@ -25,6 +25,9 @@ commands:
   clan:
     description: Comandos de clãs (convites e banco compartilhado)
     usage: /clan <create | invite | join | deposit | withdraw | info | leave>
+  claim:
+    description: Abre a interface completa de criação de claims
+    usage: /claim [confirm|cancel]
   chat:
     description: Troca entre canais de chat (global, local, clã, cidade e admin)
     usage: /chat <global | local | clan | cidade | admin>

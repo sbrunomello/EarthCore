@@ -1,7 +1,7 @@
 package mello.core.claims;
 
 /**
- * Describes who owns a given claim so listeners can tailor permissions and messages.
+ * Representa quem está realizando o claim.
  */
 public enum ClaimOwnerType {
     CLAN,
