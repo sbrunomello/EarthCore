@@ -4,3 +4,8 @@ kingdom.upkeep.claim_lost: "&e{kingdom} perdeu um claim por falta de pagamento. 
 kingdom.upkeep.disbanded: "&c{kingdom} foi dissolvido por falta de pagamento após {debt_days} dias em dívida."
 claims.protected.clan: "&cVocê não pode modificar blocos no território do clan {clan}."
 claims.protected.kingdom: "&cVocê não pode modificar blocos no território do reino {kingdom}."
+job.join.success: "&aVocê agora é {job_display}."
+job.join.invalid: "&cJob {job} não existe."
+job.list.header: "&eJobs disponíveis:"
+job.info.none: "&eVocê ainda não escolheu um job. Use /job join <job>."
+job.info.current: "&eSeu job: &a{job_display}"

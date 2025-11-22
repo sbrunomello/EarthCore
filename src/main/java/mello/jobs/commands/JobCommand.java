@@ -1,25 +1,31 @@
 package mello.jobs.commands;
 
+import mello.jobs.JobMessages;
 import mello.jobs.JobPayout;
 import mello.jobs.JobService;
+import mello.jobs.JobType;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * /job list - mostra todos os jobs disponíveis
- * /job set <job> - define seu job
- * /job leave - remove o job atual
+ * /job join <job> - define seu job
+ * /job info - mostra o job atual
  */
 public class JobCommand implements CommandExecutor {
 
     private final JobService service;
+    private final JobMessages messages;
 
-    public JobCommand(JobService service) {
+    public JobCommand(JobService service, JobMessages messages) {
         this.service = service;
+        this.messages = messages;
     }
 
     @Override
@@ -34,62 +40,64 @@ public class JobCommand implements CommandExecutor {
             return true;
         }
 
-        String sub = args[0].toLowerCase(Locale.ROOT);
+        String sub = args[0].toLowerCase();
         switch (sub) {
             case "list":
-                player.sendMessage("§eJobs disponíveis:");
-                for (JobPayout payout : service.getConfig().getAllPayouts().values()) {
-                    player.sendMessage(" - §a" + payout.getName());
-                }
+                sendList(player);
                 return true;
-
-            case "set":
+            case "join":
                 if (args.length < 2) {
-                    player.sendMessage("Uso: /job set <nome>");
+                    player.sendMessage(ChatColor.YELLOW + "Uso: /job join <job>");
                     return true;
                 }
-                String jobName = args[1].toLowerCase(Locale.ROOT);
-                if (!service.setJob(player.getUniqueId(), jobName)) {
-                    player.sendMessage("§cJob não encontrado: " + jobName);
-                    return true;
-                }
-                player.sendMessage("§aVocê agora é " + jobName + "!");
+                handleJoin(player, args[1]);
                 return true;
-
-            case "leave":
-                service.clearJob(player.getUniqueId());
-                player.sendMessage("§eVocê não possui mais um job atribuído.");
-                return true;
-
             case "info":
-                String current = service.getJob(player.getUniqueId());
-                if (current == null) {
-                    player.sendMessage("§eVocê ainda não escolheu um job. Use /job set <nome>.");
-                    return true;
-                }
-                JobPayout currentPayout = service.getConfig().getPayout(current);
-                player.sendMessage("§eSeu job: §a" + current);
-                if (currentPayout != null) {
-                    player.sendMessage("§7Pagamentos por bloco:");
-                    currentPayout.getBlockBreakPayouts().forEach((mat, value) ->
-                            player.sendMessage(" - " + mat + ": §a" + value));
-                    player.sendMessage("§7Pagamentos por kill:");
-                    currentPayout.getEntityKillPayouts().forEach((type, value) ->
-                            player.sendMessage(" - " + type + ": §a" + value));
-                }
+                sendInfo(player);
                 return true;
-
             default:
                 sendHelp(player);
                 return true;
         }
     }
 
+    private void sendList(Player player) {
+        player.sendMessage(messages.format("job.list.header"));
+        for (JobPayout payout : service.getConfig().getAllPayouts().values()) {
+            if (!payout.isEnabled()) {
+                continue;
+            }
+            player.sendMessage(ChatColor.GRAY + "- " + ChatColor.GREEN + payout.getJobType().name() + ChatColor.WHITE + " (" + payout.getDisplayName() + ")");
+        }
+    }
+
+    private void handleJoin(Player player, String rawJob) {
+        JobType jobType = JobType.fromString(rawJob);
+        if (jobType == null || !service.setJob(player.getUniqueId(), jobType)) {
+            player.sendMessage(messages.format("job.join.invalid", Map.of("job", rawJob)));
+            return;
+        }
+        JobPayout payout = service.getConfig().getPayout(jobType).orElse(null);
+        String display = payout != null ? payout.getDisplayName() : rawJob.toUpperCase();
+        player.sendMessage(messages.format("job.join.success", Map.of("job_display", display)));
+    }
+
+    private void sendInfo(Player player) {
+        Optional<JobType> jobOpt = service.getJob(player.getUniqueId()).map(pj -> pj.getJobType());
+        if (jobOpt.isEmpty()) {
+            player.sendMessage(messages.format("job.info.none"));
+            return;
+        }
+        JobType jobType = jobOpt.get();
+        JobPayout payout = service.getConfig().getPayout(jobType).orElse(null);
+        String displayName = payout != null ? payout.getDisplayName() : jobType.name();
+        player.sendMessage(messages.format("job.info.current", Map.of("job_display", displayName)));
+    }
+
     private void sendHelp(Player player) {
-        player.sendMessage("§eComandos de job:");
-        player.sendMessage("§7/job list §f- lista os jobs disponíveis");
-        player.sendMessage("§7/job set <job> §f- escolhe um job");
-        player.sendMessage("§7/job info §f- mostra detalhes do seu job atual");
-        player.sendMessage("§7/job leave §f- remove seu job atual");
+        player.sendMessage(ChatColor.YELLOW + "Comandos de job:");
+        player.sendMessage(ChatColor.GRAY + "/job list " + ChatColor.WHITE + "- lista os jobs disponíveis");
+        player.sendMessage(ChatColor.GRAY + "/job join <job> " + ChatColor.WHITE + "- escolhe um job");
+        player.sendMessage(ChatColor.GRAY + "/job info " + ChatColor.WHITE + "- mostra detalhes do seu job atual");
     }
 }
