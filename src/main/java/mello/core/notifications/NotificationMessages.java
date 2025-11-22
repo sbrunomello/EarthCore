@@ -20,6 +20,7 @@ public class NotificationMessages {
     public NotificationMessages(JavaPlugin plugin) {
         defaults.put("notifications.money.receive", "&a+{amount} ⛁ &7({source})");
         defaults.put("notifications.important", "&6⚠ {message}");
+        defaults.put("notifications.claim.enter", "&6⚑ Território de &e{owner}");
 
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {

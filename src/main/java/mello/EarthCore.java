@@ -190,7 +190,7 @@ public class EarthCore extends JavaPlugin {
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
         getServer().getPluginManager().registerEvents(new PortalListener(portalService), this);
-        getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService), this);
+        getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService, notificationService), this);
         getServer().getPluginManager().registerEvents(new StarterKitListener(starterKitService), this);
 
         startFrontend();

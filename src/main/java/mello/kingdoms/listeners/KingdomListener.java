@@ -1,8 +1,8 @@
 package mello.kingdoms.listeners;
 
+import mello.core.notifications.NotificationService;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomService;
-import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,10 +21,12 @@ import java.util.UUID;
 public class KingdomListener implements Listener {
 
     private final KingdomService kingdomService;
+    private final NotificationService notificationService;
     private final Map<UUID, String> lastEnteredKingdom = new HashMap<>();
 
-    public KingdomListener(KingdomService kingdomService) {
+    public KingdomListener(KingdomService kingdomService, NotificationService notificationService) {
         this.kingdomService = kingdomService;
+        this.notificationService = notificationService;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -57,8 +59,7 @@ public class KingdomListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        player.sendMessage(ChatColor.GOLD + "Você entrou no território de "
-                + ChatColor.YELLOW + currentName + ChatColor.GOLD + "!");
+        notificationService.notifyClaimEntered(player, currentName);
         lastEnteredKingdom.put(player.getUniqueId(), currentName);
     }
 
