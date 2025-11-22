@@ -23,6 +23,11 @@ public class KingdomsConfig {
                                double upgradeCost, double upkeepMultiplier) {
     }
 
+    public record UpkeepSettings(boolean enabled, int checkIntervalMinutes, int graceDaysBeforePenalty,
+                                 int graceDaysBeforeDisband, double baseCostPerClaim,
+                                 Map<KingdomTier, Double> tierMultipliers) {
+    }
+
     private final JavaPlugin plugin;
     private final Logger logger;
     private final File file;
@@ -32,6 +37,7 @@ public class KingdomsConfig {
     private double baseClaimCost;
     private double costPerExistingClaim;
     private final Map<KingdomTier, TierSettings> tierSettings = new EnumMap<>(KingdomTier.class);
+    private UpkeepSettings upkeepSettings;
 
     public KingdomsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -64,6 +70,10 @@ public class KingdomsConfig {
         return tierSettings;
     }
 
+    public UpkeepSettings getUpkeepSettings() {
+        return upkeepSettings;
+    }
+
     private void load() {
         ensureDefaults();
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -72,6 +82,31 @@ public class KingdomsConfig {
         minMembersForCreation = config.getInt("requirements.min_members_for_creation", 5);
         baseClaimCost = config.getDouble("claim.base_cost", 1000);
         costPerExistingClaim = config.getDouble("claim.cost_per_existing_claim", 250);
+
+        ConfigurationSection upkeepSection = config.getConfigurationSection("upkeep");
+        Map<KingdomTier, Double> multipliers = new EnumMap<>(KingdomTier.class);
+        if (upkeepSection != null) {
+            ConfigurationSection tierMultipliersSection = upkeepSection.getConfigurationSection("tier_multipliers");
+            if (tierMultipliersSection != null) {
+                for (KingdomTier tier : KingdomTier.values()) {
+                    multipliers.put(tier, tierMultipliersSection.getDouble(tier.name(), 1.0));
+                }
+            }
+            upkeepSettings = new UpkeepSettings(
+                    upkeepSection.getBoolean("enabled", true),
+                    upkeepSection.getInt("check_interval_minutes", 10),
+                    upkeepSection.getInt("grace_days_before_penalty", 3),
+                    upkeepSection.getInt("grace_days_before_disband", 7),
+                    upkeepSection.getDouble("base_cost_per_claim", 500),
+                    multipliers
+            );
+        } else {
+            upkeepSettings = new UpkeepSettings(true, 10, 3, 7, 500, multipliers);
+        }
+
+        for (KingdomTier tier : KingdomTier.values()) {
+            multipliers.putIfAbsent(tier, 1.0);
+        }
 
         ConfigurationSection tiersSection = config.getConfigurationSection("tiers");
         if (tiersSection != null) {
@@ -100,6 +135,18 @@ public class KingdomsConfig {
         defaults.set("requirements.min_members_for_creation", 5);
         defaults.set("claim.base_cost", 1000);
         defaults.set("claim.cost_per_existing_claim", 250);
+
+        ConfigurationSection upkeepSection = defaults.createSection("upkeep");
+        upkeepSection.set("enabled", true);
+        upkeepSection.set("check_interval_minutes", 10);
+        upkeepSection.set("grace_days_before_penalty", 3);
+        upkeepSection.set("grace_days_before_disband", 7);
+        upkeepSection.set("base_cost_per_claim", 500);
+        ConfigurationSection tierMultipliers = upkeepSection.createSection("tier_multipliers");
+        tierMultipliers.set(KingdomTier.VILLAGE.name(), 1.0);
+        tierMultipliers.set(KingdomTier.CITY.name(), 1.5);
+        tierMultipliers.set(KingdomTier.STATE.name(), 2.0);
+        tierMultipliers.set(KingdomTier.KINGDOM.name(), 3.0);
 
         ConfigurationSection tiersSection = defaults.createSection("tiers");
         setTierDefaults(tiersSection, KingdomTier.VILLAGE, "Vila", 5, 1, 3, 10000, 1.0);
