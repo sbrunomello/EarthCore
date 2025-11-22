@@ -23,12 +23,24 @@ public class StarterKitSettings {
     private final List<ItemStack> items;
     private final String receivedMessage;
     private final String droppedMessage;
+    private final boolean commandEnabled;
+    private final long commandCooldownSeconds;
+    private final String commandReceivedMessage;
+    private final String commandCooldownMessage;
+    private final String commandDisabledMessage;
 
-    private StarterKitSettings(boolean enabled, List<ItemStack> items, String receivedMessage, String droppedMessage) {
+    private StarterKitSettings(boolean enabled, List<ItemStack> items, String receivedMessage, String droppedMessage,
+                               boolean commandEnabled, long commandCooldownSeconds, String commandReceivedMessage,
+                               String commandCooldownMessage, String commandDisabledMessage) {
         this.enabled = enabled;
         this.items = items;
         this.receivedMessage = receivedMessage;
         this.droppedMessage = droppedMessage;
+        this.commandEnabled = commandEnabled;
+        this.commandCooldownSeconds = commandCooldownSeconds;
+        this.commandReceivedMessage = commandReceivedMessage;
+        this.commandCooldownMessage = commandCooldownMessage;
+        this.commandDisabledMessage = commandDisabledMessage;
     }
 
     public boolean isEnabled() {
@@ -47,6 +59,26 @@ public class StarterKitSettings {
         return droppedMessage;
     }
 
+    public boolean isCommandEnabled() {
+        return commandEnabled;
+    }
+
+    public long getCommandCooldownSeconds() {
+        return commandCooldownSeconds;
+    }
+
+    public String getCommandReceivedMessage() {
+        return commandReceivedMessage;
+    }
+
+    public String getCommandCooldownMessage() {
+        return commandCooldownMessage;
+    }
+
+    public String getCommandDisabledMessage() {
+        return commandDisabledMessage;
+    }
+
     /**
      * Carrega a configuração a partir do arquivo starter-kit.yml, criando-o com valores
      * padrão caso ainda não exista.
@@ -62,6 +94,14 @@ public class StarterKitSettings {
         boolean enabled = config.getBoolean("enabled", true);
         String receivedMessage = translate(config.getString("messages.received", "&aVocê recebeu o kit inicial."));
         String droppedMessage = translate(config.getString("messages.dropped", "&eItens foram dropados aos seus pés."));
+        boolean commandEnabled = config.getBoolean("command.enabled", true);
+        long commandCooldownSeconds = Math.max(0, config.getLong("command.cooldown-seconds", 600));
+        String commandReceivedMessage = translate(
+                config.getString("command.messages.received", receivedMessage));
+        String commandCooldownMessage = translate(
+                config.getString("command.messages.cooldown", "&cAguarde %time% para receber o kit novamente."));
+        String commandDisabledMessage = translate(
+                config.getString("command.messages.disabled", "&cO comando de kit inicial está desativado."));
 
         List<ItemStack> items = new ArrayList<>();
         List<Map<?, ?>> rawItems = config.getMapList("items");
@@ -80,7 +120,8 @@ public class StarterKitSettings {
             logger.warning("Não foi possível salvar starter-kit.yml: " + ioException.getMessage());
         }
 
-        return new StarterKitSettings(enabled, items, receivedMessage, droppedMessage);
+        return new StarterKitSettings(enabled, items, receivedMessage, droppedMessage, commandEnabled,
+                commandCooldownSeconds, commandReceivedMessage, commandCooldownMessage, commandDisabledMessage);
     }
 
     private static ItemStack parseItem(Map<?, ?> raw, int index, Logger logger) {
