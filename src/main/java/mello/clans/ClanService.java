@@ -1,6 +1,7 @@
 package mello.clans;
 
 import mello.common.OperationResult;
+import mello.core.claims.ClaimValidationResult;
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
 import mello.kingdoms.ClaimedChunk;
@@ -120,14 +121,31 @@ public class ClanService {
     }
 
     public OperationResult claimChunk(UUID playerId, Chunk chunk) {
-        if (chunk == null) return OperationResult.fail("Chunk inválido.");
+        ClaimValidationResult validation = validateClaim(playerId, chunk);
+        if (!validation.success()) {
+            return OperationResult.fail(validation.message());
+        }
+
+        if (!economyService.withdraw(playerId, config.getClaimCost(), MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para clã")) {
+            return OperationResult.fail("Saldo insuficiente para reivindicar este chunk (custo: " + config.getClaimCost() + ")");
+        }
+
+        return finalizeClaim(validation.clan(), chunk);
+    }
+
+    public ClaimValidationResult validateClaim(UUID playerId, Chunk chunk) {
+        if (chunk == null) {
+            return ClaimValidationResult.fail("Chunk inválido.");
+        }
 
         Clan clan = getByMember(playerId);
-        if (clan == null) return OperationResult.fail("Você precisa estar em um clã para reivindicar terreno.");
+        if (clan == null) {
+            return ClaimValidationResult.fail("Você precisa estar em um clã para reivindicar terreno.");
+        }
 
         ClanRole role = clan.getRole(playerId);
         if (role == null || !role.canClaim()) {
-            return OperationResult.fail("Apenas líder ou oficiais podem reivindicar terreno para o clã.");
+            return ClaimValidationResult.fail("Apenas líder ou oficiais podem reivindicar terreno para o clã.");
         }
 
         ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
@@ -135,22 +153,23 @@ public class ClanService {
 
         Kingdom existingKingdom = kingdomService != null ? kingdomService.getByChunk(chunk) : null;
         if (existingKingdom != null) {
-            return OperationResult.fail("Este chunk já pertence ao reino " + existingKingdom.getName());
+            return ClaimValidationResult.fail("Este chunk já pertence ao reino " + existingKingdom.getName());
         }
 
         String existingClan = storage.getClanByChunk(chunkKey);
         if (existingClan != null && !existingClan.equalsIgnoreCase(clan.getName())) {
-            return OperationResult.fail("Este chunk já pertence ao clã " + existingClan);
+            return ClaimValidationResult.fail("Este chunk já pertence ao clã " + existingClan);
         }
 
         if (clan.hasClaim()) {
-            return OperationResult.fail("Seu clã já possui um território. Transforme-o em um reino para expandir.");
+            return ClaimValidationResult.fail("Seu clã já possui um território. Transforme-o em um reino para expandir.");
         }
 
-        if (!economyService.withdraw(playerId, config.getClaimCost(), MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para clã")) {
-            return OperationResult.fail("Saldo insuficiente para reivindicar este chunk (custo: " + config.getClaimCost() + ")");
-        }
+        return ClaimValidationResult.successClan(clan, claimedChunk, config.getClaimCost());
+    }
 
+    public OperationResult finalizeClaim(Clan clan, Chunk chunk) {
+        ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
         clan.setClaim(claimedChunk);
         storage.updateClaim(clan);
         notifyDynmapUpdate(clan);

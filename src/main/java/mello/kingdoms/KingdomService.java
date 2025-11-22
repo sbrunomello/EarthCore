@@ -3,6 +3,7 @@ package mello.kingdoms;
 import mello.clans.Clan;
 import mello.clans.ClanService;
 import mello.common.OperationResult;
+import mello.core.claims.ClaimValidationResult;
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
 import mello.kingdoms.TaxBreakdown;
@@ -208,41 +209,62 @@ public class KingdomService {
     }
 
     public OperationResult claim(UUID playerId, Chunk chunk) {
+        ClaimValidationResult validation = validateClaim(playerId, chunk);
+        if (!validation.success()) {
+            if (validation.isClanClaim() && clanService != null) {
+                return clanService.claimChunk(playerId, chunk);
+            }
+            return OperationResult.fail(validation.message());
+        }
+
+        double cost = validation.cost();
+        if (!economyService.withdraw(playerId, cost, MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para reino")) {
+            return OperationResult.fail("Saldo insuficiente para claim. Custo: " + cost);
+        }
+
+        return finalizeClaim(validation.kingdom(), chunk);
+    }
+
+    public ClaimValidationResult validateClaim(UUID playerId, Chunk chunk) {
+        if (chunk == null) {
+            return ClaimValidationResult.fail("Chunk inválido.");
+        }
+
         Kingdom kingdom = getByMember(playerId);
         if (kingdom == null) {
             if (clanService != null) {
-                return clanService.claimChunk(playerId, chunk);
+                return clanService.validateClaim(playerId, chunk);
             }
-            return OperationResult.fail("Entre em um reino ou clã antes de reivindicar terras.");
+            return ClaimValidationResult.fail("Entre em um reino ou clã antes de reivindicar terras.");
         }
 
         KingdomRole role = kingdom.getRole(playerId);
         if (role == null || !role.canManageClaims()) {
-            return OperationResult.fail("Somente rei ou nobre podem dar claim.");
+            return ClaimValidationResult.fail("Somente rei ou nobre podem dar claim.");
         }
 
         String chunkKey = toChunkKey(chunk);
         if (storage.getKingdomByChunk(chunkKey) != null) {
-            return OperationResult.fail("Este chunk já pertence a outro reino.");
+            return ClaimValidationResult.fail("Este chunk já pertence a outro reino.");
         }
         if (clanService != null) {
             String owningClan = clanService.getClanByChunk(chunk);
             if (owningClan != null && !owningClan.equalsIgnoreCase(kingdom.getClanName())) {
-                return OperationResult.fail("Este chunk já pertence ao clã " + owningClan + ".");
+                return ClaimValidationResult.fail("Este chunk já pertence ao clã " + owningClan + ".");
             }
         }
 
         KingdomsConfig.TierSettings settings = config.getTierSettings(kingdom.getTier());
         int totalClaimsAfter = kingdom.getClaims().size() + 1 + 1; // existing + new + capital
         if (settings != null && totalClaimsAfter > settings.maxClaims()) {
-            return OperationResult.fail("Limite de claims do tier atingido.");
+            return ClaimValidationResult.fail("Limite de claims do tier atingido.");
         }
 
         double cost = config.getBaseClaimCost() + (kingdom.getClaims().size() * config.getCostPerExistingClaim());
-        if (!economyService.withdraw(playerId, cost, MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para reino")) {
-            return OperationResult.fail("Saldo insuficiente para claim. Custo: " + cost);
-        }
+        return ClaimValidationResult.successKingdom(kingdom, cost, chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
+    }
 
+    public OperationResult finalizeClaim(Kingdom kingdom, Chunk chunk) {
         KingdomClaim claim = KingdomClaim.fromChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
         kingdom.addClaim(claim);
         storage.updateChunks(kingdom);

@@ -39,3 +39,12 @@ frontend:
 claims:
   protection_enabled: true
   deny_message_cooldown_ticks: 20
+
+claim:
+  no_permission: "&cVocê não pode criar claims."
+  already_claimed: "&cEste chunk já está claimed."
+  preview_started: "&aPreview criado! Confirme ou cancele."
+  claim_confirmed: "&aClaim criado com sucesso!"
+  claim_cancelled: "&cClaim cancelado."
+  preview_restored: "&7Preview removido."
+  insufficient_bank: "&cBanco do grupo não possui saldo suficiente."
