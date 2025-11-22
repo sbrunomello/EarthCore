@@ -34,6 +34,9 @@ import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
 import mello.core.claims.ClaimService;
 import mello.core.commands.PortalCommand;
+import mello.core.notifications.NotificationListener;
+import mello.core.notifications.NotificationMessages;
+import mello.core.notifications.NotificationService;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.Plugin;
 import org.dynmap.DynmapAPI;
@@ -70,6 +73,7 @@ public class EarthCore extends JavaPlugin {
     private HomeService homeService;
     private TeleportRequestService teleportRequestService;
     private PrivateMessageService privateMessageService;
+    private NotificationService notificationService;
     private DynmapAPI dynmapAPI;
     private FrontendServer frontendServer;
     private ClaimService claimService;
@@ -140,6 +144,8 @@ public class EarthCore extends JavaPlugin {
         StarterKitSettings starterKitSettings = StarterKitSettings.fromConfig(this);
         StarterKitStorage starterKitStorage = new StarterKitStorage(getDataFolder(), getLogger());
         starterKitService = new StarterKitService(starterKitSettings, starterKitStorage, getLogger());
+        NotificationMessages notificationMessages = new NotificationMessages(this);
+        notificationService = new NotificationService(notificationMessages, getLogger());
 
         // Registrar comandos
         getCommand("balance").setExecutor(new BalanceCommand(economyService));
@@ -158,6 +164,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("msg").setExecutor(new MsgCommand(privateMessageService));
         getCommand("reply").setExecutor(new ReplyCommand(privateMessageService));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
+        getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
