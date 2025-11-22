@@ -131,6 +131,10 @@ public class KingdomCommand implements CommandExecutor {
                 player.sendMessage(balance.message());
                 return true;
 
+            case "help":
+                sendHelp(player);
+                return true;
+
             case "info":
                 Kingdom kingdom;
                 if (args.length >= 2) {

@@ -129,6 +129,10 @@ public class ClanCommand implements CommandExecutor {
                 sendInfo(player, clan);
                 return true;
 
+            case "help":
+                sendHelp(player);
+                return true;
+
             default:
                 sendHelp(player);
                 return true;

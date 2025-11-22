@@ -1,0 +1,20 @@
+# Configuração do kit inicial entregue automaticamente para novos jogadores
+# Customize materiais, quantidades e encantamentos conforme desejar.
+# Os códigos de cor seguem o padrão do Minecraft com prefixo &.
+enabled: true
+messages:
+  received: "&aVocê recebeu o kit inicial. Boa aventura!"
+  dropped: "&eSeu inventário estava cheio, alguns itens foram dropados aos seus pés."
+items:
+  - material: STONE_SWORD
+    amount: 1
+    enchantments:
+      SHARPNESS: 1
+  - material: SHIELD
+    amount: 1
+  - material: IRON_PICKAXE
+    amount: 1
+  - material: COOKED_BEEF
+    amount: 16
+  - material: OAK_PLANKS
+    amount: 32

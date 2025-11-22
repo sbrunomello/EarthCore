@@ -31,13 +31,16 @@ public class EconomyCommand implements CommandExecutor {
         }
 
         if (args.length < 1) {
-            sender.sendMessage("Uso: /economy <give|take|set|top> ...");
+            sendHelp(sender);
             return true;
         }
 
         String sub = args[0].toLowerCase();
         try {
             switch (sub) {
+                case "help":
+                    sendHelp(sender);
+                    break;
                 case "give":
                     handleGive(sender, args);
                     break;
@@ -57,6 +60,14 @@ public class EconomyCommand implements CommandExecutor {
             sender.sendMessage("§c" + ex.getMessage());
         }
         return true;
+    }
+
+    private void sendHelp(CommandSender sender) {
+        sender.sendMessage("§6Comandos de economia:");
+        sender.sendMessage("§7/economy give <player> <amount> [reason] §f- adiciona saldo");
+        sender.sendMessage("§7/economy take <player> <amount> [reason] §f- remove saldo");
+        sender.sendMessage("§7/economy set <player> <amount> §f- define saldo fixo");
+        sender.sendMessage("§7/economy top [page] §f- mostra o ranking de mais ricos");
     }
 
     private void handleGive(CommandSender sender, String[] args) {
