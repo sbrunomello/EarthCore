@@ -39,6 +39,13 @@ import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
 import mello.core.claims.ClaimService;
 import mello.core.claims.ClaimListener;
+import mello.auth.AuthService;
+import mello.auth.AuthSessionManager;
+import mello.auth.AuthStorage;
+import mello.auth.commands.LoginCommand;
+import mello.auth.commands.RegisterCommand;
+import mello.auth.listeners.AuthRestrictionListener;
+import mello.auth.listeners.AuthSessionListener;
 import mello.core.commands.PortalCommand;
 import mello.core.notifications.NotificationListener;
 import mello.core.notifications.NotificationMessages;
@@ -110,6 +117,8 @@ public class EarthCore extends JavaPlugin {
     private StarterKitService starterKitService;
     private PlayerStatsService playerStatsService;
     private ScoreboardService scoreboardService;
+    private AuthService authService;
+    private AuthSessionManager authSessionManager;
 
     /**
      * Inicializa todos os serviços do plugin em ordem explícita para evitar
@@ -121,6 +130,11 @@ public class EarthCore extends JavaPlugin {
         getLogger().info("MonolitoServidor iniciado!");
 
         saveDefaultConfig();
+
+        // Sistema de autenticação básico (register/login)
+        AuthStorage authStorage = new AuthStorage(getDataFolder(), getLogger());
+        authSessionManager = new AuthSessionManager();
+        authService = new AuthService(authStorage, getLogger());
 
         // Criar storage + service
         EconomyRepository economyRepository = new EconomyRepository(getDataFolder(), getLogger());
@@ -212,6 +226,8 @@ public class EarthCore extends JavaPlugin {
         getCommand("reply").setExecutor(new ReplyCommand(privateMessageService));
         getCommand("starterkit").setExecutor(new StarterKitCommand(starterKitService, starterKitSettings, starterKitStorage));
         getCommand("shop").setExecutor(new ShopCommand(shopService));
+        getCommand("register").setExecutor(new RegisterCommand(authService, authSessionManager));
+        getCommand("login").setExecutor(new LoginCommand(authService, authSessionManager));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);
@@ -223,6 +239,8 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PortalListener(portalService), this);
         getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService, notificationService), this);
         getServer().getPluginManager().registerEvents(new StarterKitListener(starterKitService), this);
+        getServer().getPluginManager().registerEvents(new AuthSessionListener(authService, authSessionManager), this);
+        getServer().getPluginManager().registerEvents(new AuthRestrictionListener(authSessionManager), this);
 
         playerStatsService = new PlayerStatsService();
         scoreboardService = new ScoreboardService(this, economyService, clanService, kingdomService, playerStatsService);
