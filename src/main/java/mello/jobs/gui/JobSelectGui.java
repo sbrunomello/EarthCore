@@ -3,6 +3,7 @@ package mello.jobs.gui;
 import mello.core.gui.AbstractGui;
 import mello.core.gui.GuiManager;
 import mello.core.gui.GuiMessages;
+import mello.core.gui.GuiTheme;
 import mello.jobs.JobPayout;
 import mello.jobs.JobService;
 import mello.jobs.JobType;
@@ -29,13 +30,14 @@ public class JobSelectGui extends AbstractGui {
     private final GuiMessages guiMessages;
 
     public JobSelectGui(Player player, GuiManager guiManager, JobService jobService, GuiMessages guiMessages) {
-        super(player, guiManager, 27, "&8Jobs disponíveis");
+        super(player, guiManager, 27, guiMessages.format("gui.job.title"));
         this.jobService = jobService;
         this.guiMessages = guiMessages;
     }
 
     @Override
     protected void build() {
+        fillBorder(GuiTheme.JOBS.getBorderMaterial());
         Optional<JobType> currentJob = jobService.getJob(player.getUniqueId()).map(pj -> pj.getJobType());
         List<JobPayout> payouts = new ArrayList<>(jobService.getConfig().getAllPayouts().values());
         payouts.sort(Comparator.comparing(p -> p.getJobType().ordinal()));
@@ -50,15 +52,12 @@ public class JobSelectGui extends AbstractGui {
             slot++;
         }
 
-        setItem(26, createBarrier());
+        setCloseButton(26);
     }
 
     @Override
     public void handleClick(InventoryClickEvent event) {
-        if (event.getRawSlot() == 26) {
-            player.closeInventory();
-            return;
-        }
+        super.handleClick(event);
 
         Optional<JobType> clickedJob = jobService.getConfig().getAllPayouts().values().stream()
                 .filter(JobPayout::isEnabled)
@@ -130,20 +129,5 @@ public class JobSelectGui extends AbstractGui {
             case HUNTER -> Material.BONE;
             case LUMBERJACK -> Material.OAK_LOG;
         };
-    }
-
-    private ItemStack createBarrier() {
-        ItemStack barrier = new ItemStack(Material.BARRIER);
-        ItemMeta meta = barrier.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName("§cFechar");
-            meta.setLore(List.of("§7Clique para fechar."));
-            barrier.setItemMeta(meta);
-        }
-        return barrier;
-    }
-
-    private void setItem(int slot, ItemStack stack) {
-        getInventory().setItem(slot, stack);
     }
 }

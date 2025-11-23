@@ -22,6 +22,12 @@ public class GuiMessages {
         defaults.put("gui.clan.no_clan", "&cVocê não pertence a um clã.");
         defaults.put("gui.job.selected", "&aVocê agora é {job}&a.");
         defaults.put("gui.open.error", "&cNão foi possível abrir o menu agora. Tente novamente mais tarde.");
+        defaults.put("gui.job.title", "&8Jobs disponíveis");
+        defaults.put("gui.kingdom.bank.title", "&8Banco do Reino");
+        defaults.put("gui.kingdom.bank.balance", "&eSaldo do Reino");
+        defaults.put("gui.kingdom.bank.line.balance", "&7Saldo atual: &a{amount}");
+        defaults.put("gui.kingdom.bank.line.deposit", "&7Use /kingdom deposit <valor> para contribuir.");
+        defaults.put("gui.kingdom.bank.line.withdraw", "&7Use /kingdom withdraw <valor> para sacar (apenas líder).");
 
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {
