@@ -63,6 +63,10 @@ import mello.core.starter.StarterKitListener;
 import mello.core.starter.StarterKitService;
 import mello.core.starter.StarterKitSettings;
 import mello.core.starter.StarterKitStorage;
+import mello.shops.ShopService;
+import mello.shops.ShopStorage;
+import mello.shops.commands.ShopCommand;
+import mello.shops.ShopListener;
 import mello.web.FrontendServer;
 import mello.web.FrontendSettings;
 
@@ -80,6 +84,7 @@ public class EarthCore extends JavaPlugin {
     private TeleportRequestService teleportRequestService;
     private PrivateMessageService privateMessageService;
     private NotificationService notificationService;
+    private ShopService shopService;
     private DynmapAPI dynmapAPI;
     private FrontendServer frontendServer;
     private ClaimService claimService;
@@ -162,6 +167,9 @@ public class EarthCore extends JavaPlugin {
         NotificationMessages notificationMessages = new NotificationMessages(this);
         notificationService = new NotificationService(notificationMessages, getLogger());
 
+        ShopStorage shopStorage = new ShopStorage(getDataFolder(), getLogger());
+        shopService = new ShopService(this, shopStorage, economyService, claimService, clanService, kingdomService, guiManager, getLogger());
+
         ClaimCommand claimCommand = new ClaimCommand(this, kingdomService, clanService, kingdomsConfig, clansConfig, claimPreviewManager, claimSettings, guiManager, claimFlowService);
         claimPreviewManager.setCleanupCallback(claimCommand::removeClaimStick);
 
@@ -183,9 +191,11 @@ public class EarthCore extends JavaPlugin {
         getCommand("msg").setExecutor(new MsgCommand(privateMessageService));
         getCommand("reply").setExecutor(new ReplyCommand(privateMessageService));
         getCommand("starterkit").setExecutor(new StarterKitCommand(starterKitService, starterKitSettings, starterKitStorage));
+        getCommand("shop").setExecutor(new ShopCommand(shopService));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);
+        getServer().getPluginManager().registerEvents(new ShopListener(shopService), this);
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
@@ -213,6 +223,10 @@ public class EarthCore extends JavaPlugin {
 
         if (clanService != null) {
             clanService.saveAll();
+        }
+
+        if (shopService != null) {
+            shopService.saveAll();
         }
 
         if (frontendServer != null) {
