@@ -6,6 +6,7 @@ import mello.core.gui.GuiManager;
 import mello.core.gui.GuiMessages;
 import mello.kingdoms.KingdomService;
 import mello.kingdoms.gui.KingdomMainGui;
+import mello.core.claims.ClaimVisualizationService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -22,11 +23,13 @@ public class KingdomCommand implements CommandExecutor {
     private final KingdomService service;
     private final GuiManager guiManager;
     private final GuiMessages guiMessages;
+    private final ClaimVisualizationService visualizationService;
 
-    public KingdomCommand(KingdomService service, GuiManager guiManager, GuiMessages guiMessages) {
+    public KingdomCommand(KingdomService service, GuiManager guiManager, GuiMessages guiMessages, ClaimVisualizationService visualizationService) {
         this.service = service;
         this.guiManager = guiManager;
         this.guiMessages = guiMessages;
+        this.visualizationService = visualizationService;
     }
 
     @Override
@@ -96,6 +99,9 @@ public class KingdomCommand implements CommandExecutor {
             case "claim":
                 OperationResult claimResult = service.claim(player.getUniqueId(), player.getLocation().getChunk());
                 player.sendMessage(claimResult.message());
+                if (claimResult.success()) {
+                    visualizationService.showChunkParticles(player, player.getLocation().getChunk());
+                }
                 return true;
 
             case "unclaim":
@@ -133,6 +139,29 @@ public class KingdomCommand implements CommandExecutor {
 
             case "help":
                 sendHelp(player);
+                return true;
+
+            case "request":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom request <nome do reino>");
+                    return true;
+                }
+                OperationResult requestResult = service.requestEntry(player.getUniqueId(), args[1]);
+                player.sendMessage(requestResult.message());
+                return true;
+
+            case "requests":
+                OperationResult listResult = service.listJoinRequests(player.getUniqueId());
+                player.sendMessage(listResult.message());
+                return true;
+
+            case "acceptrequest":
+                if (args.length < 2) {
+                    player.sendMessage("Uso: /kingdom acceptrequest <jogador>");
+                    return true;
+                }
+                OperationResult acceptResult = service.acceptJoinRequest(player.getUniqueId(), args[1]);
+                player.sendMessage(acceptResult.message());
                 return true;
 
             case "info":
@@ -201,5 +230,8 @@ public class KingdomCommand implements CommandExecutor {
         player.sendMessage("§7/kingdom info [nome] §f- mostra detalhes");
         player.sendMessage("§7/kingdom disband §f- dissolve o reino");
         player.sendMessage("§7/kingdom leave §f- sai do seu reino");
+        player.sendMessage("§7/kingdom request <nome> §f- envia solicitação para entrar em um reino");
+        player.sendMessage("§7/kingdom requests §f- vê pedidos pendentes (rei/nobre)");
+        player.sendMessage("§7/kingdom acceptrequest <jogador> §f- aceita pedido pendente (rei/nobre)");
     }
 }

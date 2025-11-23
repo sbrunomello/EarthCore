@@ -33,6 +33,7 @@ import mello.core.claims.ClaimMessages;
 import mello.core.claims.ClaimPreviewManager;
 import mello.core.claims.ClaimSettings;
 import mello.core.claims.ClaimFlowService;
+import mello.core.claims.ClaimVisualizationService;
 import mello.core.claims.commands.ClaimCommand;
 import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
@@ -53,6 +54,7 @@ import mello.core.commands.SpawnCommand;
 import mello.core.commands.TpaCommand;
 import mello.core.commands.TphereCommand;
 import mello.core.listeners.PortalListener;
+import mello.core.listeners.NpcProtectionListener;
 import mello.core.portals.PortalService;
 import mello.core.services.HomeService;
 import mello.core.services.PrivateMessageService;
@@ -100,6 +102,7 @@ public class EarthCore extends JavaPlugin {
     private ClaimPreviewManager claimPreviewManager;
     private ClaimSettings claimSettings;
     private ClaimFlowService claimFlowService;
+    private ClaimVisualizationService claimVisualizationService;
     private GuiManager guiManager;
     private GuiMessages guiMessages;
     private StarterKitSettings starterKitSettings;
@@ -169,7 +172,8 @@ public class EarthCore extends JavaPlugin {
 
         claimSettings = ClaimSettings.fromConfig(this);
         claimPreviewManager = new ClaimPreviewManager(this, claimSettings, null);
-        claimFlowService = new ClaimFlowService(claimPreviewManager, claimSettings, kingdomService, clanService);
+        claimVisualizationService = new ClaimVisualizationService(this);
+        claimFlowService = new ClaimFlowService(claimPreviewManager, claimSettings, claimVisualizationService, kingdomService, clanService);
 
         // Serviços básicos de teleporte e mensagens privadas
         spawnService = new SpawnService(this);
@@ -194,7 +198,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("pay").setExecutor(new PayCommand(economyService, kingdomService, clanService));
         getCommand("economy").setExecutor(new EconomyCommand(economyService));
         getCommand("job").setExecutor(new JobCommand(jobService, jobMessages, guiManager, guiMessages));
-        getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService, guiManager, guiMessages));
+        getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService, guiManager, guiMessages, claimVisualizationService));
         getCommand("clan").setExecutor(new ClanCommand(clanService, guiManager, guiMessages));
         getCommand("claim").setExecutor(claimCommand);
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
@@ -212,6 +216,7 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);
         getServer().getPluginManager().registerEvents(new ShopListener(shopService), this);
+        getServer().getPluginManager().registerEvents(new NpcProtectionListener(shopService, portalService), this);
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);

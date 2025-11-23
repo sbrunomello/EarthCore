@@ -18,13 +18,16 @@ public class ClaimFlowService {
 
     private final ClaimPreviewManager previewManager;
     private final ClaimSettings settings;
+    private final ClaimVisualizationService visualizationService;
     private final KingdomService kingdomService;
     private final ClanService clanService;
 
     public ClaimFlowService(ClaimPreviewManager previewManager, ClaimSettings settings,
+                            ClaimVisualizationService visualizationService,
                             KingdomService kingdomService, ClanService clanService) {
         this.previewManager = previewManager;
         this.settings = settings;
+        this.visualizationService = visualizationService;
         this.kingdomService = kingdomService;
         this.clanService = clanService;
     }
@@ -75,6 +78,7 @@ public class ClaimFlowService {
             clanService.finalizeClaim(clan, chunk);
         }
 
+        visualizationService.showChunkParticles(player, chunk);
         previewManager.clear(player, false);
         player.sendMessage(settings.claimConfirmed());
         player.closeInventory();

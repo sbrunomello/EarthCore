@@ -71,6 +71,9 @@ permissions:
   core.portal:
     description: Permissão administrativa para criar e vincular totems/portais
     default: op
+  core.setspawn:
+    description: Autoriza definir o spawn global com /setspawn
+    default: op
   core.starterkit:
     description: Autoriza o jogador a resgatar o kit inicial pelo comando /starterkit
     default: true

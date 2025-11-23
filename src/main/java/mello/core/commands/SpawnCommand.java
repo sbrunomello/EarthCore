@@ -24,11 +24,6 @@ public class SpawnCommand implements CommandExecutor {
             return true;
         }
 
-        if (!player.hasPermission("core.spawn")) {
-            player.sendMessage(Messages.NO_PERMISSION);
-            return true;
-        }
-
         Optional<Location> spawn = spawnService.getSpawnLocation();
         if (spawn.isEmpty()) {
             player.sendMessage(Messages.SPAWN_NOT_SET);

@@ -34,6 +34,7 @@ public class KingdomService {
     private KingdomMessages messages;
 
     private final Map<UUID, String> invites = new HashMap<>();
+    private final Map<String, Set<UUID>> joinRequests = new HashMap<>();
     private KingdomDynmapHook dynmapHook;
     private ClanService clanService;
 
@@ -169,7 +170,94 @@ public class KingdomService {
 
         kingdom.addMember(playerId, KingdomRole.CITIZEN);
         invites.remove(playerId);
+        clearExistingRequests(playerId);
         return OperationResult.ok("Você entrou em " + kingdom.getName());
+    }
+
+    public OperationResult requestEntry(UUID playerId, String kingdomName) {
+        if (kingdomName == null || kingdomName.isBlank()) {
+            return OperationResult.fail("Informe um reino válido.");
+        }
+        if (getByMember(playerId) != null) {
+            return OperationResult.fail("Você já pertence a um reino.");
+        }
+
+        Kingdom target = storage.getByName(kingdomName);
+        if (target == null) {
+            return OperationResult.fail("Reino não encontrado.");
+        }
+
+        clearExistingRequests(playerId);
+
+        String key = normalizeName(target.getName());
+        Set<UUID> requests = joinRequests.computeIfAbsent(key, k -> new HashSet<>());
+        if (!requests.add(playerId)) {
+            return OperationResult.fail("Você já enviou uma solicitação para este reino.");
+        }
+
+        notifyApprovers(target, Bukkit.getOfflinePlayer(playerId).getName());
+        return OperationResult.ok("Solicitação enviada para " + target.getName() + ". Aguarde aprovação do líder.");
+    }
+
+    public OperationResult listJoinRequests(UUID reviewerId) {
+        Kingdom kingdom = getByMember(reviewerId);
+        if (kingdom == null) {
+            return OperationResult.fail("Você não pertence a um reino.");
+        }
+        KingdomRole role = kingdom.getRole(reviewerId);
+        if (role == null || !role.canManageMembers()) {
+            return OperationResult.fail("Somente rei ou nobre podem visualizar solicitações.");
+        }
+
+        Set<UUID> requests = joinRequests.getOrDefault(normalizeName(kingdom.getName()), Collections.emptySet());
+        if (requests.isEmpty()) {
+            return OperationResult.ok("Nenhuma solicitação pendente para o seu reino.");
+        }
+
+        String names = requests.stream()
+                .map(uuid -> Bukkit.getOfflinePlayer(uuid).getName())
+                .filter(Objects::nonNull)
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("Nenhum jogador conhecido");
+
+        return OperationResult.ok("Solicitações pendentes: " + names);
+    }
+
+    public OperationResult acceptJoinRequest(UUID reviewerId, String playerName) {
+        Kingdom kingdom = getByMember(reviewerId);
+        if (kingdom == null) {
+            return OperationResult.fail("Você não pertence a um reino.");
+        }
+        KingdomRole role = kingdom.getRole(reviewerId);
+        if (role == null || !role.canManageMembers()) {
+            return OperationResult.fail("Somente rei ou nobre podem aceitar solicitações.");
+        }
+
+        Set<UUID> requests = joinRequests.getOrDefault(normalizeName(kingdom.getName()), new HashSet<>());
+        UUID targetId = requests.stream()
+                .filter(uuid -> {
+                    String name = Bukkit.getOfflinePlayer(uuid).getName();
+                    return name != null && name.equalsIgnoreCase(playerName);
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (targetId == null) {
+            return OperationResult.fail("Nenhuma solicitação pendente para o jogador informado.");
+        }
+        if (kingdom.isMember(targetId)) {
+            requests.remove(targetId);
+            return OperationResult.fail("Este jogador já faz parte do reino.");
+        }
+
+        kingdom.addMember(targetId, KingdomRole.CITIZEN);
+        invites.remove(targetId);
+        requests.remove(targetId);
+        purgeEmptyRequests(kingdom.getName());
+
+        notifyPlayerAccepted(targetId, kingdom.getName());
+        notifyApprovers(kingdom, Bukkit.getOfflinePlayer(targetId).getName());
+        return OperationResult.ok("Solicitação de ingresso aceita para " + Bukkit.getOfflinePlayer(targetId).getName());
     }
 
     /**
@@ -362,6 +450,7 @@ public class KingdomService {
         if (kingdom == null) return OperationResult.fail("Você não pertence a um reino.");
         if (!kingdom.getKing().equals(playerId)) return OperationResult.fail("Somente o rei pode dissolver o reino.");
 
+        joinRequests.remove(normalizeName(kingdom.getName()));
         storage.removeKingdom(kingdom.getName());
         notifyDynmapRemoval(kingdom.getName());
         return OperationResult.ok("Reino dissolvido com sucesso.");
@@ -430,6 +519,39 @@ public class KingdomService {
 
     public void saveAll() {
         storage.saveAll();
+    }
+
+    private void notifyApprovers(Kingdom kingdom, String requesterName) {
+        if (requesterName == null) {
+            requesterName = "Jogador";
+        }
+        String message = requesterName + " enviou solicitação para entrar no reino " + kingdom.getName();
+        kingdom.getMembers().forEach((uuid, role) -> {
+            if (role != null && role.canManageMembers()) {
+                Optional.ofNullable(Bukkit.getPlayer(uuid)).ifPresent(player -> player.sendMessage("§e" + message));
+            }
+        });
+    }
+
+    private void notifyPlayerAccepted(UUID playerId, String kingdomName) {
+        Optional.ofNullable(Bukkit.getPlayer(playerId))
+                .ifPresent(player -> player.sendMessage("§aSua solicitação foi aceita! Você entrou no reino " + kingdomName));
+    }
+
+    private void clearExistingRequests(UUID playerId) {
+        joinRequests.values().forEach(set -> set.remove(playerId));
+    }
+
+    private void purgeEmptyRequests(String kingdomName) {
+        String key = normalizeName(kingdomName);
+        Set<UUID> requests = joinRequests.get(key);
+        if (requests == null || requests.isEmpty()) {
+            joinRequests.remove(key);
+        }
+    }
+
+    private String normalizeName(String name) {
+        return name == null ? "" : name.toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -561,6 +683,7 @@ public class KingdomService {
     }
 
     private void disbandForDebt(Kingdom kingdom) {
+        joinRequests.remove(normalizeName(kingdom.getName()));
         storage.removeKingdom(kingdom.getName());
         notifyDynmapRemoval(kingdom.getName());
         notifyMembers(kingdom, formatMessage("kingdom.upkeep.disbanded", kingdom, 0));
