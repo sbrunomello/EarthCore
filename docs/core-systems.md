@@ -2,16 +2,18 @@
 
 Este arquivo descreve o que já está funcional dentro do plugin, com foco em módulos que não estavam detalhados no README. Use-o como referência para operar e configurar os recursos existentes.
 
-## Proteção de claims (reinos e clãs)
-- **Escopo**: toda tentativa de quebrar, colocar blocos ou interagir com blocos/entidades passa pelo `ClaimProtectionListener`.
-- **Critérios de bloqueio**:
-  - Verifica o chunk atual via `ClaimService.findClaimAt`, que prioriza claims de **reino** e, se não houver, claims de **clã**.
+## Proteção e fluxo de claims (reinos e clãs)
+- **Proteção**: toda tentativa de quebrar, colocar blocos ou interagir com blocos/entidades passa pelo `ClaimProtectionListener`.
+  - Verifica o chunk atual via `ClaimService.findClaimAt`, priorizando claims de **reino** e, se não houver, claims de **clã**.
   - Se o jogador não for membro do dono (reino ou clã), a ação é cancelada e uma mensagem é enviada com cooldown para evitar spam.
-- **Flags padrão**: `BUILD`, `INTERACT`, `PVP` e `MOB_DAMAGE` são negadas para não membros; hoje não existem exceções configuráveis além da associação ao dono do claim.
+  - Flags padrão `BUILD`, `INTERACT`, `PVP` e `MOB_DAMAGE` são negadas para não membros; hoje não existem exceções configuráveis além da associação ao claim.
+- **Preview e confirmação**: `ClaimPreviewManager` desenha um preview temporário de chunk com vidro + tocha nos cantos (30s, auto limpeza) para evitar grief acidental.
+  - `ClaimFlowService` reaproveita o mesmo fluxo para comandos e GUIs: confirma o claim após revalidar elegibilidade e efetuar o pagamento no banco do grupo.
+  - Se o chunk ficar indisponível ou o banco estiver sem saldo, o preview é limpo e o jogador recebe mensagem específica.
 - **Configuração** (`config.yml`):
   - `claims.protection_enabled` liga/desliga toda a proteção.
   - `claims.deny_message_cooldown_ticks` controla o intervalo (em ticks) para reenviar a mensagem de bloqueio por jogador.
-- **Mensagens**: personalize `claims.protected.kingdom` e `claims.protected.clan` em `messages.yml` para indicar quem controla a área.
+- **Mensagens**: personalize `claims.protected.kingdom` e `claims.protected.clan` em `messages.yml` para indicar quem controla a área. Mensagens do fluxo de claim ficam em `claims.*` dentro do `config.yml`.
 
 ## Economia
 - **Persistência**: saldos são mantidos em `plugins/EarthCore/currency.yml`, com cache em memória protegido por lock de leitura/escrita.
@@ -89,3 +91,25 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Inicialização**: `FrontendServer` sobe automaticamente se `frontend.enabled` estiver `true`, usando host/porta da config e apontando o iframe para `frontend.dynmapUrl`.
 - **Dados expostos**: endpoint `/api/user?username=<nick>` retorna saldo, reino e clã consultando os serviços internos; ideal para painel informativo.
 - **Dynmap**: se o plugin Dynmap estiver carregado, o hook adiciona áreas de claims de reinos/clãs no mapa com logging de status na inicialização.
+
+## Autenticação offline (register/login)
+- **Persistência segura**: hashes bcrypt ficam em `plugins/EarthCore/auth.yml` via `AuthStorage`; nenhuma senha é salva em texto puro.
+- **Sessão**: `AuthSessionManager` mantém apenas UUIDs logados em memória, liberando players após `/login` ou `/register` bem-sucedidos.
+- **Restrições pré-login**: o `AuthRestrictionListener` bloqueia movimento, comandos (exceto `/login` e `/register`), chat, dano e interações até autenticar, evitando abuso por bots.
+- **Mensagens**: mensagens rápidas de bloqueio ficam em `AuthMessages`, voltadas para lembrar que o login é obrigatório.
+
+## Lojas físicas com NPC
+- **Tipos de loja**: pessoal (`/shop create <nome>`), clã (`/shop clan create <nome>`, apenas líder, dentro de claim do clã) e reino (`/shop kingdom create <nome>`, apenas rei, dentro de claim do reino). Pessoais exigem estar em área onde você tenha permissão de construir.
+- **Infraestrutura**: ao criar, o `ShopService` spawna um aldeão fixo (invulnerável, sem IA) e gera um baú duplo atrás do NPC para ser o estoque físico; cada loja mantém cache de itens e vínculo com o baú.
+- **Edição**: o dono abre uma GUI de edição (`ShopEditGui`) que pede preço via chat e quantidade por clique (1 ou 64). O item é copiado do que está na mão para garantir fidelidade de metadados.
+- **Compra**: `ShopBuyGui` lista os itens; ao comprar o sistema verifica saldo (`EconomyService`), espaço no inventário e estoque antes de debitar o comprador e creditar o dono (tipo `PLAYER_TRADE`). Estoque é removido diretamente do baú.
+- **Persistência e resiliência**: lojas e itens são salvos em disco (`ShopStorage`). NPCs e baús são recriados no carregamento; remoção limpa o estoque e destrói o aldeão. NPCs de loja também são protegidos por `NpcProtectionListener` contra dano/target.
+
+## Scoreboard dinâmico
+- **Modelo configurável**: `scoreboard.*` em `config.yml` define título, rodapé, cores e separadores. Ícones têm fallback para fontes antigas.
+- **Dados exibidos**: coordenadas, horário e mundo atuais, clã, reino, saldo (money/coins), kills de jogadores, mobs, deaths e placeholder de conquistas.
+- **Atualização**: `ScoreboardService` cria um holder por jogador no login e atualiza a cada 20 ticks via `ScoreboardUpdaterTask`, reaproveitando times para evitar flicker. Usa `EconomyService`, `ClanService`, `KingdomService` e `PlayerStatsService` como fontes.
+- **Fallback seguro**: ao desabilitar via config, o serviço apenas loga e não registra placares; no desligamento restaura o scoreboard principal para evitar lixo visual.
+
+## Proteção de NPCs sensíveis
+- `NpcProtectionListener` anula dano e target em aldeões ligados a portais (`PortalService`) e lojas (`ShopService`), reforçando a invulnerabilidade mesmo se outros plugins alterarem flags.
