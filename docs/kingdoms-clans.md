@@ -9,6 +9,9 @@ Este módulo adiciona gerenciamento político e social nativo ao plugin. Reinos 
 - `/kingdom invite <jogador>`: envia convite para o reino (rei/conselheiro).
 - `/kingdom join <nome>`: aceita o convite recebido.
 - `/kingdom claim` / `/kingdom unclaim`: adiciona ou remove o claim do chunk atual.
+- `/kingdom request <nome>`: envia solicitação para entrar em um reino específico.
+- `/kingdom requests`: lista solicitações pendentes para o seu reino (rei/nobre).
+- `/kingdom acceptrequest <jogador>`: aceita uma solicitação pendente e adiciona o jogador como cidadão.
 - `/kingdom info [nome]`: mostra detalhes, claims e tesouraria.
 - `/kingdom leave`: sai do reino (o rei só pode sair se estiver sozinho).
 
@@ -44,6 +47,7 @@ Este módulo adiciona gerenciamento político e social nativo ao plugin. Reinos 
 ## Marcação visual e Dynmap
 - **Tochas nos claims**: sempre que um chunk é claimado pelo reino, o serviço coloca tochas nos quatro cantos da superfície do chunk para feedback imediato sem GUIs.
 - **Dynmap**: hooks de reinos e clãs são carregados automaticamente se o plugin Dynmap estiver presente; claims são redesenhados após depósitos, claims/unclaims e disband, ou removidos junto ao reino/clã.
+- **Feedback imediato**: após confirmar um claim (GUI ou comando), partículas verdes contornam o chunk por alguns segundos para facilitar a visualização da área protegida.
 
 ## Configuração
 

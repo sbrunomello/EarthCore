@@ -114,8 +114,9 @@ public class ShopService {
         }
 
         Location spawnLocation = player.getLocation().getBlock().getLocation().add(0.5, 0, 0.5);
-        spawnLocation.setYaw(player.getLocation().getYaw());
-        spawnLocation.setPitch(player.getLocation().getPitch());
+        float facingYaw = player.getLocation().getYaw() + 180; // aldeão olha para o criador
+        spawnLocation.setYaw(facingYaw);
+        spawnLocation.setPitch(0);
         BlockFace facing = yawToFace(spawnLocation.getYaw());
 
         Villager villager = spawnShopKeeper(spawnLocation, type, buildDisplayName(type, trimmedName, player.getName(), clan, kingdom));
@@ -179,6 +180,26 @@ public class ShopService {
 
     public void openEdit(Player player, Shop shop) {
         new ShopEditGui(player, this, guiManager, shop).open();
+    }
+
+    public OperationResult deleteByName(Player player, String rawName) {
+        String name = rawName == null ? "" : rawName.trim();
+        if (name.isEmpty()) {
+            return OperationResult.fail("Informe o nome da loja a ser removida.");
+        }
+
+        UUID ownerId = player.getUniqueId();
+        List<Shop> ownedShops = new ArrayList<>(storage.getShops()).stream()
+                .filter(shop -> shop.getOwnerId().equals(ownerId))
+                .filter(shop -> shop.getName().equalsIgnoreCase(name))
+                .toList();
+
+        if (ownedShops.isEmpty()) {
+            return OperationResult.fail("Nenhuma loja sua com esse nome foi encontrada.");
+        }
+
+        ownedShops.forEach(this::deleteShop);
+        return OperationResult.ok(ownedShops.size() + " loja(s) removida(s). Estoque descartado.");
     }
 
     public void openBuy(Player player, Shop shop) {
@@ -402,6 +423,42 @@ public class ShopService {
         logger.info("[Shop] NPC recriado para loja " + shop.getId());
     }
 
+    private void deleteShop(Shop shop) {
+        removeNpc(shop);
+        clearStock(shop);
+        unregisterChest(shop);
+        shopsByNpc.remove(shop.getNpcUuid());
+        itemsByShop.remove(shop.getId());
+        storage.removeShop(shop.getId());
+    }
+
+    private void removeNpc(Shop shop) {
+        if (shop.getNpcUuid() == null) {
+            return;
+        }
+        Entity entity = Bukkit.getEntity(shop.getNpcUuid());
+        if (entity != null) {
+            entity.remove();
+        }
+    }
+
+    private void clearStock(Shop shop) {
+        removeChestAt(shop.getPrimaryChestLocation());
+        removeChestAt(shop.getSecondaryChestLocation());
+    }
+
+    private void removeChestAt(Location location) {
+        if (location == null) {
+            return;
+        }
+        Block block = location.getBlock();
+        if (block.getState() instanceof org.bukkit.block.Chest chestState) {
+            chestState.getBlockInventory().clear();
+        }
+        block.setType(Material.AIR, false);
+        shopsByChest.remove(blockKey(location));
+    }
+
     private ChestPlacement placeDoubleChest(Location villagerLocation, BlockFace facing) {
         Block primary = villagerLocation.getBlock().getRelative(facing.getOppositeFace());
         Block secondary = primary.getRelative(rotateLeft(facing));
@@ -436,6 +493,15 @@ public class ShopService {
         }
         if (shop.getSecondaryChestLocation() != null) {
             shopsByChest.put(blockKey(shop.getSecondaryChestLocation()), shop);
+        }
+    }
+
+    private void unregisterChest(Shop shop) {
+        if (shop.getPrimaryChestLocation() != null) {
+            shopsByChest.remove(blockKey(shop.getPrimaryChestLocation()));
+        }
+        if (shop.getSecondaryChestLocation() != null) {
+            shopsByChest.remove(blockKey(shop.getSecondaryChestLocation()));
         }
     }
 

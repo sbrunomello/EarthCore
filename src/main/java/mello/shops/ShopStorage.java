@@ -55,6 +55,12 @@ public class ShopStorage {
         saveAll();
     }
 
+    public void removeShop(UUID shopId) {
+        shops.remove(shopId);
+        itemsByShop.remove(shopId);
+        saveAll();
+    }
+
     public void saveAll() {
         config.set("shops", null);
         for (Shop shop : shops.values()) {

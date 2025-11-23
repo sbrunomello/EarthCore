@@ -74,7 +74,7 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
   - Clicar em um item teleporta para o `target` configurado do destino; portais sem destino exibem mensagem de erro amigável.
 
 ## Utilidades de teleporte e sociais
-- **Spawn global**: armazenado em `config.yml` (`spawn.*`); `/setspawn` grava, `/spawn` teleporta. Logs alertam se o mundo não estiver carregado.
+- **Spawn global**: armazenado em `config.yml` (`spawn.*`); `/setspawn` grava (perm. `core.setspawn`, padrão apenas para OPs), `/spawn` teleporta (aberto para todos, sem permissão). Logs alertam se o mundo não estiver carregado.
 - **Homes**: um home por jogador persistido em `homes.yml`; `/home set` grava e `/home` teleporta se existir e o mundo estiver carregado.
 - **Pedidos de teleporte**: `/tpa` e `/tphere` armazenam solicitações em memória (`TeleportRequestService`) mapeadas por alvo; cada novo pedido sobrescreve o anterior para o mesmo alvo.
 - **Mensagens privadas**: `/msg` registra o último contato bilateral em `PrivateMessageService` para habilitar `/reply` imediato.
