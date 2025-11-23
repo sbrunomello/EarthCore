@@ -61,14 +61,32 @@ public class ShopStorage {
             String path = "shops." + shop.getId();
             Location location = shop.getLocation();
             config.set(path + ".owner", shop.getOwnerId().toString());
+            config.set(path + ".type", shop.getType().name());
+            config.set(path + ".name", shop.getName());
+            if (shop.getOwnerClanId() != null) {
+                config.set(path + ".clan", shop.getOwnerClanId().toString());
+            }
+            if (shop.getOwnerKingdomId() != null) {
+                config.set(path + ".kingdom", shop.getOwnerKingdomId().toString());
+            }
+
             config.set(path + ".world", location.getWorld().getName());
             config.set(path + ".x", location.getX());
             config.set(path + ".y", location.getY());
             config.set(path + ".z", location.getZ());
+            config.set(path + ".yaw", location.getYaw());
+            config.set(path + ".pitch", location.getPitch());
             config.set(path + ".npc", shop.getNpcUuid().toString());
             config.set(path + ".enabled", shop.isEnabled());
             config.set(path + ".createdAt", shop.getCreatedAt().toEpochMilli());
             config.set(path + ".updatedAt", shop.getUpdatedAt().toEpochMilli());
+
+            if (shop.getPrimaryChestLocation() != null) {
+                writeLocation(path + ".chest.primary", shop.getPrimaryChestLocation());
+            }
+            if (shop.getSecondaryChestLocation() != null) {
+                writeLocation(path + ".chest.secondary", shop.getSecondaryChestLocation());
+            }
 
             List<ShopItem> items = itemsByShop.getOrDefault(shop.getId(), Collections.emptyList());
             ConfigurationSection itemsSection = config.createSection(path + ".items");
@@ -77,8 +95,6 @@ public class ShopStorage {
                 config.set(itemPath + ".id", item.getId().toString());
                 config.set(itemPath + ".price", item.getPrice());
                 config.set(itemPath + ".quantity", item.getQuantityPerClick());
-                config.set(itemPath + ".unlimitedStock", item.isUnlimitedStock());
-                config.set(itemPath + ".stock", item.getStock());
                 config.set(itemPath + ".item", item.getItem());
             }
         }
@@ -117,12 +133,22 @@ public class ShopStorage {
             double x = section.getDouble("x");
             double y = section.getDouble("y");
             double z = section.getDouble("z");
-            Location location = new Location(world, x, y, z);
+            float yaw = (float) section.getDouble("yaw", 0);
+            float pitch = (float) section.getDouble("pitch", 0);
+            Location location = new Location(world, x, y, z, yaw, pitch);
             boolean enabled = section.getBoolean("enabled", true);
             long createdAt = section.getLong("createdAt", System.currentTimeMillis());
             long updatedAt = section.getLong("updatedAt", createdAt);
 
-            Shop shop = new Shop(id, owner, location, npc, enabled, Instant.ofEpochMilli(createdAt), Instant.ofEpochMilli(updatedAt));
+            ShopType type = parseType(section.getString("type"));
+            String name = section.getString("name", "Loja");
+            UUID clanId = parseUuid(section.getString("clan"), "clan");
+            UUID kingdomId = parseUuid(section.getString("kingdom"), "kingdom");
+            Location primaryChest = readLocation(section.getConfigurationSection("chest.primary"));
+            Location secondaryChest = readLocation(section.getConfigurationSection("chest.secondary"));
+
+            Shop shop = new Shop(id, owner, type, clanId, kingdomId, name, location, npc, primaryChest, secondaryChest, enabled,
+                    Instant.ofEpochMilli(createdAt), Instant.ofEpochMilli(updatedAt));
             shops.put(id, shop);
 
             ConfigurationSection itemsSection = section.getConfigurationSection("items");
@@ -135,15 +161,13 @@ public class ShopStorage {
                     int slot = parseInt(slotKey, "slot");
                     double price = itemSection.getDouble("price", 0);
                     int quantity = itemSection.getInt("quantity", ShopItem.QUANTITY_SINGLE);
-                    boolean unlimited = itemSection.getBoolean("unlimitedStock", true);
-                    int stock = itemSection.getInt("stock", 0);
                     ItemStack itemStack = itemSection.getItemStack("item");
                     if (itemId == null || slot < 0 || itemStack == null) {
                         logger.warning("[Shop] Item inválido na loja " + rawId + " slot " + slotKey);
                         continue;
                     }
                     try {
-                        items.add(new ShopItem(itemId, id, slot, itemStack, price, quantity, unlimited, stock));
+                        items.add(new ShopItem(itemId, id, slot, itemStack, price, quantity));
                     } catch (IllegalArgumentException ex) {
                         logger.warning("[Shop] Quantidade inválida no slot " + slotKey + " da loja " + rawId + ": " + ex.getMessage());
                     }
@@ -171,6 +195,40 @@ public class ShopStorage {
         } catch (NumberFormatException ex) {
             logger.warning("[Shop] Número inválido para " + field + ": " + raw);
             return -1;
+        }
+    }
+
+    private void writeLocation(String path, Location location) {
+        if (location == null || location.getWorld() == null) {
+            return;
+        }
+        config.set(path + ".world", location.getWorld().getName());
+        config.set(path + ".x", location.getX());
+        config.set(path + ".y", location.getY());
+        config.set(path + ".z", location.getZ());
+    }
+
+    private Location readLocation(ConfigurationSection section) {
+        if (section == null) {
+            return null;
+        }
+        String worldName = section.getString("world");
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            return null;
+        }
+        double x = section.getDouble("x");
+        double y = section.getDouble("y");
+        double z = section.getDouble("z");
+        return new Location(world, x, y, z);
+    }
+
+    private ShopType parseType(String raw) {
+        try {
+            return ShopType.valueOf(raw == null ? "PERSONAL" : raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            logger.warning("[Shop] Tipo inválido: " + raw + ", assumindo PERSONAL");
+            return ShopType.PERSONAL;
         }
     }
 }

@@ -6,8 +6,12 @@ import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 
 import java.util.Optional;
 
@@ -45,6 +49,46 @@ public class ShopListener implements Listener {
     public void handleDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Villager villager && service.getShopByNpc(villager).isPresent()) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void handleChestInteract(PlayerInteractEvent event) {
+        if (event.getClickedBlock() == null || event.getPlayer() == null) {
+            return;
+        }
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        Optional<Shop> shopOpt = service.getShopByChest(event.getClickedBlock());
+        if (shopOpt.isEmpty()) {
+            return;
+        }
+        Shop shop = shopOpt.get();
+        if (!shop.getOwnerId().equals(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cApenas o dono da loja pode abrir este baú de estoque.");
+        }
+    }
+
+    @EventHandler
+    public void handleInventoryOpen(InventoryOpenEvent event) {
+        InventoryView view = event.getView();
+        Inventory top = view.getTopInventory();
+        if (top == null) {
+            return;
+        }
+        if (top.getLocation() == null) {
+            return;
+        }
+        Optional<Shop> shopOpt = service.getShopByChest(top.getLocation().getBlock());
+        if (shopOpt.isEmpty()) {
+            return;
+        }
+        Shop shop = shopOpt.get();
+        if (!shop.getOwnerId().equals(event.getPlayer().getUniqueId())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cApenas o dono da loja pode abrir este baú de estoque.");
         }
     }
 
