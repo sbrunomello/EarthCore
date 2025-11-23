@@ -62,3 +62,12 @@ claim:
   claim_cancelled: "&cClaim cancelado."
   preview_restored: "&7Preview removido."
   insufficient_bank: "&cBanco do grupo não possui saldo suficiente."
+
+scoreboard:
+  enabled: true
+  title: "&b&l2&f&l0&a&l2&f&lX &7| &aEARTH"
+  footer: "&7play.202Xearth.gg"
+  colors:
+    separator: "&8&l────────────────"
+    label: "&7"
+    value: "&f"

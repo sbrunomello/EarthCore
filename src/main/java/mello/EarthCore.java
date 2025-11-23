@@ -69,6 +69,8 @@ import mello.shops.commands.ShopCommand;
 import mello.shops.ShopListener;
 import mello.web.FrontendServer;
 import mello.web.FrontendSettings;
+import earthcore.scoreboard.PlayerStatsService;
+import earthcore.scoreboard.ScoreboardService;
 
 /**
  * Plugin principal do servidor. Responsável por orquestrar a inicialização dos
@@ -103,6 +105,8 @@ public class EarthCore extends JavaPlugin {
     private StarterKitSettings starterKitSettings;
     private StarterKitStorage starterKitStorage;
     private StarterKitService starterKitService;
+    private PlayerStatsService playerStatsService;
+    private ScoreboardService scoreboardService;
 
     /**
      * Inicializa todos os serviços do plugin em ordem explícita para evitar
@@ -215,6 +219,11 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new KingdomListener(kingdomService, notificationService), this);
         getServer().getPluginManager().registerEvents(new StarterKitListener(starterKitService), this);
 
+        playerStatsService = new PlayerStatsService();
+        scoreboardService = new ScoreboardService(this, economyService, clanService, kingdomService, playerStatsService);
+        getServer().getPluginManager().registerEvents(scoreboardService, this);
+        scoreboardService.initialize();
+
         startFrontend();
 
     }
@@ -248,6 +257,10 @@ public class EarthCore extends JavaPlugin {
 
         if (frontendServer != null) {
             frontendServer.stop();
+        }
+
+        if (scoreboardService != null) {
+            scoreboardService.shutdown();
         }
 
         getLogger().info("MonolitoServidor desligado!");
