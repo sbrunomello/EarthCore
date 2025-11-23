@@ -217,6 +217,26 @@ public class KingdomService {
             return OperationResult.fail(validation.message());
         }
 
+        // Delegamos para o fluxo de clã quando o jogador ainda não evoluiu o clã para reino,
+        // evitando NPEs e garantindo que as cobranças usem a configuração correta.
+        if (validation.isClanClaim()) {
+            if (clanService == null || validation.clan() == null) {
+                return OperationResult.fail("Configuração de clãs indisponível. Informe a staff.");
+            }
+
+            double clanCost = validation.cost();
+            if (!economyService.withdraw(playerId, clanCost, MoneyTransactionType.CLAIM_UPKEEP,
+                    "Claim de chunk para clã")) {
+                return OperationResult.fail("Saldo insuficiente para claim. Custo: " + clanCost);
+            }
+
+            return clanService.finalizeClaim(validation.clan(), chunk);
+        }
+
+        if (validation.kingdom() == null) {
+            return OperationResult.fail("Reino não encontrado para concluir o claim. Informe a staff.");
+        }
+
         double cost = validation.cost();
         if (!economyService.withdraw(playerId, cost, MoneyTransactionType.CLAIM_UPKEEP, "Claim de chunk para reino")) {
             return OperationResult.fail("Saldo insuficiente para claim. Custo: " + cost);
