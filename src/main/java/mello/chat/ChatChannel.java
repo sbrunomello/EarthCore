@@ -20,10 +20,16 @@ public enum ChatChannel {
         this.messageColor = messageColor;
     }
 
+    /**
+     * Prefixo visível antes do nome do remetente para identificar o canal.
+     */
     public String getPrefix() {
         return prefix;
     }
 
+    /**
+     * Cor aplicada ao conteúdo da mensagem dentro do canal.
+     */
     public ChatColor getMessageColor() {
         return messageColor;
     }

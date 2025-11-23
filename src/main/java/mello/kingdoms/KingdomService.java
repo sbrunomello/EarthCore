@@ -20,7 +20,9 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Orquestra regras de reinos: criação, claims, upgrades e dissolução.
+ * Orquestra regras de reinos: criação, claims, upgrades, banco e dissolução.
+ * Centraliza validações para que comandos e listeners reutilizem a mesma lógica
+ * e mantenham consistência de negócio.
  */
 public class KingdomService {
 
@@ -35,6 +37,10 @@ public class KingdomService {
     private KingdomDynmapHook dynmapHook;
     private ClanService clanService;
 
+    /**
+     * Construtor com injeção explícita de dependências financeiras e de
+     * persistência, facilitando testes e evitando estados globais.
+     */
     public KingdomService(EconomyService economyService, KingdomStorage storage, KingdomsConfig config, Logger logger) {
         this.economyService = economyService;
         this.storage = storage;
@@ -89,6 +95,9 @@ public class KingdomService {
                 .orElse(null);
     }
 
+    /**
+     * Localiza o reino ao qual o jogador pertence varrendo o cache em memória.
+     */
     public Kingdom getByMember(UUID uuid) {
         return storage.getKingdoms().stream()
                 .filter(k -> k.isMember(uuid))
@@ -96,6 +105,10 @@ public class KingdomService {
                 .orElse(null);
     }
 
+    /**
+     * Fluxo de criação de reino: valida elegibilidade do clã, cobra custos e
+     * registra capital inicial baseada no claim do clã.
+     */
     public OperationResult createKingdom(UUID creator, String name) {
         String normalized = name.toLowerCase(Locale.ROOT);
         if (storage.getByName(normalized) != null) {
@@ -159,6 +172,10 @@ public class KingdomService {
         return OperationResult.ok("Você entrou em " + kingdom.getName());
     }
 
+    /**
+     * Evolui o reino para o próximo tier validando custos, quantidade de membros
+     * e claims mínimos exigidos pela configuração.
+     */
     public OperationResult upgrade(UUID playerId) {
         Kingdom kingdom = getByMember(playerId);
         if (kingdom == null) return OperationResult.fail("Você não pertence a um reino.");
@@ -191,6 +208,9 @@ public class KingdomService {
         return OperationResult.ok("Reino evoluído para " + settings.displayName());
     }
 
+    /**
+     * Remove o jogador do reino e dissolve a entidade quando não restam membros.
+     */
     public OperationResult leave(UUID playerId) {
         Kingdom kingdom = getByMember(playerId);
         if (kingdom == null) return OperationResult.fail("Você não pertence a um reino.");
@@ -208,6 +228,10 @@ public class KingdomService {
         return OperationResult.ok("Você saiu do reino " + kingdom.getName());
     }
 
+    /**
+     * Valida e executa claim de chunk, integrando com fluxo de clãs quando o
+     * jogador ainda não converteu o clã em reino.
+     */
     public OperationResult claim(UUID playerId, Chunk chunk) {
         ClaimValidationResult validation = validateClaim(playerId, chunk);
         if (!validation.success()) {
@@ -245,6 +269,10 @@ public class KingdomService {
         return finalizeClaim(validation.kingdom(), chunk);
     }
 
+    /**
+     * Aplica todas as regras de elegibilidade para claim de reinos: papel do
+     * jogador, conflitos com claims existentes e limites do tier atual.
+     */
     public ClaimValidationResult validateClaim(UUID playerId, Chunk chunk) {
         if (chunk == null) {
             return ClaimValidationResult.fail("Chunk inválido.");
@@ -284,6 +312,10 @@ public class KingdomService {
         return ClaimValidationResult.successKingdom(kingdom, cost, chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
     }
 
+    /**
+     * Persiste um novo claim no armazenamento, atualiza Dynmap e sinaliza o
+     * chunk no mundo para feedback visual.
+     */
     public OperationResult finalizeClaim(Kingdom kingdom, Chunk chunk) {
         KingdomClaim claim = KingdomClaim.fromChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
         kingdom.addClaim(claim);
@@ -400,6 +432,10 @@ public class KingdomService {
         storage.saveAll();
     }
 
+    /**
+     * Agenda cobrança periódica de upkeep em background. O scheduler é resiliente
+     * a exceções para evitar travar o servidor e registra logs informativos.
+     */
     public void startUpkeepScheduler(JavaPlugin plugin) {
         KingdomsConfig.UpkeepSettings settings = config.getUpkeepSettings();
         if (settings == null || !settings.enabled()) {
@@ -418,6 +454,10 @@ public class KingdomService {
         logger.info("[Kingdoms] Scheduler de upkeep iniciado a cada " + settings.checkIntervalMinutes() + " minutos.");
     }
 
+    /**
+     * Calcula impostos aplicados a ganhos de jogadores, direcionando uma parcela
+     * para o tesouro do reino quando o recurso está habilitado.
+     */
     public TaxBreakdown calculateTax(UUID receiverId, double amount) {
         Kingdom kingdom = getByMember(receiverId);
         KingdomsConfig.BankSettings bankSettings = config.getBankSettings();

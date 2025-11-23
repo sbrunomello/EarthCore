@@ -46,6 +46,10 @@ public class ShopService {
     private final Map<UUID, List<ShopItem>> itemsByShop = new HashMap<>();
     private final Map<UUID, PendingItemSetup> pendingPriceInput = new HashMap<>();
 
+    /**
+     * Constrói o serviço de lojas com todas as dependências injetadas. O cache
+     * é pré-carregado para minimizar IO durante o uso in-game.
+     */
     public ShopService(JavaPlugin plugin,
                        ShopStorage storage,
                        EconomyService economyService,
@@ -66,6 +70,10 @@ public class ShopService {
         warmUpCache();
     }
 
+    /**
+     * Recarrega o cache de lojas e itens a partir do armazenamento, garantindo
+     * que NPCs órfãos sejam recriados após reinícios do servidor.
+     */
     public void warmUpCache() {
         shopsByNpc.clear();
         itemsByShop.clear();
@@ -76,6 +84,10 @@ public class ShopService {
         }
     }
 
+    /**
+     * Cria uma nova loja vinculada a um vilarejo NPC, validando liderança e
+     * localização dentro de claims do jogador.
+     */
     public OperationResult createShop(Player player) {
         UUID playerId = player.getUniqueId();
         if (!isLeader(playerId)) {
@@ -103,6 +115,10 @@ public class ShopService {
         return OperationResult.ok("Loja criada com sucesso!");
     }
 
+    /**
+     * Resolve a loja associada a um NPC específico, lendo o identificador do
+     * PersistentDataContainer e aplicando fallback para cache em memória.
+     */
     public Optional<Shop> getShopByNpc(Entity entity) {
         if (entity == null || entity.getType() != EntityType.VILLAGER) {
             return Optional.empty();

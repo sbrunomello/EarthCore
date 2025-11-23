@@ -31,6 +31,10 @@ public class JobService {
     private final Map<UUID, Long> lastRewardReceived = new HashMap<>();
     private final Map<BlockPosition, PlacedBlock> placedBlocks = new HashMap<>();
 
+    /**
+     * Cria o serviço de jobs com dependências financeiras e de configuração
+     * injetadas, permitindo testes e ajustes de balanceamento.
+     */
     public JobService(EconomyService economyService, JobStorage storage, JobsConfig config, Logger logger) {
         this.economyService = economyService;
         this.storage = storage;
@@ -38,6 +42,9 @@ public class JobService {
         this.logger = logger;
     }
 
+    /**
+     * Integra o serviço de jobs ao contexto de reinos para aplicar taxações.
+     */
     public void setKingdomService(KingdomService kingdomService) {
         this.kingdomService = kingdomService;
     }
@@ -46,10 +53,16 @@ public class JobService {
         return config;
     }
 
+    /**
+     * Recupera o job atual do jogador, se houver.
+     */
     public Optional<PlayerJob> getJob(UUID uuid) {
         return storage.getJob(uuid).map(jobType -> new PlayerJob(uuid, jobType));
     }
 
+    /**
+     * Define o job do jogador validando se o pagamento configurado está ativo.
+     */
     public boolean setJob(UUID uuid, JobType jobType) {
         if (jobType == null) {
             return false;
@@ -62,10 +75,17 @@ public class JobService {
         return true;
     }
 
+    /**
+     * Remove associação de job para o jogador.
+     */
     public void clearJob(UUID uuid) {
         storage.setJob(uuid, null);
     }
 
+    /**
+     * Fluxo de pagamento para quebra de blocos. Evita exploits (blocos
+     * recém-colocados ou colheitas imaturas) e aplica rate limiting simples.
+     */
     public void handleBlockBreak(Player player, Block block) {
         UUID playerId = player.getUniqueId();
         Optional<JobPayout> payoutOpt = storage.getJob(playerId).flatMap(config::getPayout);
@@ -104,6 +124,10 @@ public class JobService {
         logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por quebrar " + material + ".");
     }
 
+    /**
+     * Recompensa o jogador por abates configurados, respeitando habilitação do
+     * job e tabela de pagamentos.
+     */
     public void handleEntityKill(Player player, EntityType entityType) {
         UUID playerId = player.getUniqueId();
         Optional<JobPayout> payoutOpt = storage.getJob(playerId).flatMap(config::getPayout);

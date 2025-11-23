@@ -70,6 +70,13 @@ import mello.shops.ShopListener;
 import mello.web.FrontendServer;
 import mello.web.FrontendSettings;
 
+/**
+ * Plugin principal do servidor. Responsável por orquestrar a inicialização dos
+ * diversos módulos (economia, reinos, clãs, chat, teleporte, lojas, etc.) e
+ * registrar comandos e listeners. Age como ponto de entrada Bukkit seguindo
+ * boas práticas de bootstrap para garantir dependências resolvidas e recursos
+ * liberados com segurança no desligamento.
+ */
 public class EarthCore extends JavaPlugin {
 
     private EconomyService economyService;
@@ -97,6 +104,11 @@ public class EarthCore extends JavaPlugin {
     private StarterKitStorage starterKitStorage;
     private StarterKitService starterKitService;
 
+    /**
+     * Inicializa todos os serviços do plugin em ordem explícita para evitar
+     * dependências cíclicas. Também registra comandos, listeners e integrações
+     * externas como Dynmap e o servidor web embutido.
+     */
     @Override
     public void onEnable() {
         getLogger().info("MonolitoServidor iniciado!");
@@ -207,6 +219,11 @@ public class EarthCore extends JavaPlugin {
 
     }
 
+    /**
+     * Persiste dados críticos e encerra recursos externos de forma defensiva
+     * durante o desligamento do servidor. Cada serviço é verificado antes do
+     * uso para evitar exceções caso a inicialização tenha falhado.
+     */
     @Override
     public void onDisable() {
         if (economyService != null) {
@@ -236,6 +253,10 @@ public class EarthCore extends JavaPlugin {
         getLogger().info("MonolitoServidor desligado!");
     }
 
+    /**
+     * Configura a integração com o plugin Dynmap, validando a presença e a
+     * compatibilidade da API antes de registrar hooks para reinos e clãs.
+     */
     private void setupDynmap() {
         Plugin dynmapPlugin = getServer().getPluginManager().getPlugin("dynmap");
 
@@ -264,6 +285,10 @@ public class EarthCore extends JavaPlugin {
         }
     }
 
+    /**
+     * Inicializa o servidor web embutido utilizado para expor dados do plugin
+     * de forma assíncrona.
+     */
     private void startFrontend() {
         FrontendSettings settings = FrontendSettings.fromConfig(getConfig(), getLogger());
         frontendServer = new FrontendServer(this, economyService, kingdomService, clanService, settings);
