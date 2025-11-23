@@ -26,12 +26,29 @@ public class ShopCommand implements CommandExecutor {
         }
 
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            sender.sendMessage("§e/shop create §7- cria um NPC de loja pessoal");
+            sender.sendMessage("§e/shop create <nome> §7- cria uma loja pessoal");
+            sender.sendMessage("§e/shop clan create <nome> §7- cria uma loja do clã (somente líder)");
+            sender.sendMessage("§e/shop kingdom create <nome> §7- cria uma loja do reino (somente líder)");
             return true;
         }
 
         if (args[0].equalsIgnoreCase("create")) {
-            OperationResult result = shopService.createShop(player);
+            String name = args.length >= 2 ? String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)) : "";
+            OperationResult result = shopService.createPersonalShop(player, name);
+            sender.sendMessage((result.success() ? "§a" : "§c") + result.message());
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("clan") && args.length >= 2 && args[1].equalsIgnoreCase("create")) {
+            String name = args.length >= 3 ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)) : "";
+            OperationResult result = shopService.createClanShop(player, name);
+            sender.sendMessage((result.success() ? "§a" : "§c") + result.message());
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("kingdom") && args.length >= 2 && args[1].equalsIgnoreCase("create")) {
+            String name = args.length >= 3 ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)) : "";
+            OperationResult result = shopService.createKingdomShop(player, name);
             sender.sendMessage((result.success() ? "§a" : "§c") + result.message());
             return true;
         }

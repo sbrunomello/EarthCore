@@ -2,7 +2,6 @@ package mello.shops;
 
 import mello.core.gui.AbstractGui;
 import mello.core.gui.GuiManager;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -23,7 +22,7 @@ public class ShopBuyGui extends AbstractGui {
     private final ShopService service;
 
     public ShopBuyGui(Player player, GuiManager guiManager, Shop shop, ShopService service) {
-        super(player, guiManager, 27, ChatColor.GOLD + "Loja de " + resolveName(shop));
+        super(player, guiManager, 27, service.getDisplayName(shop));
         this.shop = shop;
         this.service = service;
     }
@@ -66,8 +65,4 @@ public class ShopBuyGui extends AbstractGui {
         return String.format(Locale.ROOT, "%.2f", value);
     }
 
-    private static String resolveName(Shop shop) {
-        String name = Bukkit.getOfflinePlayer(shop.getOwnerId()).getName();
-        return name == null ? "Jogador" : name;
-    }
 }

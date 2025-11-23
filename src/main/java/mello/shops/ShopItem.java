@@ -18,10 +18,8 @@ public class ShopItem {
     private final ItemStack item;
     private final double price;
     private final int quantityPerClick;
-    private final boolean unlimitedStock;
-    private final int stock;
 
-    public ShopItem(UUID id, UUID shopId, int slot, ItemStack item, double price, int quantityPerClick, boolean unlimitedStock, int stock) {
+    public ShopItem(UUID id, UUID shopId, int slot, ItemStack item, double price, int quantityPerClick) {
         validateQuantity(quantityPerClick);
         this.id = id;
         this.shopId = shopId;
@@ -29,8 +27,6 @@ public class ShopItem {
         this.item = item;
         this.price = price;
         this.quantityPerClick = quantityPerClick;
-        this.unlimitedStock = unlimitedStock;
-        this.stock = stock;
     }
 
     public UUID getId() {
@@ -55,14 +51,6 @@ public class ShopItem {
 
     public int getQuantityPerClick() {
         return quantityPerClick;
-    }
-
-    public boolean isUnlimitedStock() {
-        return unlimitedStock;
-    }
-
-    public int getStock() {
-        return stock;
     }
 
     private void validateQuantity(int quantity) {
