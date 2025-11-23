@@ -90,7 +90,7 @@ public class KingdomsConfig {
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 
         startingKingdomCost = config.getDouble("startingKingdomCost", 5000);
-        minMembersForCreation = config.getInt("requirements.min_members_for_creation", 5);
+        minMembersForCreation = config.getInt("requirements.min_members_for_creation", 1);
         baseClaimCost = config.getDouble("claim.base_cost", 1000);
         costPerExistingClaim = config.getDouble("claim.cost_per_existing_claim", 250);
 
@@ -159,7 +159,7 @@ public class KingdomsConfig {
         plugin.getDataFolder().mkdirs();
         FileConfiguration defaults = new YamlConfiguration();
         defaults.set("startingKingdomCost", 5000);
-        defaults.set("requirements.min_members_for_creation", 5);
+        defaults.set("requirements.min_members_for_creation", 1);
         defaults.set("claim.base_cost", 1000);
         defaults.set("claim.cost_per_existing_claim", 250);
 
@@ -183,10 +183,10 @@ public class KingdomsConfig {
         taxSection.set("min_amount", 1.0);
 
         ConfigurationSection tiersSection = defaults.createSection("tiers");
-        setTierDefaults(tiersSection, KingdomTier.VILLAGE, "Vila", 5, 1, 3, 10000, 1.0);
-        setTierDefaults(tiersSection, KingdomTier.CITY, "Cidade", 10, 5, 8, 50000, 1.0);
-        setTierDefaults(tiersSection, KingdomTier.STATE, "Estado", 20, 10, 15, 150000, 1.0);
-        setTierDefaults(tiersSection, KingdomTier.KINGDOM, "Reino", 30, 20, 30, 500000, 1.0);
+        setTierDefaults(tiersSection, KingdomTier.VILLAGE, "Vila", 1, 1, 4, 10000, 1.0);
+        setTierDefaults(tiersSection, KingdomTier.CITY, "Cidade", 1, 5, 8, 50000, 1.0);
+        setTierDefaults(tiersSection, KingdomTier.STATE, "Estado", 1, 10, 15, 150000, 1.0);
+        setTierDefaults(tiersSection, KingdomTier.KINGDOM, "Reino", 1, 20, 30, 500000, 1.0);
 
         try {
             defaults.save(file);

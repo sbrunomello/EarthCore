@@ -110,7 +110,7 @@ public class KingdomMainGui extends AbstractGui {
         }
     }
 
-    private void setItem(int slot, ItemStack itemStack) {
+    protected void setItem(int slot, ItemStack itemStack) {
         getInventory().setItem(slot, itemStack);
     }
 

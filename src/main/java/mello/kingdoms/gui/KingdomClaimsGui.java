@@ -66,7 +66,7 @@ public class KingdomClaimsGui extends AbstractGui {
         }
     }
 
-    private void setItem(int slot, ItemStack stack) {
+    protected void setItem(int slot, ItemStack stack) {
         getInventory().setItem(slot, stack);
     }
 

@@ -140,7 +140,7 @@ public class ClaimSelectChunkGui extends AbstractGui {
         return stack;
     }
 
-    private void setItem(int slot, ItemStack stack) {
+    protected void setItem(int slot, ItemStack stack) {
         getInventory().setItem(slot, stack);
     }
 }
