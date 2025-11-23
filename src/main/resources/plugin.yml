@@ -60,6 +60,9 @@ commands:
   starterkit:
     description: Recebe o kit inicial manualmente caso tenha perdido os itens
     usage: /starterkit
+  shop:
+    description: Cria e gerencia sua loja pessoal
+    usage: /shop create
 
 permissions:
   economy.admin:
