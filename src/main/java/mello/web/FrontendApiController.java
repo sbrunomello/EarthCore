@@ -482,18 +482,16 @@ public class FrontendApiController {
         }
 
         String origin = exchange.getRequestHeaders().getFirst("Origin");
-        if (origin != null && !settings.allowedOrigins().isEmpty()) {
-            boolean allowed = settings.allowedOrigins().stream().anyMatch(origin::startsWith);
-            if (!allowed) {
-                respondJson(exchange, 403, new ApiError("Origem não permitida."));
-                return ApiContext.halted();
-            }
+        String allowedOrigin = resolveAllowedOrigin(origin);
+        if (origin != null && !settings.allowedOrigins().isEmpty() && allowedOrigin == null) {
+            respondJson(exchange, 403, new ApiError("Origem não permitida."));
+            return ApiContext.halted();
         }
 
         if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
             Headers headers = exchange.getResponseHeaders();
-            if (origin != null) {
-                headers.set("Access-Control-Allow-Origin", origin);
+            if (allowedOrigin != null) {
+                headers.set("Access-Control-Allow-Origin", allowedOrigin);
             }
             headers.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
             headers.set("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
@@ -501,8 +499,8 @@ public class FrontendApiController {
             return ApiContext.halted();
         }
 
-        if (origin != null) {
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", origin);
+        if (allowedOrigin != null) {
+            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", allowedOrigin);
         }
 
         if (!requireAuth) {
@@ -525,6 +523,24 @@ public class FrontendApiController {
         UUID playerId = UUID.fromString(jwt.getClaim("uuid").asString());
         String username = jwt.getClaim("username").asString();
         return new ApiContext(playerId, username, false);
+    }
+
+    /**
+     * Applies permissive CORS rules. If the configuration explicitly allows all origins
+     * ("*"), the wildcard is returned to avoid origin reflection and simplify caching.
+     * Otherwise, the requested origin must match a configured prefix.
+     */
+    private String resolveAllowedOrigin(String origin) {
+        if (settings.allowedOrigins().isEmpty()) {
+            return null;
+        }
+        if (settings.allowedOrigins().contains("*")) {
+            return "*";
+        }
+        if (origin == null) {
+            return null;
+        }
+        return settings.allowedOrigins().stream().anyMatch(origin::startsWith) ? origin : null;
     }
 
     private <T> T readBody(HttpExchange exchange, Class<T> type) {

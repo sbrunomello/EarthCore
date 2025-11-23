@@ -57,7 +57,7 @@ public record FrontendSettings(boolean enabled,
         }
 
         Set<String> allowedOrigins = new HashSet<>(originList == null || originList.isEmpty()
-                ? List.of("http://localhost", "http://localhost:3000", "http://127.0.0.1")
+                ? Set.of("*")
                 : originList);
 
         return new FrontendSettings(enabled, host, port, dynmapUrl, jwtSecret, jwtIssuer, allowedOrigins, rateLimit);
