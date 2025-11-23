@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Meu Clã</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/kingdom">Meu Reino</a>
+            <a href="/clan" class="active">Meu Clã</a>
+            <a href="/shops">Minhas Lojas</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/portals">Portais</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar"><h2>Clã</h2><span class="pill" id="clan-name"></span></div>
+        <section class="card-grid" id="clan-overview"></section>
+        <section class="card-grid" style="grid-template-columns: 1.2fr 1fr;">
+            <div class="card">
+                <h3>Membros</h3>
+                <table class="table" id="member-table"></table>
+            </div>
+            <div class="card">
+                <h3>Banco</h3>
+                <div id="bank"></div>
+            </div>
+        </section>
+        <section class="card">
+            <h3>Claim</h3>
+            <table class="table" id="claim"></table>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const render = async () => {
+        try {
+            const info = await Api.clanInfo();
+            document.querySelector('#clan-name').textContent = `${info.name} [${info.tag}]`;
+            document.querySelector('#clan-overview').innerHTML = `
+                <div class="card"><h3>Saldo</h3><p>${UI.formatCurrency(info.bank)}</p></div>`;
+
+            const members = await Api.clanMembers();
+            const rows = ['<tr><th>Nome</th><th>Cargo</th></tr>'];
+            members.forEach(m => rows.push(`<tr><td>${m.name || m.uuid}</td><td>${m.role}</td></tr>`));
+            document.querySelector('#member-table').innerHTML = rows.join('');
+
+            const bank = await Api.clanBank();
+            document.querySelector('#bank').innerHTML = `<p>Saldo: ${UI.formatCurrency(bank.balance)}</p>`;
+
+            const claim = await Api.clanClaim();
+            const claimRows = ['<tr><th>Mundo</th><th>X</th><th>Z</th></tr>'];
+            claim.forEach(c => claimRows.push(`<tr><td>${c.world}</td><td>${c.x}</td><td>${c.z}</td></tr>`));
+            document.querySelector('#claim').innerHTML = claimRows.join('');
+        } catch (err) {
+            document.querySelector('#clan-overview').innerHTML = `<div class="card error">${err.message}</div>`;
+        }
+    };
+
+    render();
+</script>
+</body>
+</html>

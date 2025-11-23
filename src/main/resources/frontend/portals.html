@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Portais</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/kingdom">Meu Reino</a>
+            <a href="/clan">Meu Clã</a>
+            <a href="/shops">Minhas Lojas</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/portals" class="active">Portais</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar"><h2>Portais</h2></div>
+        <section class="card">
+            <table class="table" id="portals"></table>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const loadPortals = async () => {
+        try {
+            const portals = await Api.portals();
+            const rows = ['<tr><th>Nome</th><th>Mundo</th><th>Posição</th><th>Status</th></tr>'];
+            portals.forEach(p => rows.push(`<tr><td>${p.name}</td><td>${p.world}</td><td>${p.x}, ${p.y}, ${p.z}</td><td>${p.online ? 'Online' : 'Offline'}</td></tr>`));
+            document.querySelector('#portals').innerHTML = rows.join('');
+        } catch (err) {
+            document.querySelector('#portals').innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+        }
+    };
+
+    loadPortals();
+</script>
+</body>
+</html>

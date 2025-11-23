@@ -23,6 +23,7 @@ dependencies {
     compileOnly("org.dynmap:dynmap-api:1.9")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.mindrot:jbcrypt:0.4")
+    implementation("com.auth0:java-jwt:4.4.0")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }

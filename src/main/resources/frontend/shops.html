@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Minhas Lojas</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/kingdom">Meu Reino</a>
+            <a href="/clan">Meu Clã</a>
+            <a href="/shops" class="active">Minhas Lojas</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/portals">Portais</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar"><h2>Lojas</h2></div>
+        <section class="card">
+            <table class="table" id="shops"></table>
+        </section>
+        <section class="card" id="shop-details" hidden>
+            <h3>Itens</h3>
+            <table class="table" id="items"></table>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const loadShops = async () => {
+        try {
+            const shops = await Api.shops();
+            const rows = ['<tr><th>Nome</th><th>Tipo</th><th>Local</th><th></th></tr>'];
+            shops.forEach(shop => {
+                const location = `${shop.world} (${shop.x.toFixed(1)}, ${shop.y.toFixed(1)}, ${shop.z.toFixed(1)})`;
+                rows.push(`<tr><td>${shop.name}</td><td>${shop.type}</td><td>${location}</td><td><button class="button" data-id="${shop.id}">Ver</button></td></tr>`);
+            });
+            document.querySelector('#shops').innerHTML = rows.join('');
+            document.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => loadDetails(btn.dataset.id)));
+        } catch (err) {
+            document.querySelector('#shops').innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+        }
+    };
+
+    const loadDetails = async (id) => {
+        const panel = document.querySelector('#shop-details');
+        panel.hidden = false;
+        try {
+            const detail = await Api.shopDetails(id);
+            const rows = ['<tr><th>Item</th><th>Preço</th><th>Estoque</th></tr>'];
+            detail.items.forEach(i => rows.push(`<tr><td>${i.item}</td><td>${UI.formatCurrency(i.price)}</td><td>${i.stock}</td></tr>`));
+            document.querySelector('#items').innerHTML = rows.join('');
+        } catch (err) {
+            document.querySelector('#items').innerHTML = `<tr><td colspan="3" class="error">${err.message}</td></tr>`;
+        }
+    };
+
+    loadShops();
+</script>
+</body>
+</html>

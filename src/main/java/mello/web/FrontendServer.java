@@ -5,77 +5,97 @@ import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import mello.clans.Clan;
-import mello.clans.ClanRole;
+import mello.auth.AuthService;
+import mello.auth.AuthStorage;
 import mello.clans.ClanService;
+import mello.core.portals.PortalService;
 import mello.economy.EconomyService;
-import mello.kingdoms.Kingdom;
-import mello.kingdoms.KingdomRole;
+import mello.jobs.JobService;
 import mello.kingdoms.KingdomService;
-import org.bukkit.OfflinePlayer;
+import mello.shops.ShopService;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Embedded HTTP server responsible for hosting the lightweight frontend that
- * embeds the Dynmap experience and exposes a minimal authentication flow. The
- * server is deliberately isolated from the Bukkit thread pool to avoid
- * blocking gameplay-critical tasks while still pulling data from the plugin's
- * services on the main thread when required.
+ * Embedded HTTP server responsible for hosting the revamped web dashboard and API endpoints.
+ * Static assets are served from the classpath while JSON endpoints are delegated to
+ * {@link FrontendApiController}.
  */
 public class FrontendServer {
 
-    private static final AtomicInteger THREAD_COUNTER = new AtomicInteger();
-    private static final Duration SYNC_TIMEOUT = Duration.ofSeconds(2);
+    private static final Set<String> HTML_PAGES = Set.of(
+            "index.html",
+            "dashboard.html",
+            "kingdom.html",
+            "clan.html",
+            "shops.html",
+            "jobs.html",
+            "portals.html"
+    );
+
+    private static final Map<String, String> MIME_TYPES = Map.of(
+            "css", "text/css; charset=utf-8",
+            "js", "application/javascript; charset=utf-8",
+            "png", "image/png",
+            "jpg", "image/jpeg",
+            "jpeg", "image/jpeg",
+            "svg", "image/svg+xml",
+            "html", "text/html; charset=utf-8"
+    );
 
     private final JavaPlugin plugin;
     private final EconomyService economyService;
     private final KingdomService kingdomService;
     private final ClanService clanService;
+    private final JobService jobService;
+    private final ShopService shopService;
+    private final PortalService portalService;
+    private final AuthService authService;
+    private final AuthStorage authStorage;
     private final FrontendSettings settings;
     private final Gson gson;
     private final Logger logger;
 
     private volatile HttpServer server;
-    private volatile String cachedIndex;
-    private volatile String cachedScript;
+    private final Map<String, byte[]> cachedAssets = new HashMap<>();
+    private final Map<String, String> cachedPages = new HashMap<>();
 
     public FrontendServer(JavaPlugin plugin,
                           EconomyService economyService,
                           KingdomService kingdomService,
                           ClanService clanService,
+                          JobService jobService,
+                          ShopService shopService,
+                          PortalService portalService,
+                          AuthService authService,
+                          AuthStorage authStorage,
                           FrontendSettings settings) {
         this.plugin = plugin;
         this.economyService = economyService;
         this.kingdomService = kingdomService;
         this.clanService = clanService;
+        this.jobService = jobService;
+        this.shopService = shopService;
+        this.portalService = portalService;
+        this.authService = authService;
+        this.authStorage = authStorage;
         this.settings = settings;
         this.logger = plugin.getLogger();
         this.gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
     }
 
-    /**
-     * Starts the HTTP server if enabled. Errors are logged but never crash the
-     * plugin lifecycle, preventing the gameplay loop from being affected by
-     * networking issues.
-     */
     public void start() {
         if (!settings.enabled()) {
             logger.info("Frontend desabilitado nas configurações. Ignorando inicialização web.");
@@ -84,10 +104,15 @@ public class FrontendServer {
 
         try {
             server = HttpServer.create(new InetSocketAddress(settings.host(), settings.port()), 0);
-            server.createContext("/", this::handleIndex);
-            server.createContext("/assets/app.js", this::handleScript);
-            server.createContext("/api/user", this::handleUserLookup);
             server.setExecutor(Executors.newCachedThreadPool(buildThreadFactory()));
+
+            JwtService jwtService = new JwtService(settings.jwtSecret(), settings.jwtIssuer(), logger);
+            RateLimiter rateLimiter = new RateLimiter(settings.rateLimitPerMinute());
+            FrontendApiController api = new FrontendApiController(plugin, gson, settings, jwtService, rateLimiter, authService, authStorage, economyService, kingdomService, clanService, jobService, shopService, portalService);
+
+            registerStaticRoutes();
+            registerApiRoutes(api);
+
             server.start();
             logger.info("Frontend iniciado em http://" + settings.host() + ":" + settings.port());
         } catch (IOException ex) {
@@ -95,10 +120,6 @@ public class FrontendServer {
         }
     }
 
-    /**
-     * Stops the HTTP server gracefully when the plugin is disabled. A small
-     * delay is acceptable because the server already runs on its own executor.
-     */
     public void stop() {
         if (server != null) {
             server.stop(0);
@@ -107,95 +128,77 @@ public class FrontendServer {
         }
     }
 
-    private void handleIndex(HttpExchange exchange) throws IOException {
+    private void registerStaticRoutes() {
+        server.createContext("/", exchange -> handlePage(exchange, "index.html"));
+        for (String page : HTML_PAGES) {
+            server.createContext("/" + page.replace(".html", ""), exchange -> handlePage(exchange, page));
+        }
+        server.createContext("/assets", this::handleAsset);
+    }
+
+    private void registerApiRoutes(FrontendApiController api) {
+        server.createContext("/api/auth/login", api::handleLogin);
+        server.createContext("/api/user", api::handleLegacyLookup);
+        server.createContext("/api/secure/userinfo", api::handleUserInfo);
+        server.createContext("/api/secure/user/transactions", api::handleUserTransactions);
+        server.createContext("/api/secure/clan/transactions", api::handleClanTransactions);
+        server.createContext("/api/secure/kingdom/transactions", api::handleKingdomTransactions);
+        server.createContext("/api/secure/stats", api::handleStats);
+        server.createContext("/api/secure/claims", api::handleClaims);
+        server.createContext("/api/secure/kingdom/info", api::handleKingdomInfo);
+        server.createContext("/api/secure/kingdom/members", api::handleKingdomMembers);
+        server.createContext("/api/secure/kingdom/bank", api::handleKingdomBank);
+        server.createContext("/api/secure/kingdom/claims", api::handleKingdomClaims);
+        server.createContext("/api/secure/kingdom/upkeep", api::handleKingdomUpkeep);
+        server.createContext("/api/secure/clan/info", api::handleClanInfo);
+        server.createContext("/api/secure/clan/members", api::handleClanMembers);
+        server.createContext("/api/secure/clan/bank", api::handleClanBank);
+        server.createContext("/api/secure/clan/claim", api::handleClanClaim);
+        server.createContext("/api/secure/shops", api::handleShops);
+        server.createContext("/api/secure/shops/", api::handleShopDetails);
+        server.createContext("/api/jobs", api::handleJobs);
+        server.createContext("/api/secure/jobs/current", api::handleCurrentJob);
+        server.createContext("/api/secure/portals", api::handlePortals);
+    }
+
+    private void handlePage(HttpExchange exchange, String fileName) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             sendJson(exchange, 405, new ApiError("Método não permitido."));
             return;
         }
 
-        String index = cachedIndex;
-        if (index == null) {
-            index = loadResource("/web/index.html")
+        String cached = cachedPages.get(fileName);
+        if (cached == null) {
+            cached = loadResource("/frontend/" + fileName)
                     .replace("{{DYNMAP_URL}}", settings.dynmapUrl());
-            cachedIndex = index;
+            cachedPages.put(fileName, cached);
         }
-
-        sendResponse(exchange, 200, "text/html; charset=utf-8", index.getBytes(StandardCharsets.UTF_8));
+        sendResponse(exchange, 200, "text/html; charset=utf-8", cached.getBytes(StandardCharsets.UTF_8));
     }
 
-    private void handleScript(HttpExchange exchange) throws IOException {
+    private void handleAsset(HttpExchange exchange) throws IOException {
         if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             sendJson(exchange, 405, new ApiError("Método não permitido."));
             return;
         }
+        String path = exchange.getRequestURI().getPath();
+        String resourcePath = "/frontend" + path;
 
-        String script = cachedScript;
-        if (script == null) {
-            script = loadResource("/web/app.js");
-            cachedScript = script;
+        byte[] payload = cachedAssets.get(resourcePath);
+        if (payload == null) {
+            payload = loadResourceBytes(resourcePath);
+            cachedAssets.put(resourcePath, payload);
         }
 
-        sendResponse(exchange, 200, "application/javascript; charset=utf-8", script.getBytes(StandardCharsets.UTF_8));
+        sendResponse(exchange, 200, detectMimeType(resourcePath), payload);
     }
 
-    private void handleUserLookup(HttpExchange exchange) throws IOException {
-        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
-            sendJson(exchange, 405, new ApiError("Método não permitido."));
-            return;
+    private String detectMimeType(String resourcePath) {
+        int idx = resourcePath.lastIndexOf('.') + 1;
+        if (idx <= 0 || idx >= resourcePath.length()) {
+            return "application/octet-stream";
         }
-
-        Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
-        String username = query.getOrDefault("username", "").trim();
-
-        if (username.isEmpty()) {
-            sendJson(exchange, 400, new ApiError("Forneça um nome de usuário."));
-            return;
-        }
-
-        OfflinePlayer offlinePlayer = plugin.getServer().getOfflinePlayer(username);
-        UUID playerId = offlinePlayer.getUniqueId();
-
-        try {
-            UserProfile profile = plugin.getServer().getScheduler()
-                    .callSyncMethod(plugin, () -> buildProfile(username, playerId))
-                    .get(SYNC_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-
-            if (profile == null) {
-                sendJson(exchange, 404, new ApiError("Jogador não encontrado."));
-                return;
-            }
-
-            sendJson(exchange, 200, profile);
-        } catch (TimeoutException timeoutException) {
-            sendJson(exchange, 504, new ApiError("Tempo excedido ao consultar dados do jogador."));
-        } catch (Exception ex) {
-            logger.log(Level.WARNING, "Erro ao montar perfil para " + username, ex);
-            sendJson(exchange, 500, new ApiError("Erro interno ao consultar dados."));
-        }
-    }
-
-    private UserProfile buildProfile(String username, UUID playerId) {
-        double balance = economyService.getBalance(playerId);
-        Clan clan = clanService.getByMember(playerId);
-        Kingdom kingdom = kingdomService.getByMember(playerId);
-
-        ClanSummary clanSummary = null;
-        if (clan != null) {
-            ClanRole role = clan.getRole(playerId);
-            clanSummary = new ClanSummary(clan.getName(), clan.getTag(), role == null ? "UNKNOWN" : role.name(), clan.getBank());
-        }
-
-        KingdomSummary kingdomSummary = null;
-        if (kingdom != null) {
-            KingdomRole role = kingdom.getRole(playerId);
-            kingdomSummary = new KingdomSummary(
-                    kingdom.getName(),
-                    role == null ? "UNKNOWN" : role.name(),
-                    kingdom.getBankBalance(),
-                    kingdom.getClaims().size());
-        }
-
-        return new UserProfile(username, playerId.toString(), balance, clanSummary, kingdomSummary);
+        return MIME_TYPES.getOrDefault(resourcePath.substring(idx), "application/octet-stream");
     }
 
     private void sendJson(HttpExchange exchange, int status, Object body) throws IOException {
@@ -207,11 +210,9 @@ public class FrontendServer {
         Headers headers = exchange.getResponseHeaders();
         headers.set("Content-Type", contentType);
         headers.set("Cache-Control", "no-store, max-age=0");
-
         exchange.sendResponseHeaders(status, payload.length);
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(payload);
-        }
+        exchange.getResponseBody().write(payload);
+        exchange.close();
     }
 
     private String loadResource(String path) {
@@ -225,12 +226,22 @@ public class FrontendServer {
         }
     }
 
-    private Map<String, String> parseQuery(String rawQuery) {
+    private byte[] loadResourceBytes(String path) {
+        try (InputStream stream = plugin.getResource(path.startsWith("/") ? path.substring(1) : path)) {
+            if (stream == null) {
+                throw new IllegalStateException("Recurso não encontrado: " + path);
+            }
+            return stream.readAllBytes();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Erro ao ler recurso " + path, ex);
+        }
+    }
+
+    static Map<String, String> parseQuery(String rawQuery) {
         Map<String, String> params = new HashMap<>();
         if (rawQuery == null || rawQuery.isEmpty()) {
             return params;
         }
-
         String[] pairs = rawQuery.split("&");
         for (String pair : pairs) {
             if (pair.isEmpty()) continue;
@@ -248,21 +259,12 @@ public class FrontendServer {
     private ThreadFactory buildThreadFactory() {
         return runnable -> {
             Thread thread = new Thread(runnable);
-            thread.setName("earthcore-frontend-" + THREAD_COUNTER.incrementAndGet());
+            thread.setName("earthcore-frontend-" + thread.getId());
             thread.setDaemon(true);
             return thread;
         };
     }
 
     private record ApiError(String message) {
-    }
-
-    private record ClanSummary(String name, String tag, String role, double bank) {
-    }
-
-    private record KingdomSummary(String name, String role, double bank, int claims) {
-    }
-
-    private record UserProfile(String username, String uuid, double balance, ClanSummary clan, KingdomSummary kingdom) {
     }
 }

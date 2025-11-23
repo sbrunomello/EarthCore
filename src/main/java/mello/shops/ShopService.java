@@ -167,6 +167,19 @@ public class ShopService {
         return Optional.ofNullable(shopsByNpc.get(entity.getUniqueId()));
     }
 
+    public Optional<Shop> getShop(UUID id) {
+        return storage.getShop(id);
+    }
+
+    public List<Shop> getShopsByOwner(UUID ownerId) {
+        if (ownerId == null) {
+            return Collections.emptyList();
+        }
+        return storage.getShops().stream()
+                .filter(shop -> ownerId.equals(shop.getOwnerId()))
+                .toList();
+    }
+
     public Optional<Shop> getShopByChest(Block block) {
         if (block == null) {
             return Optional.empty();
