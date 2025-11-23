@@ -54,5 +54,5 @@ Retorna `{ token, uuid, username }` com expiração de 24h.
 ## Segurança
 
 - Rate limit: 30 requisições/min por IP (configurável via `frontend.rateLimitPerMinute`).
-- CORS: permitido apenas para origens listadas em `frontend.allowedOrigins`.
+- CORS: permitido para qualquer origem por padrão (`*` em `frontend.allowedOrigins`), podendo ser restrito via configuração.
 - JWT HMAC256 com emissor configurável em `frontend.jwtIssuer`.
