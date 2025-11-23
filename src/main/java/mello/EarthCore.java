@@ -119,6 +119,7 @@ public class EarthCore extends JavaPlugin {
     private ScoreboardService scoreboardService;
     private AuthService authService;
     private AuthSessionManager authSessionManager;
+    private AuthStorage authStorage;
 
     /**
      * Inicializa todos os serviços do plugin em ordem explícita para evitar
@@ -132,7 +133,7 @@ public class EarthCore extends JavaPlugin {
         saveDefaultConfig();
 
         // Sistema de autenticação básico (register/login)
-        AuthStorage authStorage = new AuthStorage(getDataFolder(), getLogger());
+        authStorage = new AuthStorage(getDataFolder(), getLogger());
         authSessionManager = new AuthSessionManager();
         authService = new AuthService(authStorage, getLogger());
 
@@ -327,7 +328,7 @@ public class EarthCore extends JavaPlugin {
      */
     private void startFrontend() {
         FrontendSettings settings = FrontendSettings.fromConfig(getConfig(), getLogger());
-        frontendServer = new FrontendServer(this, economyService, kingdomService, clanService, settings);
+        frontendServer = new FrontendServer(this, economyService, kingdomService, clanService, jobService, shopService, portalService, authService, authStorage, settings);
         frontendServer.start();
     }
 }

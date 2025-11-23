@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Dashboard</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard" class="active">Dashboard</a>
+            <a href="/kingdom">Meu Reino</a>
+            <a href="/clan">Meu Clã</a>
+            <a href="/shops">Minhas Lojas</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/portals">Portais</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar">
+            <h2>Visão Geral</h2>
+            <span class="pill" id="player-id"></span>
+        </div>
+
+        <section class="card-grid" id="summary-cards"></section>
+
+        <section class="card-grid" style="grid-template-columns: 2fr 1fr;">
+            <div class="card" id="dynmap-card">
+                <h3>Mapa Dinâmico</h3>
+                <iframe src="{{DYNMAP_URL}}" style="border:none;width:100%;height:420px;border-radius:12px;"></iframe>
+            </div>
+            <div class="card">
+                <h3>Coordenadas / Sessão</h3>
+                <div id="coords" class="muted">Localizando...</div>
+                <div class="stack" id="stats"></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h3>Transações recentes</h3>
+            <table class="table" id="transactions"></table>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const summary = document.querySelector('#summary-cards');
+    const txTable = document.querySelector('#transactions');
+    const coordsBox = document.querySelector('#coords');
+    const statsBox = document.querySelector('#stats');
+
+    const renderCards = (info) => {
+        const cards = [];
+        cards.push(`<div class="card"><h3>Saldo</h3><p>${UI.formatCurrency(info.balance)}</p></div>`);
+        if (info.clan) {
+            cards.push(`<div class="card"><h3>Clã</h3><p>${info.clan.name} [${info.clan.tag}]</p><span class="pill">${info.clan.role}</span></div>`);
+        } else {
+            cards.push(`<div class="card"><h3>Clã</h3><span class="pill danger">Nenhum</span></div>`);
+        }
+        if (info.kingdom) {
+            cards.push(`<div class="card"><h3>Reino</h3><p>${info.kingdom.name}</p><span class="pill">${info.kingdom.role}</span><p class="muted">Tier ${info.kingdom.tier || '—'}</p></div>`);
+            cards.push(`<div class="card"><h3>Claims do Reino</h3><p>${info.kingdom.claims}</p><p class="muted">Banco: ${UI.formatCurrency(info.kingdom.bank)}</p></div>`);
+        } else {
+            cards.push(`<div class="card"><h3>Reino</h3><span class="pill danger">Nenhum</span></div>`);
+        }
+        summary.innerHTML = cards.join('');
+    };
+
+    const renderTransactions = (list) => {
+        const rows = ['<tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Razão</th></tr>'];
+        list.forEach(tx => rows.push(`<tr><td>${new Date(tx.at).toLocaleString()}</td><td>${tx.type}</td><td>${UI.formatCurrency(tx.amount)}</td><td>${tx.reason || ''}</td></tr>`));
+        txTable.innerHTML = rows.join('');
+    };
+
+    const renderStats = (stats) => {
+        statsBox.innerHTML = `
+            <p class="muted">Kills Jogadores: ${stats.playerKills}</p>
+            <p class="muted">Kills Mobs: ${stats.mobKills}</p>
+            <p class="muted">Mortes: ${stats.deaths}</p>
+            <p class="muted">Horas jogadas (sessão online necessária): ${stats.hoursPlayed.toFixed(1)}</p>
+        `;
+    };
+
+    const refresh = async () => {
+        try {
+            const info = await Api.userInfo();
+            UI.setText('#player-id', info.username);
+            renderCards(info);
+            if (info.coordinates) {
+                coordsBox.textContent = `${info.coordinates.world} ${info.coordinates.x}, ${info.coordinates.y}, ${info.coordinates.z}`;
+            } else {
+                coordsBox.textContent = 'Jogador offline para coordenadas';
+            }
+            const stats = await Api.stats();
+            renderStats(stats);
+            const tx = await Api.userTransactions();
+            renderTransactions(tx);
+        } catch (err) {
+            coordsBox.textContent = err.message;
+        }
+    };
+
+    refresh();
+    setInterval(refresh, 3000);
+</script>
+</body>
+</html>

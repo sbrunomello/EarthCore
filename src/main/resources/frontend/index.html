@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Login</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout" style="justify-content:center;align-items:center;">
+    <div class="card" style="max-width:420px;width:100%;">
+        <div class="stack">
+            <h2>Entrar no Painel EarthCore</h2>
+            <p class="muted">Use o mesmo usuário e senha configurados in-game via /register e /login.</p>
+            <label>Usuário
+                <input id="username" class="input" type="text" autocomplete="username">
+            </label>
+            <label>Senha
+                <input id="password" class="input" type="password" autocomplete="current-password">
+            </label>
+            <button id="login" class="button">Entrar</button>
+            <div id="error" class="error" hidden></div>
+        </div>
+    </div>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    const loginBtn = document.querySelector('#login');
+    const errorBox = document.querySelector('#error');
+    const usernameInput = document.querySelector('#username');
+    const passwordInput = document.querySelector('#password');
+
+    if (Api.token()) {
+        location.href = '/dashboard';
+    }
+
+    const setLoading = (loading) => {
+        loginBtn.classList.toggle('loading', loading);
+        loginBtn.disabled = loading;
+    };
+
+    const submit = async () => {
+        setLoading(true);
+        errorBox.hidden = true;
+        try {
+            await Api.login(usernameInput.value.trim(), passwordInput.value);
+            location.href = '/dashboard';
+        } catch (err) {
+            errorBox.textContent = err.message;
+            errorBox.hidden = false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    loginBtn.addEventListener('click', submit);
+    passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+</script>
+</body>
+</html>

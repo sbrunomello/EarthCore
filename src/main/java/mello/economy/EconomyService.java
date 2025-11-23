@@ -6,7 +6,10 @@ import org.bukkit.Bukkit;
 
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,6 +115,18 @@ public class EconomyService {
 
     public Optional<UUID> getRichestPlayer() {
         return repository.findPlayerWithHighestBalance();
+    }
+
+    public synchronized List<MoneyTransaction> getRecentTransactions(UUID playerId, int limit) {
+        List<MoneyTransaction> snapshot;
+        synchronized (auditLog) {
+            snapshot = new ArrayList<>(auditLog);
+        }
+        return snapshot.stream()
+                .filter(tx -> tx.playerId().equals(playerId))
+                .sorted(Comparator.comparing(MoneyTransaction::timestamp).reversed())
+                .limit(Math.max(1, limit))
+                .toList();
     }
 
     private void enforceTransactionLimit(UUID playerId) {

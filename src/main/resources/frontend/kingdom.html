@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Meu Reino</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/kingdom" class="active">Meu Reino</a>
+            <a href="/clan">Meu Clã</a>
+            <a href="/shops">Minhas Lojas</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/portals">Portais</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar"><h2>Reino</h2><span class="pill" id="kingdom-name"></span></div>
+        <section class="card-grid" id="kingdom-overview"></section>
+        <section class="card-grid" style="grid-template-columns: 1.2fr 1fr;">
+            <div class="card">
+                <h3>Membros</h3>
+                <table class="table" id="member-table"></table>
+            </div>
+            <div class="card">
+                <h3>Banco</h3>
+                <div id="bank"></div>
+                <h3>Próximo Upkeep</h3>
+                <div id="upkeep"></div>
+            </div>
+        </section>
+        <section class="card">
+            <h3>Claims</h3>
+            <table class="table" id="claims"></table>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const render = async () => {
+        try {
+            const info = await Api.kingdomInfo();
+            document.querySelector('#kingdom-name').textContent = info.name;
+            document.querySelector('#kingdom-overview').innerHTML = `
+                <div class="card"><h3>Tier</h3><p>${info.tier}</p></div>
+                <div class="card"><h3>Banco</h3><p>${UI.formatCurrency(info.bank)}</p></div>
+                <div class="card"><h3>Claims</h3><p>${info.claims}</p></div>
+                <div class="card"><h3>Dias em débito</h3><p>${info.debtDays}</p></div>`;
+
+            const members = await Api.kingdomMembers();
+            const rows = ['<tr><th>Nome</th><th>Cargo</th></tr>'];
+            members.forEach(m => rows.push(`<tr><td>${m.name || m.uuid}</td><td>${m.role}</td></tr>`));
+            document.querySelector('#member-table').innerHTML = rows.join('');
+
+            const bank = await Api.kingdomBank();
+            document.querySelector('#bank').innerHTML = `<p>Saldo: ${UI.formatCurrency(bank.balance)}</p>`;
+
+            const upkeep = await Api.kingdomUpkeep();
+            document.querySelector('#upkeep').innerHTML = `<p>Dias em atraso: ${upkeep.debtDays}</p><p>Banco atual: ${UI.formatCurrency(upkeep.bank)}</p>`;
+
+            const claims = await Api.kingdomClaims();
+            const claimRows = ['<tr><th>Mundo</th><th>X</th><th>Z</th></tr>'];
+            claims.forEach(c => claimRows.push(`<tr><td>${c.world}</td><td>${c.x}</td><td>${c.z}</td></tr>`));
+            document.querySelector('#claims').innerHTML = claimRows.join('');
+        } catch (err) {
+            document.querySelector('#kingdom-overview').innerHTML = `<div class="card error">${err.message}</div>`;
+        }
+    };
+
+    render();
+</script>
+</body>
+</html>

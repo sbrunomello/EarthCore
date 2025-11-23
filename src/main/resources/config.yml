@@ -19,6 +19,12 @@ frontend:
   host: "0.0.0.0"
   port: 8210
   dynmapUrl: "http://localhost:8123/"
+  jwtSecret: "troque-este-segredo"
+  jwtIssuer: "earthcore"
+  allowedOrigins:
+    - "http://localhost"
+    - "http://127.0.0.1"
+  rateLimitPerMinute: 30
 
 # Portais de viagem por aldeão: cada entrada representa um hub de continente.
 # O aldeão aparece no ponto "totem" e abre uma GUI com os demais portais configurados.

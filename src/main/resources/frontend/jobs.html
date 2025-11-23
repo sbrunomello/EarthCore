@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Jobs</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/kingdom">Meu Reino</a>
+            <a href="/clan">Meu Clã</a>
+            <a href="/shops">Minhas Lojas</a>
+            <a href="/jobs" class="active">Jobs</a>
+            <a href="/portals">Portais</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar"><h2>Jobs</h2><span class="pill" id="current-job"></span></div>
+        <section class="card">
+            <table class="table" id="jobs"></table>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const loadJobs = async () => {
+        try {
+            const current = await Api.currentJob();
+            document.querySelector('#current-job').textContent = current.job ? `Atual: ${current.job}` : 'Nenhum job selecionado';
+
+            const jobs = await Api.jobs();
+            const rows = ['<tr><th>Job</th><th>Status</th><th>Pagamentos</th></tr>'];
+            jobs.forEach(job => {
+                const rewards = [...Object.entries(job.blockRewards || {}), ...Object.entries(job.mobRewards || {})]
+                    .map(([name, value]) => `${name}: ${UI.formatCurrency(value)}`).join('<br>');
+                rows.push(`<tr><td>${job.name}</td><td>${job.enabled ? 'Ativo' : 'Desativado'}</td><td>${rewards}</td></tr>`);
+            });
+            document.querySelector('#jobs').innerHTML = rows.join('');
+        } catch (err) {
+            document.querySelector('#jobs').innerHTML = `<tr><td colspan="3" class="error">${err.message}</td></tr>`;
+        }
+    };
+
+    loadJobs();
+</script>
+</body>
+</html>
