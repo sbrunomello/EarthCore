@@ -8,8 +8,9 @@ Este guia descreve como configurar portais interativos ativados por totens e com
 - Totem físico (qualquer bloco sólido) que será usado como ponto de clique.
 
 ## Visão rápida dos comandos
-- `/portal settarget <nome>`: salva o destino do portal com base na sua posição atual (inclui yaw/pitch).
-- `/portal settotem <nome>`: vincula o bloco que você está mirando (raio de 6 blocos) como totem de ativação.
+- `/portal settotem <nome>`: cria ou substitui o portal mirando um bloco (raio de 6 blocos). O aldeão spawna **1 bloco acima** e o destino fica **na frente do totem**, alinhado com a direção do jogador.
+- `/portal settarget <nome>`: opcional para ajustar manualmente o destino do portal a partir da sua posição atual (inclui yaw/pitch).
+- `/portal removetotem <nome>` (alias `/portal delete <nome>`): remove o aldeão e limpa o ponto de spawn daquele portal.
 
 > Dica: use nomes simples (ex.: `africa`, `asia`, `europa`) para facilitar suporte e auditoria.
 
@@ -23,10 +24,12 @@ Este guia descreve como configurar portais interativos ativados por totens e com
 3. **Escolha o totem**
    - Vá até o bloco que funcionará como totem (no spawn ou na área temática).
    - Mire exatamente no bloco (até 6 blocos de distância) e rode `/portal settotem <nome>`.
+   - O aldeão nasce 1 bloco acima do totem, e o destino fica um passo à frente do totem usando sua rotação atual.
    - O plugin recusa blocos já usados por outro portal; troque de bloco se receber aviso.
 4. **Teste e refine**
    - Como jogador, clique com botão direito no totem para validar o teleporte.
-   - Se quiser mudar apenas o destino, repita `/portal settarget <nome>` direto no local novo — não precisa refazer o totem.
+   - Se quiser mudar apenas o destino (por exemplo, para alinhar com escadas ou plataformas específicas), vá até o local exato e use `/portal settarget <nome>`.
+   - Para remover um portal por completo, use `/portal removetotem <nome>` (ou `/portal delete <nome>`). Isso apaga o aldeão e o ponto de spawn no config.
 
 ## Teleportar para qualquer coordenada como OP
 1. Use `/tp <x> <y> <z> [yaw pitch]` para chegar exatamente na posição desejada, mesmo que esteja em outro mundo.

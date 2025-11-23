@@ -113,25 +113,50 @@ public class PortalService {
         return updated;
     }
 
-    public Optional<PortalDefinition> setTotem(String name, Location totem) {
+    public Optional<PortalDefinition> setTotem(String name, Location totem, Location playerLocation) {
         String normalizedName = name.toLowerCase();
         if (totem == null || totem.getWorld() == null) {
             return Optional.empty();
         }
 
-        String key = blockKey(totem);
+        Location totemBlockLocation = totem.getBlock().getLocation();
+        String key = blockKey(totemBlockLocation);
         PortalDefinition currentOwner = portalsByTotem.get(key);
         if (currentOwner != null && !currentOwner.getName().equalsIgnoreCase(normalizedName)) {
             return Optional.empty();
         }
 
-        PortalDefinition current = portalsByName.get(normalizedName);
-        Location target = current != null ? current.getTarget() : null;
-        PortalDefinition updated = new PortalDefinition(normalizedName, target, totem);
+        Location arrival = computeArrivalLocation(totemBlockLocation, playerLocation);
+        PortalDefinition updated = new PortalDefinition(normalizedName, arrival, totemBlockLocation);
         registerPortal(updated);
         persistPortal(updated);
         spawnVillagerForPortal(updated);
         return Optional.of(updated);
+    }
+
+    public boolean clearTotem(String name) {
+        if (name == null) {
+            return false;
+        }
+
+        String normalizedName = name.toLowerCase();
+        PortalDefinition existing = portalsByName.get(normalizedName);
+        if (existing == null) {
+            return false;
+        }
+
+        removeTrackedVillager(normalizedName);
+
+        PortalDefinition updated = new PortalDefinition(normalizedName, existing.getTarget(), null);
+        portalsByTotem.values().removeIf(portal -> portal.getName().equalsIgnoreCase(normalizedName));
+        registerPortal(updated);
+
+        FileConfiguration config = plugin.getConfig();
+        String basePath = "portals." + normalizedName + ".totem";
+        config.set(basePath, null);
+        plugin.saveConfig();
+
+        return true;
     }
 
     public Optional<PortalDefinition> findByVillager(UUID uniqueId) {
@@ -233,7 +258,7 @@ public class PortalService {
 
         removeTrackedVillager(portal.getName());
 
-        Location spawnLocation = portal.getTotem().clone().add(0.5, 0, 0.5);
+        Location spawnLocation = portal.getTotem().clone().add(0.5, 1, 0.5);
         World world = spawnLocation.getWorld();
         Chunk chunk = world.getChunkAt(spawnLocation);
         if (!chunk.isLoaded()) {
@@ -379,5 +404,25 @@ public class PortalService {
 
     private String blockKey(Location location) {
         return location.getWorld().getName() + ':' + location.getBlockX() + ':' + location.getBlockY() + ':' + location.getBlockZ();
+    }
+
+    private Location computeArrivalLocation(Location totem, Location playerLocation) {
+        Location base = totem.clone().add(0.5, 1, 0.5);
+        if (playerLocation == null) {
+            return base;
+        }
+
+        Location arrival = base.clone();
+        var direction = playerLocation.getDirection();
+        if (direction != null) {
+            direction.setY(0);
+            if (direction.lengthSquared() > 0) {
+                arrival.add(direction.normalize());
+            }
+            arrival.setYaw(playerLocation.getYaw());
+            arrival.setPitch(0);
+        }
+
+        return arrival;
     }
 }
