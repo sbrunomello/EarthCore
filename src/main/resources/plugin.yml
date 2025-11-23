@@ -63,6 +63,12 @@ commands:
   shop:
     description: Cria e gerencia sua loja pessoal
     usage: /shop create
+  register:
+    description: Registra uma senha para sua conta.
+    usage: "/register <senha> <senha>"
+  login:
+    description: Faz login com sua conta.
+    usage: "/login <senha>"
 
 permissions:
   economy.admin:
