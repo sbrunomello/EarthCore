@@ -14,6 +14,8 @@ import java.util.logging.Logger;
 
 /**
  * Regras de domínio de clãs: criação, convites, banco compartilhado e impostos internos.
+ * Centraliza validações para que comandos e GUIs possam reutilizar o mesmo fluxo
+ * e garantir consistência.
  */
 public class ClanService {
 
@@ -25,6 +27,10 @@ public class ClanService {
     private KingdomService kingdomService;
     private ClanDynmapHook dynmapHook;
 
+    /**
+     * Cria o serviço aplicando injeção explícita de dependências financeiras e
+     * de persistência para facilitar testes e manutenção.
+     */
     public ClanService(EconomyService economyService, ClanStorage storage, ClansConfig config, Logger logger) {
         this.economyService = economyService;
         this.storage = storage;
@@ -32,27 +38,48 @@ public class ClanService {
         this.logger = logger;
     }
 
+    /**
+     * Retorna todos os clãs em memória. Usado por telas administrativas e
+     * integrações externas.
+     */
     public Collection<Clan> getAll() {
         return storage.getClans();
     }
 
+    /**
+     * Injeta a dependência opcional de reinos para validar claims cruzados.
+     */
     public void setKingdomService(KingdomService kingdomService) {
         this.kingdomService = kingdomService;
     }
 
+    /**
+     * Expõe o serviço de reinos associado, utilizado em integrações de fronteira.
+     */
     public KingdomService getKingdomService() {
         return kingdomService;
     }
 
+    /**
+     * Registra a integração com Dynmap e força um redraw inicial para evitar
+     * discrepâncias visuais após reloads.
+     */
     public void setDynmapHook(ClanDynmapHook dynmapHook) {
         this.dynmapHook = dynmapHook;
         dynmapHook.redrawAll(storage.getClans());
     }
 
+    /**
+     * Busca um clã pelo nome normalizado para reutilizar em comandos e hooks
+     * externos.
+     */
     public Clan getByName(String name) {
         return storage.getByName(name);
     }
 
+    /**
+     * Retorna o clã ao qual o jogador pertence, varrendo o cache em memória.
+     */
     public Clan getByMember(UUID uuid) {
         return storage.getClans().stream()
                 .filter(c -> c.isMember(uuid))
@@ -60,6 +87,9 @@ public class ClanService {
                 .orElse(null);
     }
 
+    /**
+     * Fluxo de criação de clã com validação de unicidade e cobrança inicial.
+     */
     public OperationResult createClan(UUID creator, String name, String tag) {
         String normalized = name.toLowerCase(Locale.ROOT);
         if (storage.getByName(normalized) != null) {
@@ -76,6 +106,9 @@ public class ClanService {
         return OperationResult.ok("Clã criado com sucesso!");
     }
 
+    /**
+     * Registra convite para um jogador, respeitando permissões do cargo.
+     */
     public OperationResult invite(UUID inviter, UUID target) {
         Clan clan = getByMember(inviter);
         if (clan == null) return OperationResult.fail("Você não faz parte de um clã.");
@@ -89,6 +122,10 @@ public class ClanService {
         return OperationResult.ok("Convite enviado para " + target);
     }
 
+    /**
+     * Conclui o fluxo de convite garantindo que o token de convite corresponda
+     * ao clã informado.
+     */
     public OperationResult acceptInvite(UUID playerId, String clanName) {
         String invitedTo = invites.get(playerId);
         if (invitedTo == null || !invitedTo.equalsIgnoreCase(clanName)) {
@@ -103,6 +140,10 @@ public class ClanService {
         return OperationResult.ok("Você entrou no clã " + clan.getName());
     }
 
+    /**
+     * Permite saída de membros e remove completamente o clã quando o último
+     * integrante sai, preservando integridade do armazenamento.
+     */
     public OperationResult leave(UUID playerId) {
         Clan clan = getByMember(playerId);
         if (clan == null) return OperationResult.fail("Você não pertence a um clã.");
@@ -120,6 +161,10 @@ public class ClanService {
         return OperationResult.ok("Você saiu do clã " + clan.getName());
     }
 
+    /**
+     * Valida e executa o claim inicial do clã. Há apenas um claim permitido,
+     * então delegamos ao fluxo de reinos quando necessário.
+     */
     public OperationResult claimChunk(UUID playerId, Chunk chunk) {
         ClaimValidationResult validation = validateClaim(playerId, chunk);
         if (!validation.success()) {
@@ -133,6 +178,10 @@ public class ClanService {
         return finalizeClaim(validation.clan(), chunk);
     }
 
+    /**
+     * Verifica elegibilidade para claim: pertencimento ao clã, cargo, ausência
+     * de conflitos com reinos ou outros clãs e inexistência de claim prévio.
+     */
     public ClaimValidationResult validateClaim(UUID playerId, Chunk chunk) {
         if (chunk == null) {
             return ClaimValidationResult.fail("Chunk inválido.");
@@ -168,6 +217,9 @@ public class ClanService {
         return ClaimValidationResult.successClan(clan, claimedChunk, config.getClaimCost());
     }
 
+    /**
+     * Conclui o claim persistindo o território e disparando redraw no Dynmap.
+     */
     public OperationResult finalizeClaim(Clan clan, Chunk chunk) {
         ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
         clan.setClaim(claimedChunk);
@@ -176,6 +228,9 @@ public class ClanService {
         return OperationResult.ok("Chunk reivindicado para o clã " + clan.getName() + ". Crie um reino para expandir suas terras.");
     }
 
+    /**
+     * Remove o claim único do clã, validando posse e permissão do solicitante.
+     */
     public OperationResult unclaimChunk(UUID playerId, Chunk chunk) {
         Clan clan = getByMember(playerId);
         if (clan == null) return OperationResult.fail("Você precisa estar em um clã para remover um claim.");
@@ -196,6 +251,9 @@ public class ClanService {
         return OperationResult.ok("Claim do clã removido.");
     }
 
+    /**
+     * Deposita valores no banco do clã aplicando taxação configurada.
+     */
     public OperationResult deposit(UUID playerId, double amount) {
         if (amount <= 0) return OperationResult.fail("Informe um valor positivo.");
 
@@ -212,6 +270,9 @@ public class ClanService {
         return OperationResult.ok("Depositado " + net + " no banco do clã. Imposto: " + tax);
     }
 
+    /**
+     * Permite saque apenas pelo líder, garantindo que o caixa do clã possua saldo.
+     */
     public OperationResult withdraw(UUID playerId, double amount) {
         if (amount <= 0) return OperationResult.fail("Informe um valor positivo.");
 
@@ -231,6 +292,10 @@ public class ClanService {
         return OperationResult.ok("Saque de " + amount + " realizado com sucesso.");
     }
 
+    /**
+     * Recupera e limpa o claim atual do clã, usado quando o território é
+     * promovido a reino ou removido por manutenção.
+     */
     public ClaimedChunk consumeClaim(String clanName) {
         Clan clan = storage.getByName(clanName);
         if (clan == null) {
@@ -246,11 +311,17 @@ public class ClanService {
         return claim;
     }
 
+    /**
+     * Resolve rapidamente qual clã detém um chunk específico.
+     */
     public String getClanByChunk(Chunk chunk) {
         if (chunk == null) return null;
         return storage.getClanByChunk(ClaimedChunk.fromChunk(chunk).toStorageKey());
     }
 
+    /**
+     * Calcula imposto aplicado a ganhos individuais redirecionando parte para o clã.
+     */
     public TaxResult calculateTax(UUID receiverId, double amount) {
         Clan clan = getByMember(receiverId);
         if (clan == null) {
@@ -263,6 +334,9 @@ public class ClanService {
         return new TaxResult(net, tax, clan.getName());
     }
 
+    /**
+     * Credita automaticamente o imposto calculado no banco do clã.
+     */
     public void applyTax(UUID receiverId, double taxAmount) {
         if (taxAmount <= 0) return;
         Clan clan = getByMember(receiverId);
@@ -270,6 +344,9 @@ public class ClanService {
         clan.deposit(taxAmount);
     }
 
+    /**
+     * Persiste o estado de todos os clãs em disco.
+     */
     public void saveAll() {
         storage.saveAll();
     }

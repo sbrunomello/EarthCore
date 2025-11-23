@@ -26,24 +26,41 @@ public class EconomyService {
     private final Map<UUID, TransactionWindow> transactionWindows = new ConcurrentHashMap<>();
     private final Deque<MoneyTransaction> auditLog = new ArrayDeque<>();
 
+    /**
+     * Cria o serviço financeiro com repositório injetado para facilitar testes
+     * e permitir variações de armazenamento.
+     */
     public EconomyService(EconomyRepository repository) {
         this.repository = repository;
     }
 
+    /**
+     * Garante que uma conta exista antes de qualquer operação monetária.
+     */
     public void ensureAccount(UUID playerId) {
         repository.initializeAccount(playerId);
     }
 
+    /**
+     * Recupera o saldo atual aplicando auto-provisionamento da conta.
+     */
     public double getBalance(UUID playerId) {
         ensureAccount(playerId);
         return repository.getBalance(playerId);
     }
 
+    /**
+     * Verifica se o jogador possui saldo suficiente para uma operação.
+     */
     public boolean hasEnough(UUID playerId, double amount) {
         validateAmount(amount);
         return getBalance(playerId) >= amount;
     }
 
+    /**
+     * Ajusta diretamente o saldo de um jogador, registrando transação de auditoria
+     * e disparando eventos Bukkit para observabilidade.
+     */
     public void setBalance(UUID playerId, double amount, String reason) {
         validateAmount(amount);
         enforceTransactionLimit(playerId);
@@ -53,6 +70,10 @@ public class EconomyService {
         fireReceiveEvent(playerId, amount, MoneyTransactionType.ADMIN_ADJUST, reason);
     }
 
+    /**
+     * Deposita valor na conta, respeitando limites de transações por tick e
+     * registrando o evento para consumo de outros sistemas.
+     */
     public void deposit(UUID playerId, double amount, MoneyTransactionType type, String reason) {
         validateAmount(amount);
         enforceTransactionLimit(playerId);
@@ -63,6 +84,10 @@ public class EconomyService {
         fireReceiveEvent(playerId, amount, type, reason);
     }
 
+    /**
+     * Tenta debitar o valor informado. Retorna false quando o saldo é
+     * insuficiente, sem lançar exceção para facilitar o fluxo de chamada.
+     */
     public boolean withdraw(UUID playerId, double amount, MoneyTransactionType type, String reason) {
         validateAmount(amount);
         enforceTransactionLimit(playerId);
