@@ -47,18 +47,25 @@ public class PortalCommand implements CommandExecutor {
         String name = args.length > 1 ? args[1].toLowerCase() : "";
 
         switch (action) {
-            case "settarget":
-                if (name.isBlank()) {
-                    sendHelp(player);
-                    return true;
-                }
-                return handleSetTarget(player, name);
             case "settotem":
                 if (name.isBlank()) {
                     sendHelp(player);
                     return true;
                 }
                 return handleSetTotem(player, name);
+            case "removetotem":
+            case "delete":
+                if (name.isBlank()) {
+                    sendHelp(player);
+                    return true;
+                }
+                return handleRemoveTotem(player, name);
+            case "settarget":
+                if (name.isBlank()) {
+                    sendHelp(player);
+                    return true;
+                }
+                return handleSetTarget(player, name);
             case "list":
                 return handleList(player);
             default:
@@ -79,22 +86,31 @@ public class PortalCommand implements CommandExecutor {
     }
 
     private boolean handleSetTotem(Player player, String name) {
-        Location totemLocation = player.getTargetBlockExact(6) != null
-                ? player.getTargetBlockExact(6).getLocation()
-                : player.getLocation();
+        var targetBlock = player.getTargetBlockExact(6);
+        Location totemLocation = targetBlock != null ? targetBlock.getLocation() : null;
+        if (totemLocation == null) {
+            player.sendMessage(Messages.PORTAL_NO_BLOCK);
+            return true;
+        }
 
-        Optional<PortalDefinition> definition = portalService.setTotem(name, totemLocation);
+        Optional<PortalDefinition> definition = portalService.setTotem(name, totemLocation, player.getLocation());
         if (definition.isEmpty()) {
             player.sendMessage(Messages.PORTAL_TOTEM_IN_USE);
             return true;
         }
 
-        if (definition.get().getTarget() == null) {
-            player.sendMessage(String.format(Messages.PORTAL_TOTEM_SET_NEEDS_TARGET, name));
+        player.sendMessage(String.format(Messages.PORTAL_TOTEM_SET, name));
+        return true;
+    }
+
+    private boolean handleRemoveTotem(Player player, String name) {
+        boolean removed = portalService.clearTotem(name);
+        if (!removed) {
+            player.sendMessage(String.format(Messages.PORTAL_NOT_FOUND, name));
             return true;
         }
 
-        player.sendMessage(String.format(Messages.PORTAL_TOTEM_SET, name));
+        player.sendMessage(String.format(Messages.PORTAL_TOTEM_REMOVED, name));
         return true;
     }
 
@@ -116,8 +132,9 @@ public class PortalCommand implements CommandExecutor {
 
     private void sendHelp(Player player) {
         player.sendMessage(Messages.PORTAL_USAGE);
-        player.sendMessage("§7/portal settarget <nome> §f- salva o destino do portal");
-        player.sendMessage("§7/portal settotem <nome> §f- define onde o aldeão do portal ficará");
+        player.sendMessage("§7/portal settotem <nome> §f- posiciona o aldeão acima do bloco selecionado e define o destino em frente ao totem");
+        player.sendMessage("§7/portal removetotem <nome> §f- remove o aldeão e o ponto de spawn do portal");
+        player.sendMessage("§7/portal settarget <nome> §f- ajusta manualmente o destino do portal, se necessário");
         player.sendMessage("§7/portal list §f- lista portais configurados");
     }
 }

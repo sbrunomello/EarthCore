@@ -25,11 +25,12 @@ public final class Messages {
     public static final String INVALID_PLAYER = ChatColor.RED + "Player not found.";
     public static final String CANNOT_TARGET_SELF = ChatColor.RED + "You cannot target yourself.";
 
-    public static final String PORTAL_USAGE = ChatColor.YELLOW + "Use /portal <settarget|settotem|list> <nome>.";
+    public static final String PORTAL_USAGE = ChatColor.YELLOW + "Use /portal <settotem|removetotem|settarget|list> <nome>.";
     public static final String PORTAL_TARGET_SET = ChatColor.GREEN + "Destino do portal '%s' salvo. Aldeão já vinculado.";
     public static final String PORTAL_TARGET_SET_NEEDS_TOTEM = ChatColor.GREEN
             + "Destino do portal '%s' salvo. Defina a posição do aldeão com /portal settotem <nome>.";
-    public static final String PORTAL_TOTEM_SET = ChatColor.GREEN + "Aldeão do portal '%s' posicionado.";
+    public static final String PORTAL_TOTEM_SET = ChatColor.GREEN
+            + "Aldeão do portal '%s' posicionado. Destino configurado em frente ao totem.";
     public static final String PORTAL_TOTEM_SET_NEEDS_TARGET = ChatColor.GREEN
             + "Aldeão posicionado, defina o destino com /portal settarget %s.";
     public static final String PORTAL_NO_BLOCK = ChatColor.RED
@@ -42,6 +43,8 @@ public final class Messages {
     public static final String PORTAL_TARGET_MISSING = ChatColor.RED + "Portal '%s' ainda não possui destino configurado.";
     public static final String PORTAL_LIST_HEADER = ChatColor.YELLOW + "Portais configurados:";
     public static final String PORTAL_LIST_EMPTY = ChatColor.RED + "Nenhum portal configurado ainda.";
+    public static final String PORTAL_TOTEM_REMOVED = ChatColor.GREEN + "Aldeão do portal '%s' removido.";
+    public static final String PORTAL_NOT_FOUND = ChatColor.RED + "Portal não encontrado: %s";
 
     public static final String TPA_REQUEST_SENT = ChatColor.GREEN + "Teleport request sent.";
     public static final String TPA_REQUEST_RECEIVED = ChatColor.YELLOW + "%s wants to teleport to you. Use /tpacept or /tpdeny.";
