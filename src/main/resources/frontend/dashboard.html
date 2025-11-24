@@ -18,7 +18,7 @@
             <a href="/shops">Minhas Lojas</a>
             <a href="/jobs">Jobs</a>
             <a href="/portals">Portais</a>
-            <a href="#gems">Comprar Gems</a>
+            <a href="/gems">Comprar Gems</a>
             <a href="#" id="logout">Sair</a>
         </nav>
     </aside>
@@ -46,18 +46,6 @@
             <h3>Transações recentes</h3>
             <table class="table" id="transactions"></table>
         </section>
-
-        <section class="card" id="gems">
-            <div class="toolbar">
-                <div>
-                    <h3>Comprar Gems</h3>
-                    <p class="muted">Mock de checkout: ao comprar, os gems entram direto na conta in-game com transação auditada.</p>
-                </div>
-                <span class="pill" id="gem-balance">0 ✦</span>
-            </div>
-            <div id="gem-error" class="error" hidden></div>
-            <div class="card-grid" id="gem-packs"></div>
-        </section>
     </main>
 </div>
 <script src="/assets/js/api.js"></script>
@@ -69,21 +57,6 @@
     const txTable = document.querySelector('#transactions');
     const coordsBox = document.querySelector('#coords');
     const statsBox = document.querySelector('#stats');
-    const gemBalance = document.querySelector('#gem-balance');
-    const gemPacksGrid = document.querySelector('#gem-packs');
-    const gemError = document.querySelector('#gem-error');
-
-    let cachedGemPacks = [];
-    let lastProfile = null;
-    let gemCatalogMode = 'api';
-
-    // Catálogo de fallback para manter a UI testável quando o backend estiver offline.
-    const DEMO_GEM_PACKS = [
-        { id: 'starter', name: 'Pacote Iniciante', gems: 500, bonus: 0, price: 9.9, badge: '', description: 'Catálogo demo com dados básicos.', demo: true },
-        { id: 'adventurer', name: 'Aventureiro', gems: 1200, bonus: 120, price: 19.9, badge: 'VIP', description: 'Mock de pacote VIP para validação visual.', demo: true },
-        { id: 'champion', name: 'Campeão', gems: 3000, bonus: 450, price: 39.9, badge: 'MVP', description: 'Bundle premium em modo demonstração.', demo: true }
-    ];
-
     const renderCards = (info) => {
         const cards = [];
         cards.push(`<div class="card"><h3>Coins</h3><p>${UI.formatCurrency(info.balance)}</p></div>`);
@@ -119,112 +92,9 @@
 
     const formatGems = (value) => `${Number(value).toLocaleString('pt-BR')} ✦`;
 
-    // Desenha placeholders rápidos para evitar a sensação de tela vazia enquanto o catálogo carrega.
-    const renderGemLoading = () => {
-        gemPacksGrid.innerHTML = `
-            <div class="card stack">
-                <div class="stack inline">
-                    <span class="pill">Carregando catálogo...</span>
-                    <span class="skeleton" style="max-width: 180px;"></span>
-                </div>
-                <div class="skeleton" style="height: 18px;max-width: 60%;"></div>
-                <div class="skeleton" style="height: 36px;max-width: 120px;"></div>
-            </div>
-            <div class="card stack">
-                <div class="skeleton" style="height: 22px;max-width: 40%;"></div>
-                <div class="skeleton" style="height: 18px;max-width: 70%;"></div>
-                <div class="skeleton" style="height: 36px;max-width: 120px;"></div>
-            </div>
-        `;
-    };
-
-    const renderGemSection = (info) => {
-        gemBalance.textContent = formatGems(info.gems || 0);
-        if (!cachedGemPacks.length) {
-            return;
-        }
-        gemPacksGrid.innerHTML = cachedGemPacks.map(pack => {
-            const badge = pack.badge ? `<span class="pill accent">${pack.badge}</span>` : '';
-            const description = pack.description ? `<p class="muted">${pack.description}</p>` : '';
-            return `
-            <div class="card stack">
-                <div class="toolbar" style="align-items:flex-start;justify-content:space-between;">
-                    <div>
-                        <h3>${pack.name}</h3>
-                        <p class="muted">${pack.gems} gems + ${pack.bonus} bônus</p>
-                        ${description}
-                        ${gemCatalogMode === 'demo' ? '<p class="hint">Modo demonstração - catálogo offline</p>' : ''}
-                    </div>
-                    <div class="stack" style="align-items:flex-end;gap:8px;">
-                        ${badge}
-                        <span class="pill">R$ ${pack.price.toFixed(2)}</span>
-                    </div>
-                </div>
-                <button class="button" data-pack="${pack.id}">Comprar (mock)</button>
-            </div>
-            `;
-        }).join('');
-
-        gemPacksGrid.querySelectorAll('button[data-pack]').forEach(btn => {
-            btn.addEventListener('click', () => purchaseGems(btn.dataset.pack, btn));
-        });
-    };
-
-    const purchaseGems = async (packId, button) => {
-        gemError.hidden = true;
-        button.classList.add('loading');
-        button.disabled = true;
-        try {
-            await Api.purchaseGems(packId);
-            await refresh();
-        } catch (err) {
-            // Se estamos em modo demonstração, simula o crédito de gems para facilitar QA manual.
-            const demoPack = gemCatalogMode === 'demo' && cachedGemPacks.find(p => p.id === packId);
-            if (demoPack) {
-                const profile = lastProfile || { gems: 0 };
-                profile.gems = Number(profile.gems || 0) + Number(demoPack.gems || 0) + Number(demoPack.bonus || 0);
-                lastProfile = profile;
-                renderGemSection(profile);
-                gemError.textContent = 'Compra simulada no modo demonstração. Backend indisponível.';
-            } else {
-                gemError.textContent = err.message;
-            }
-            gemError.hidden = false;
-        } finally {
-            button.classList.remove('loading');
-            button.disabled = false;
-        }
-    };
-
-    const loadGemPacks = async () => {
-        renderGemLoading();
-        try {
-            const response = await Api.gemPacks();
-
-            // Evita deixar a UI vazia quando o backend responde 200 porém sem catálogo configurado.
-            if (!Array.isArray(response) || response.length === 0) {
-                throw new Error('Catálogo de gems indisponível no backend');
-            }
-
-            cachedGemPacks = response;
-            gemCatalogMode = 'api';
-            if (lastProfile) {
-                renderGemSection(lastProfile);
-            }
-            gemError.hidden = true;
-        } catch (err) {
-            gemCatalogMode = 'demo';
-            cachedGemPacks = DEMO_GEM_PACKS;
-            renderGemSection(lastProfile || { gems: 0 });
-            gemError.textContent = `${err.message}. Usando catálogo de demonstração para testes.`;
-            gemError.hidden = false;
-        }
-    };
-
     const refresh = async () => {
         try {
             const info = await Api.userInfo();
-            lastProfile = info;
             UI.setText('#player-id', info.username);
             renderCards(info);
             if (info.coordinates) {
@@ -236,14 +106,12 @@
             renderStats(stats);
             const tx = await Api.userTransactions();
             renderTransactions(tx);
-            renderGemSection(info);
         } catch (err) {
             coordsBox.textContent = err.message;
         }
     };
 
     refresh();
-    loadGemPacks();
     setInterval(refresh, 3000);
 </script>
 </body>

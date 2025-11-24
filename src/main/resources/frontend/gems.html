@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EarthCore · Loja</title>
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <style>body.requires-auth{visibility:hidden;}</style>
+</head>
+<body class="requires-auth">
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">🌎 EarthCore</div>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/kingdom">Meu Reino</a>
+            <a href="/clan">Meu Clã</a>
+            <a href="/shops">Minhas Lojas</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/portals">Portais</a>
+            <a href="/gems" class="active">Comprar Gems</a>
+            <a href="#" id="logout">Sair</a>
+        </nav>
+    </aside>
+    <main class="content">
+        <div class="toolbar">
+            <div>
+                <h2>Loja de Gems & VIP</h2>
+                <p class="muted">Checkout mock validando catálogo e créditos em tempo real. Ideal para testes do fluxo de monetização.</p>
+            </div>
+            <div class="stack" style="align-items:flex-end;gap:8px;">
+                <span class="pill" id="player-id"></span>
+                <span class="pill" id="gem-balance">0 ✦</span>
+            </div>
+        </div>
+
+        <section class="card" id="gem-hero">
+            <div class="toolbar">
+                <div class="stack">
+                    <h3>Checkout Instantâneo</h3>
+                    <p class="muted">Use os pacotes abaixo para testar compras de gems e validar webhooks ou listeners do backend.</p>
+                    <p class="hint" id="catalog-mode">Catálogo online</p>
+                </div>
+                <div class="stack" style="align-items:flex-end;gap:8px;">
+                    <span class="pill">Taxa zero</span>
+                    <span class="pill">Entrega mock imediata</span>
+                </div>
+            </div>
+        </section>
+
+        <div id="gem-error" class="error" hidden></div>
+        <section class="card-grid" id="gem-packs"></section>
+
+        <section class="card" id="vip-section">
+            <div class="toolbar">
+                <div>
+                    <h3>Planos VIP</h3>
+                    <p class="muted">Destaque para pacotes com badge VIP/MVP. Ajuste o catálogo em <code>gems.yml</code> para alinhar campanhas.</p>
+                </div>
+                <span class="pill accent">Benefícios In-Game</span>
+            </div>
+            <div class="card-grid" id="vip-packs"></div>
+        </section>
+    </main>
+</div>
+<script src="/assets/js/api.js"></script>
+<script>
+    Api.ensureAuth();
+    document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
+
+    const gemPacksGrid = document.querySelector('#gem-packs');
+    const vipGrid = document.querySelector('#vip-packs');
+    const gemError = document.querySelector('#gem-error');
+    const gemBalance = document.querySelector('#gem-balance');
+    const catalogMode = document.querySelector('#catalog-mode');
+
+    const state = {
+        packs: [],
+        mode: 'api',
+        profile: null
+    };
+
+    // Catálogo de fallback para manter a UI navegável quando o backend estiver offline.
+    const DEMO_GEM_PACKS = [
+        { id: 'starter', name: 'Pacote Iniciante', gems: 500, bonus: 0, price: 9.9, badge: '', description: 'Catálogo demo com dados básicos.', demo: true },
+        { id: 'vip', name: 'VIP Essencial', gems: 2000, bonus: 300, price: 49.9, badge: 'VIP', description: 'Pacote pensado para quem mantém o VIP ativo.', demo: true },
+        { id: 'mvp', name: 'MVP Supremo', gems: 4500, bonus: 900, price: 89.9, badge: 'MVP+', description: 'Bundle premium com bônus reforçado para criadores e líderes.', demo: true }
+    ];
+
+    const formatGems = (value) => `${Number(value || 0).toLocaleString('pt-BR')} ✦`;
+    const formatPrice = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
+
+    const setCatalogMode = (mode) => {
+        state.mode = mode;
+        catalogMode.textContent = mode === 'demo' ? 'Catálogo em modo demonstração (fallback)' : 'Catálogo online';
+        catalogMode.classList.toggle('hint', mode === 'demo');
+    };
+
+    const renderGemLoading = () => {
+        gemPacksGrid.innerHTML = `
+            <div class="card stack">
+                <div class="stack inline">
+                    <span class="pill">Carregando catálogo...</span>
+                    <span class="skeleton" style="max-width: 180px;"></span>
+                </div>
+                <div class="skeleton" style="height: 18px;max-width: 60%;"></div>
+                <div class="skeleton" style="height: 36px;max-width: 120px;"></div>
+            </div>
+            <div class="card stack">
+                <div class="skeleton" style="height: 22px;max-width: 40%;"></div>
+                <div class="skeleton" style="height: 18px;max-width: 70%;"></div>
+                <div class="skeleton" style="height: 36px;max-width: 120px;"></div>
+            </div>
+        `;
+    };
+
+    const renderGemCatalog = () => {
+        gemBalance.textContent = formatGems(state.profile?.gems);
+        if (!state.packs.length) {
+            gemPacksGrid.innerHTML = '<div class="card error">Catálogo de gems indisponível.</div>';
+            return;
+        }
+        gemPacksGrid.innerHTML = state.packs.map(pack => {
+            const badge = pack.badge ? `<span class="pill accent">${pack.badge}</span>` : '';
+            const description = pack.description ? `<p class="muted">${pack.description}</p>` : '';
+            const bonusLabel = Number(pack.bonus || 0) > 0 ? `<span class="pill">+${pack.bonus} bônus</span>` : '';
+            const demoLabel = state.mode === 'demo' ? '<p class="hint">Modo demonstração - backend offline</p>' : '';
+            return `
+            <div class="card stack">
+                <div class="toolbar" style="align-items:flex-start;justify-content:space-between;">
+                    <div>
+                        <h3>${pack.name}</h3>
+                        <p class="muted">${pack.gems} gems</p>
+                        ${description}
+                        ${demoLabel}
+                    </div>
+                    <div class="stack" style="align-items:flex-end;gap:8px;">
+                        ${badge}
+                        ${bonusLabel}
+                        <span class="pill">${formatPrice(pack.price)}</span>
+                    </div>
+                </div>
+                <button class="button" data-pack="${pack.id}">Comprar (mock)</button>
+            </div>
+            `;
+        }).join('');
+
+        gemPacksGrid.querySelectorAll('button[data-pack]').forEach(btn => {
+            btn.addEventListener('click', () => purchaseGems(btn.dataset.pack, btn));
+        });
+    };
+
+    const renderVipSpotlights = () => {
+        const vipPacks = state.packs.filter(p => p.badge);
+        if (!vipPacks.length) {
+            vipGrid.innerHTML = '<p class="muted">Nenhum plano VIP configurado no momento.</p>';
+            return;
+        }
+        vipGrid.innerHTML = vipPacks.map(pack => `
+            <div class="card stack">
+                <div class="toolbar" style="align-items:flex-start;justify-content:space-between;">
+                    <div>
+                        <h4>${pack.name}</h4>
+                        <p class="muted">Inclui ${formatGems(pack.gems)} + ${pack.bonus} bônus.</p>
+                        <p class="muted">Ideal para renovar ou testar benefícios VIP/MVP.</p>
+                    </div>
+                    <div class="stack" style="align-items:flex-end;gap:8px;">
+                        <span class="pill accent">${pack.badge}</span>
+                        <span class="pill">${formatPrice(pack.price)}</span>
+                    </div>
+                </div>
+                <button class="button ghost" data-pack="${pack.id}">Aplicar (mock)</button>
+            </div>
+        `).join('');
+
+        vipGrid.querySelectorAll('button[data-pack]').forEach(btn => {
+            btn.addEventListener('click', () => purchaseGems(btn.dataset.pack, btn));
+        });
+    };
+
+    const purchaseGems = async (packId, button) => {
+        gemError.hidden = true;
+        button.classList.add('loading');
+        button.disabled = true;
+        try {
+            await Api.purchaseGems(packId);
+            await refreshProfile();
+        } catch (err) {
+            // Se estamos em modo demonstração, simula o crédito de gems para facilitar QA manual.
+            const demoPack = state.mode === 'demo' && state.packs.find(p => p.id === packId);
+            if (demoPack) {
+                const profile = state.profile || { gems: 0 };
+                profile.gems = Number(profile.gems || 0) + Number(demoPack.gems || 0) + Number(demoPack.bonus || 0);
+                state.profile = profile;
+                renderGemCatalog();
+                gemError.textContent = 'Compra simulada no modo demonstração. Backend indisponível.';
+            } else {
+                gemError.textContent = err.message;
+            }
+            gemError.hidden = false;
+        } finally {
+            button.classList.remove('loading');
+            button.disabled = false;
+        }
+    };
+
+    const loadGemPacks = async () => {
+        renderGemLoading();
+        try {
+            const response = await Api.gemPacks();
+            if (!Array.isArray(response) || response.length === 0) {
+                throw new Error('Catálogo de gems indisponível no backend');
+            }
+            state.packs = response;
+            setCatalogMode('api');
+            gemError.hidden = true;
+        } catch (err) {
+            state.packs = DEMO_GEM_PACKS;
+            setCatalogMode('demo');
+            gemError.textContent = `${err.message}. Usando catálogo de demonstração para testes.`;
+            gemError.hidden = false;
+        }
+        renderGemCatalog();
+        renderVipSpotlights();
+    };
+
+    const refreshProfile = async () => {
+        try {
+            const info = await Api.userInfo();
+            state.profile = info;
+            UI.setText('#player-id', info.username);
+            gemBalance.textContent = formatGems(info.gems);
+        } catch (err) {
+            gemError.textContent = err.message;
+            gemError.hidden = false;
+        }
+    };
+
+    refreshProfile();
+    loadGemPacks();
+</script>
+</body>
+</html>
