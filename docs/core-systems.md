@@ -16,9 +16,11 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Mensagens**: personalize `claims.protected.kingdom` e `claims.protected.clan` em `messages.yml` para indicar quem controla a área. Mensagens do fluxo de claim ficam em `claims.*` dentro do `config.yml`.
 
 ## Economia
-- **Persistência**: saldos são mantidos em `plugins/EarthCore/currency.yml`, com cache em memória protegido por lock de leitura/escrita.
-- **Criação automática**: `EconomyService` garante a criação de conta ao consultar o saldo (`ensureAccount`).
-- **Limite antiflood**: até 5 transações por tick por jogador (`MAX_TRANSACTIONS_PER_TICK`); exceder lança exceção de operação.
+- **Duas moedas protegidas**: `MoneyWallet` armazena **coins** e **gems** de forma imutável e bloqueia saldos negativos, `NaN` ou infinitos já no construtor para evitar corrupção de dados (`MoneyCurrency` define os tipos).
+- **Persistência resiliente**: saldos ficam em `plugins/EarthCore/currency.yml`, com cache em memória protegido por lock de leitura/escrita. O repositório cria `currency.yml` se faltar, ignora/avisa sobre UUIDs inválidos e zera valores negativos ao ler.
+- **Criação automática**: `EconomyService` garante conta antes de qualquer operação (`ensureAccount`), persistindo imediatamente.
+- **Limite antiflood**: até 5 transações por tick por jogador (`MAX_TRANSACTIONS_PER_TICK`); exceder gera erro amigável e impede a operação antes de tocar saldo.
+- **Validação de entrada**: operações financeiras rejeitam quantias inválidas (negativas, `NaN`, infinitas) com mensagens claras. `/pay` também bloqueia transferências para si mesmo e exige valor positivo; comandos administrativos (`/economy give|take|set`) reutilizam a mesma validação e só aceitam moedas válidas.
 - **Auditoria**: as últimas 500 transações ficam em um deque em memória para inspeção e para disparar eventos Bukkit (`PlayerMoneyReceiveEvent`/`PlayerMoneySpendEvent`).
 - **Eventos e integrações**: depósitos e saques disparam eventos com o motivo (`reason`) e o tipo de transação (`MoneyTransactionType`), permitindo hooks externos.
 - **Top e ajustes**: o repositório interno oferece ranking (`getTopBalances`) e localização do jogador mais rico, além de operações de ajuste direto de saldo para admins (`setBalance`).
