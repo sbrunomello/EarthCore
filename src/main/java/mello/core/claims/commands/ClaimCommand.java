@@ -9,6 +9,7 @@ import mello.core.claims.ClaimOwnerContext;
 import mello.core.claims.ClaimOwnerType;
 import mello.core.claims.ClaimPreviewManager;
 import mello.core.claims.ClaimSelectionState;
+import mello.core.claims.ClaimSelectionHelper;
 import mello.core.claims.ClaimSettings;
 import mello.core.gui.GuiManager;
 import mello.core.claims.gui.ClaimMainGui;
@@ -38,6 +39,7 @@ public class ClaimCommand implements CommandExecutor {
     private final KingdomsConfig kingdomsConfig;
     private final ClansConfig clansConfig;
     private final ClaimPreviewManager previewManager;
+    private final ClaimSelectionHelper selectionHelper;
     private final ClaimSettings claimSettings;
     private final GuiManager guiManager;
     private final ClaimFlowService flowService;
@@ -45,13 +47,14 @@ public class ClaimCommand implements CommandExecutor {
 
     public ClaimCommand(JavaPlugin plugin, KingdomService kingdomService, ClanService clanService,
                         KingdomsConfig kingdomsConfig, ClansConfig clansConfig,
-                        ClaimPreviewManager previewManager, ClaimSettings claimSettings,
+                        ClaimPreviewManager previewManager, ClaimSelectionHelper selectionHelper, ClaimSettings claimSettings,
                         GuiManager guiManager, ClaimFlowService flowService) {
         this.kingdomService = kingdomService;
         this.clanService = clanService;
         this.kingdomsConfig = kingdomsConfig;
         this.clansConfig = clansConfig;
         this.previewManager = previewManager;
+        this.selectionHelper = selectionHelper;
         this.claimSettings = claimSettings;
         this.guiManager = guiManager;
         this.flowService = flowService;
@@ -85,11 +88,15 @@ public class ClaimCommand implements CommandExecutor {
 
         previewManager.clear(player, false);
         giveClaimStick(player);
-        new ClaimMainGui(player, guiManager, ownerContext, previewManager, claimSettings, kingdomService, clanService, kingdomsConfig, clansConfig, flowService).open();
+        new ClaimMainGui(player, guiManager, ownerContext, previewManager, claimSettings, selectionHelper, kingdomService, clanService, kingdomsConfig, clansConfig, flowService).open();
         return true;
     }
 
-    private ClaimOwnerContext resolveOwner(Player player) {
+    /**
+     * Determina qual grupo o jogador está autorizado a representar no fluxo de claim.
+     * Retorna {@code null} caso o jogador não possua permissão em nenhum grupo.
+     */
+    public ClaimOwnerContext resolveOwner(Player player) {
         Kingdom kingdom = kingdomService.getByMember(player.getUniqueId());
         if (kingdom != null) {
             KingdomRole role = kingdom.getRole(player.getUniqueId());

@@ -31,6 +31,7 @@ import mello.core.gui.GuiManager;
 import mello.core.gui.GuiMessages;
 import mello.core.claims.ClaimMessages;
 import mello.core.claims.ClaimPreviewManager;
+import mello.core.claims.ClaimSelectionHelper;
 import mello.core.claims.ClaimSettings;
 import mello.core.claims.ClaimFlowService;
 import mello.core.claims.ClaimVisualizationService;
@@ -38,6 +39,7 @@ import mello.core.claims.commands.ClaimCommand;
 import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
 import mello.core.claims.ClaimService;
+import mello.core.claims.ClaimStickListener;
 import mello.core.claims.ClaimListener;
 import mello.auth.AuthService;
 import mello.auth.AuthSessionManager;
@@ -190,6 +192,7 @@ public class EarthCore extends JavaPlugin {
         claimPreviewManager = new ClaimPreviewManager(this, claimSettings, null);
         claimVisualizationService = new ClaimVisualizationService(this);
         claimFlowService = new ClaimFlowService(claimPreviewManager, claimSettings, claimVisualizationService, kingdomService, clanService);
+        ClaimSelectionHelper claimSelectionHelper = new ClaimSelectionHelper(claimSettings, kingdomService, clanService, kingdomsConfig, clansConfig);
 
         // Serviços básicos de teleporte e mensagens privadas
         spawnService = new SpawnService(this);
@@ -206,7 +209,7 @@ public class EarthCore extends JavaPlugin {
         ShopStorage shopStorage = new ShopStorage(getDataFolder(), getLogger());
         shopService = new ShopService(this, shopStorage, economyService, claimService, clanService, kingdomService, guiManager, getLogger());
 
-        ClaimCommand claimCommand = new ClaimCommand(this, kingdomService, clanService, kingdomsConfig, clansConfig, claimPreviewManager, claimSettings, guiManager, claimFlowService);
+        ClaimCommand claimCommand = new ClaimCommand(this, kingdomService, clanService, kingdomsConfig, clansConfig, claimPreviewManager, claimSelectionHelper, claimSettings, guiManager, claimFlowService);
         claimPreviewManager.setCleanupCallback(claimCommand::removeClaimStick);
 
         // Registrar comandos
@@ -234,6 +237,7 @@ public class EarthCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);
+        getServer().getPluginManager().registerEvents(new ClaimStickListener(claimPreviewManager, claimSettings, claimSelectionHelper, claimCommand, guiManager, claimFlowService), this);
         getServer().getPluginManager().registerEvents(new ShopListener(shopService), this);
         getServer().getPluginManager().registerEvents(new NpcProtectionListener(shopService, portalService), this);
 

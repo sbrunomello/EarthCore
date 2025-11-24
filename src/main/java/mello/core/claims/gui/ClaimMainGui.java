@@ -4,6 +4,7 @@ import mello.core.claims.ClaimFlowService;
 import mello.core.claims.ClaimOwnerContext;
 import mello.core.claims.ClaimOwnerType;
 import mello.core.claims.ClaimPreviewManager;
+import mello.core.claims.ClaimSelectionHelper;
 import mello.core.claims.ClaimSettings;
 import mello.core.gui.AbstractGui;
 import mello.core.gui.GuiManager;
@@ -29,6 +30,7 @@ public class ClaimMainGui extends AbstractGui {
     private final ClaimOwnerContext ownerContext;
     private final ClaimPreviewManager previewManager;
     private final ClaimSettings settings;
+    private final ClaimSelectionHelper selectionHelper;
     private final KingdomService kingdomService;
     private final ClanService clanService;
     private final KingdomsConfig kingdomsConfig;
@@ -36,13 +38,14 @@ public class ClaimMainGui extends AbstractGui {
     private final ClaimFlowService flowService;
 
     public ClaimMainGui(Player player, GuiManager guiManager, ClaimOwnerContext ownerContext,
-                        ClaimPreviewManager previewManager, ClaimSettings settings, KingdomService kingdomService,
-                        ClanService clanService, KingdomsConfig kingdomsConfig, ClansConfig clansConfig,
-                        ClaimFlowService flowService) {
+                        ClaimPreviewManager previewManager, ClaimSettings settings, ClaimSelectionHelper selectionHelper,
+                        KingdomService kingdomService, ClanService clanService, KingdomsConfig kingdomsConfig,
+                        ClansConfig clansConfig, ClaimFlowService flowService) {
         super(player, guiManager, 27, "&8Claims");
         this.ownerContext = ownerContext;
         this.previewManager = previewManager;
         this.settings = settings;
+        this.selectionHelper = selectionHelper;
         this.kingdomService = kingdomService;
         this.clanService = clanService;
         this.kingdomsConfig = kingdomsConfig;
@@ -70,7 +73,7 @@ public class ClaimMainGui extends AbstractGui {
     @Override
     public void handleClick(InventoryClickEvent event) {
         switch (event.getRawSlot()) {
-            case 11 -> new ClaimSelectChunkGui(player, guiManager, ownerContext, previewManager, settings, kingdomService, clanService, kingdomsConfig, clansConfig, flowService).open();
+            case 11 -> new ClaimSelectChunkGui(player, guiManager, ownerContext, previewManager, settings, selectionHelper, flowService).open();
             case 13 -> showClaims();
             case 15 -> player.closeInventory();
             default -> {
