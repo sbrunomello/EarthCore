@@ -31,4 +31,8 @@ public final class AuthMessages {
             + "Você precisa fazer login antes de interagir.";
     public static final String JOIN_MESSAGE_REGISTER = ChatColor.YELLOW + "Use /register <senha> <senha> para criar sua conta.";
     public static final String JOIN_MESSAGE_LOGIN = ChatColor.YELLOW + "Use /login <senha> para entrar.";
+
+    public static final String TITLE_LOGIN_HEADER = ChatColor.RED + "Autenticação obrigatória";
+    public static final String TITLE_LOGIN_SUBTITLE = ChatColor.YELLOW + "Use /login <senha> para entrar.";
+    public static final String TITLE_REGISTER_SUBTITLE = ChatColor.YELLOW + "Use /register <senha> <senha> para criar sua conta.";
 }
