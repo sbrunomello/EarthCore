@@ -43,7 +43,8 @@ public class FrontendServer {
             "clan.html",
             "shops.html",
             "jobs.html",
-            "portals.html"
+            "portals.html",
+            "gems.html"
     );
 
     private static final Map<String, String> MIME_TYPES = Map.of(
