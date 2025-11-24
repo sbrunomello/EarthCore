@@ -1,16 +1,16 @@
 package mello.jobs;
 
 /**
- * Representa uma recompensa granular de job, permitindo combinar coins e gems
- * sem obrigar duplicação de tabelas ou novas listas de pagamento.
+ * Representa uma recompensa granular de job. O pagamento agora é exclusivo em
+ * coins: gems devem ser obtidas apenas via loja ou eventos.
  */
-public record JobReward(double coins, double gems) {
+public record JobReward(double coins) {
 
     public static JobReward empty() {
-        return new JobReward(0D, 0D);
+        return new JobReward(0D);
     }
 
     public boolean isEmpty() {
-        return coins <= 0 && gems <= 0;
+        return coins <= 0;
     }
 }

@@ -33,22 +33,12 @@ public class HomeCommand implements CommandExecutor {
     }
 
     private boolean handleSetHome(Player player) {
-        if (!player.hasPermission("core.home.set")) {
-            player.sendMessage(Messages.NO_PERMISSION);
-            return true;
-        }
-
         homeService.setHome(player.getUniqueId(), player.getLocation());
         player.sendMessage(Messages.HOME_SET);
         return true;
     }
 
     private boolean handleTeleport(Player player) {
-        if (!player.hasPermission("core.home.use")) {
-            player.sendMessage(Messages.NO_PERMISSION);
-            return true;
-        }
-
         UUID playerId = player.getUniqueId();
         Optional<Location> home = homeService.getHome(playerId);
         if (home.isEmpty()) {
