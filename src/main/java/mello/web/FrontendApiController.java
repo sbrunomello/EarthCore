@@ -443,7 +443,8 @@ public class FrontendApiController {
     }
 
     private UserProfile assembleProfile(String username, UUID playerId, ApiContext authContext) {
-        double balance = economyService.getBalance(playerId);
+        double coins = economyService.getBalance(playerId);
+        double gems = economyService.getBalance(playerId, mello.economy.MoneyCurrency.GEMS);
         Clan clan = clanService.getByMember(playerId);
         Kingdom kingdom = kingdomService.getByMember(playerId);
 
@@ -471,7 +472,7 @@ public class FrontendApiController {
             coords = new Coordinates(loc.getWorld() != null ? loc.getWorld().getName() : "", loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
         }
 
-        return new UserProfile(username, playerId.toString(), balance, clanSummary, kingdomSummary, coords);
+        return new UserProfile(username, playerId.toString(), coins, gems, clanSummary, kingdomSummary, coords);
     }
 
     private ApiContext preflight(HttpExchange exchange, boolean requireAuth) throws IOException {
@@ -569,7 +570,7 @@ public class FrontendApiController {
     private record LoginRequest(String username, String password) {}
     private record LoginResponse(String token, String uuid, String username) {}
     private record ApiError(String message) {}
-    private record UserProfile(String username, String uuid, double balance, ClanSummary clan, KingdomSummary kingdom, Coordinates coordinates) {}
+    private record UserProfile(String username, String uuid, double coins, double gems, ClanSummary clan, KingdomSummary kingdom, Coordinates coordinates) {}
     private record ClanSummary(String name, String tag, String role, double bank) {}
     private record KingdomSummary(String name, String role, double bank, int claims, String tier) {}
     private record Coordinates(String world, int x, int y, int z) {}

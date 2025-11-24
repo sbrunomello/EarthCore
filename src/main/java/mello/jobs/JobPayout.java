@@ -13,8 +13,8 @@ public class JobPayout {
     private final JobType jobType;
     private final String displayName;
     private final boolean enabled;
-    private final Map<Material, Double> blockBreakPayouts = new EnumMap<>(Material.class);
-    private final Map<EntityType, Double> entityKillPayouts = new EnumMap<>(EntityType.class);
+    private final Map<Material, JobReward> blockBreakPayouts = new EnumMap<>(Material.class);
+    private final Map<EntityType, JobReward> entityKillPayouts = new EnumMap<>(EntityType.class);
 
     public JobPayout(JobType jobType, String displayName, boolean enabled) {
         this.jobType = jobType;
@@ -34,11 +34,11 @@ public class JobPayout {
         return enabled;
     }
 
-    public Map<Material, Double> getBlockBreakPayouts() {
+    public Map<Material, JobReward> getBlockBreakPayouts() {
         return blockBreakPayouts;
     }
 
-    public Map<EntityType, Double> getEntityKillPayouts() {
+    public Map<EntityType, JobReward> getEntityKillPayouts() {
         return entityKillPayouts;
     }
 }

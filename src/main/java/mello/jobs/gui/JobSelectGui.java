@@ -109,9 +109,15 @@ public class JobSelectGui extends AbstractGui {
             case HUNTER -> lore.add("§7Derrote mobs hostis para lucrar.");
             case LUMBERJACK -> lore.add("§7Derrube árvores e madeiras para ganhar.");
         }
-        payout.getBlockBreakPayouts().entrySet().stream().limit(3).forEach(entry ->
-                lore.add(" §f" + entry.getKey().name() + " §7-> §a" + String.format("%.2f", entry.getValue()))
-        );
+        payout.getBlockBreakPayouts().entrySet().stream().limit(3).forEach(entry -> {
+            double coins = entry.getValue().coins();
+            double gems = entry.getValue().gems();
+            String rewardText = String.format("§a%.2f⛁", coins);
+            if (gems > 0) {
+                rewardText += String.format(" §b%.2f✦", gems);
+            }
+            lore.add(" §f" + entry.getKey().name() + " §7-> " + rewardText);
+        });
         if (current) {
             lore.add("");
             lore.add("§e[SEU JOB ATUAL]");

@@ -1,6 +1,7 @@
 package mello.jobs;
 
 import mello.economy.EconomyService;
+import mello.economy.MoneyCurrency;
 import mello.economy.MoneyTransactionType;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomBankService;
@@ -99,8 +100,8 @@ public class JobService {
         }
 
         Material material = block.getType();
-        Double reward = payout.getBlockBreakPayouts().get(material);
-        if (reward == null || reward <= 0) {
+        JobReward reward = payout.getBlockBreakPayouts().get(material);
+        if (reward == null || reward.isEmpty()) {
             return;
         }
 
@@ -121,7 +122,7 @@ public class JobService {
 
         payJobReward(player, reward);
         lastRewardReceived.put(playerId, System.currentTimeMillis());
-        logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por quebrar " + material + ".");
+        logger.fine("[Jobs] Pagando " + reward.coins() + " coins e " + reward.gems() + " gems para " + playerId + " por quebrar " + material + ".");
     }
 
     /**
@@ -139,8 +140,8 @@ public class JobService {
             return;
         }
 
-        Double reward = payout.getEntityKillPayouts().get(entityType);
-        if (reward == null || reward <= 0) {
+        JobReward reward = payout.getEntityKillPayouts().get(entityType);
+        if (reward == null || reward.isEmpty()) {
             return;
         }
 
@@ -150,11 +151,11 @@ public class JobService {
 
         payJobReward(player, reward);
         lastRewardReceived.put(playerId, System.currentTimeMillis());
-        logger.fine("[Jobs] Pagando " + reward + " para " + playerId + " por matar " + entityType + ".");
+        logger.fine("[Jobs] Pagando " + reward.coins() + " coins e " + reward.gems() + " gems para " + playerId + " por matar " + entityType + ".");
     }
 
-    private void payJobReward(Player player, double reward) {
-        if (reward <= 0) {
+    private void payJobReward(Player player, JobReward reward) {
+        if (reward == null || reward.isEmpty()) {
             return;
         }
 
@@ -163,31 +164,40 @@ public class JobService {
         boolean bankEnabled = bankService != null && bankService.isEnabled();
 
         if (!bankEnabled) {
-            economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
+            depositRewards(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
             return;
         }
 
         Kingdom kingdom = kingdomService.getByMember(playerId);
         if (kingdom == null) {
-            economyService.deposit(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
+            depositRewards(playerId, reward, MoneyTransactionType.JOB_REWARD, "Job reward");
             return;
         }
 
         var taxSettings = bankService.getSettings() != null ? bankService.getSettings().taxSettings() : null;
         boolean taxEnabled = taxSettings != null && taxSettings.enabled();
         double tax = 0;
-        if (taxEnabled && reward >= taxSettings.minAmount()) {
-            tax = Math.max(0, reward * taxSettings.rate());
+        if (taxEnabled && reward.coins() >= taxSettings.minAmount()) {
+            tax = Math.max(0, reward.coins() * taxSettings.rate());
             if (tax < 0.0001) {
                 tax = 0;
             }
         }
 
-        double net = Math.max(0, reward - tax);
-        economyService.deposit(playerId, net, MoneyTransactionType.JOB_REWARD, tax > 0 ? "Job reward (líquido)" : "Job reward");
+        double netCoins = Math.max(0, reward.coins() - tax);
+        depositRewards(playerId, new JobReward(netCoins, reward.gems()), MoneyTransactionType.JOB_REWARD, tax > 0 ? "Job reward (líquido)" : "Job reward");
         if (tax > 0) {
             bankService.deposit(kingdom, tax, "Taxa de job de " + player.getName());
             logger.fine("[Jobs] Imposto de " + tax + " destinado ao reino " + kingdom.getName() + " para o jogador " + player.getName());
+        }
+    }
+
+    private void depositRewards(UUID playerId, JobReward reward, MoneyTransactionType type, String reason) {
+        if (reward.coins() > 0) {
+            economyService.deposit(playerId, MoneyCurrency.COINS, reward.coins(), type, reason);
+        }
+        if (reward.gems() > 0) {
+            economyService.deposit(playerId, MoneyCurrency.GEMS, reward.gems(), MoneyTransactionType.GEM_REWARD, reason);
         }
     }
 

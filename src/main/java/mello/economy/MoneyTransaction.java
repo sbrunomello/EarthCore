@@ -12,13 +12,15 @@ public final class MoneyTransaction {
 
     private final UUID playerId;
     private final MoneyTransactionType type;
+    private final MoneyCurrency currency;
     private final double amount;
     private final Instant timestamp;
     private final String reason;
 
-    public MoneyTransaction(UUID playerId, MoneyTransactionType type, double amount, Instant timestamp, String reason) {
+    public MoneyTransaction(UUID playerId, MoneyTransactionType type, MoneyCurrency currency, double amount, Instant timestamp, String reason) {
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.type = Objects.requireNonNull(type, "type");
+        this.currency = Objects.requireNonNull(currency, "currency");
         this.timestamp = Objects.requireNonNull(timestamp, "timestamp");
         this.reason = reason == null ? "" : reason;
         this.amount = amount;
@@ -30,6 +32,10 @@ public final class MoneyTransaction {
 
     public MoneyTransactionType type() {
         return type;
+    }
+
+    public MoneyCurrency currency() {
+        return currency;
     }
 
     public double amount() {

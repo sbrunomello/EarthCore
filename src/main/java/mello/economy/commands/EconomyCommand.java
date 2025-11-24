@@ -1,6 +1,7 @@
 package mello.economy.commands;
 
 import mello.economy.EconomyService;
+import mello.economy.MoneyCurrency;
 import mello.economy.MoneyTransactionType;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -64,48 +65,51 @@ public class EconomyCommand implements CommandExecutor {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage("§6Comandos de economia:");
-        sender.sendMessage("§7/economy give <player> <amount> [reason] §f- adiciona saldo");
-        sender.sendMessage("§7/economy take <player> <amount> [reason] §f- remove saldo");
-        sender.sendMessage("§7/economy set <player> <amount> §f- define saldo fixo");
+        sender.sendMessage("§7/economy give <player> <coins|gems> <amount> [reason] §f- adiciona saldo");
+        sender.sendMessage("§7/economy take <player> <coins|gems> <amount> [reason] §f- remove saldo");
+        sender.sendMessage("§7/economy set <player> <coins|gems> <amount> §f- define saldo fixo");
         sender.sendMessage("§7/economy top [page] §f- mostra o ranking de mais ricos");
     }
 
     private void handleGive(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage("Uso: /economy give <player> <amount> [reason]");
+        if (args.length < 4) {
+            sender.sendMessage("Uso: /economy give <player> <coins|gems> <amount> [reason]");
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-        double amount = parseAmount(args[2]);
-        String reason = args.length >= 4 ? String.join(" ", slice(args, 3)) : "Ajuste administrativo";
-        economyService.deposit(target.getUniqueId(), amount, MoneyTransactionType.ADMIN_ADJUST, reason);
-        sender.sendMessage("§aAdicionado §f" + format(amount) + " §apara " + target.getName());
+        MoneyCurrency currency = parseCurrency(args[2]);
+        double amount = parseAmount(args[3]);
+        String reason = args.length >= 5 ? String.join(" ", slice(args, 4)) : "Ajuste administrativo";
+        economyService.deposit(target.getUniqueId(), currency, amount, MoneyTransactionType.ADMIN_ADJUST, reason);
+        sender.sendMessage("§aAdicionado §f" + format(amount) + " " + currency.name().toLowerCase() + " §apara " + target.getName());
     }
 
     private void handleTake(CommandSender sender, String[] args) {
-        if (args.length < 3) {
-            sender.sendMessage("Uso: /economy take <player> <amount> [reason]");
+        if (args.length < 4) {
+            sender.sendMessage("Uso: /economy take <player> <coins|gems> <amount> [reason]");
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-        double amount = parseAmount(args[2]);
-        String reason = args.length >= 4 ? String.join(" ", slice(args, 3)) : "Ajuste administrativo";
-        if (!economyService.withdraw(target.getUniqueId(), amount, MoneyTransactionType.ADMIN_ADJUST, reason)) {
+        MoneyCurrency currency = parseCurrency(args[2]);
+        double amount = parseAmount(args[3]);
+        String reason = args.length >= 5 ? String.join(" ", slice(args, 4)) : "Ajuste administrativo";
+        if (!economyService.withdraw(target.getUniqueId(), currency, amount, MoneyTransactionType.ADMIN_ADJUST, reason)) {
             sender.sendMessage("§cSaldo insuficiente para remover este valor.");
             return;
         }
-        sender.sendMessage("§aRemovido §f" + format(amount) + " §ade " + target.getName());
+        sender.sendMessage("§aRemovido §f" + format(amount) + " " + currency.name().toLowerCase() + " §ade " + target.getName());
     }
 
     private void handleSet(CommandSender sender, String[] args) {
-        if (args.length != 3) {
-            sender.sendMessage("Uso: /economy set <player> <amount>");
+        if (args.length != 4) {
+            sender.sendMessage("Uso: /economy set <player> <coins|gems> <amount>");
             return;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
-        double amount = parseAmount(args[2]);
-        economyService.setBalance(target.getUniqueId(), amount, "Definição direta por administrador");
-        sender.sendMessage("§aSaldo de " + target.getName() + " ajustado para §f" + format(amount));
+        MoneyCurrency currency = parseCurrency(args[2]);
+        double amount = parseAmount(args[3]);
+        economyService.setBalance(target.getUniqueId(), currency, amount, "Definição direta por administrador");
+        sender.sendMessage("§aSaldo de " + target.getName() + " ajustado para §f" + format(amount) + " " + currency.name().toLowerCase());
     }
 
     private void handleTop(CommandSender sender, String[] args) {
@@ -140,6 +144,14 @@ public class EconomyCommand implements CommandExecutor {
             throw new IllegalArgumentException("Informe um valor positivo.");
         }
         return value;
+    }
+
+    private MoneyCurrency parseCurrency(String raw) {
+        return switch (raw.toLowerCase()) {
+            case "coins", "coin" -> MoneyCurrency.COINS;
+            case "gems", "gem" -> MoneyCurrency.GEMS;
+            default -> throw new IllegalArgumentException("Moeda inválida. Use coins ou gems.");
+        };
     }
 
     private List<String> slice(String[] args, int start) {

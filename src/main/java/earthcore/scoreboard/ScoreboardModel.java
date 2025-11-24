@@ -36,8 +36,8 @@ public class ScoreboardModel {
     private final String worldIcon;
     private final String clanIcon;
     private final String kingdomIcon;
-    private final String moneyIcon;
     private final String coinsIcon;
+    private final String gemsIcon;
     private final String killsIcon;
     private final String mobsIcon;
     private final String deathsIcon;
@@ -59,8 +59,8 @@ public class ScoreboardModel {
         this.worldIcon = colorize("&b" + safeIcon("🌍", "W") + " ");
         this.clanIcon = colorize("&a" + safeIcon("⚔", "C") + " ");
         this.kingdomIcon = colorize("&6" + safeIcon("👑", "K") + " ");
-        this.moneyIcon = colorize("&e" + safeIcon("⛃", "$") + " ");
-        this.coinsIcon = colorize("&6" + safeIcon("⛁", "C") + " ");
+        this.coinsIcon = colorize("&e" + safeIcon("⛃", "C") + " ");
+        this.gemsIcon = colorize("&b" + safeIcon("✦", "G") + " ");
         this.killsIcon = colorize("&c" + safeIcon("✖", "X") + " ");
         this.mobsIcon = colorize("&2" + safeIcon("☠", "M") + " ");
         this.deathsIcon = colorize("&4" + safeIcon("☠", "D") + " ");
@@ -79,8 +79,8 @@ public class ScoreboardModel {
         lines.add(ScoreboardLineDefinition.team("clan_line", clanIcon + labelColor + "Clan: " + valueColor, formatClan(null)));
         lines.add(ScoreboardLineDefinition.team("kingdom_line", kingdomIcon + labelColor + "Kingdom: " + valueColor, formatKingdom(null)));
         lines.add(ScoreboardLineDefinition.team("separator_groups", separator, ""));
-        lines.add(ScoreboardLineDefinition.team("money_line", moneyIcon + labelColor + "Money: " + ChatColor.GREEN, formatMoney(0)));
         lines.add(ScoreboardLineDefinition.team("coins_line", coinsIcon + labelColor + "Coins: " + ChatColor.GOLD, formatCoins(0)));
+        lines.add(ScoreboardLineDefinition.team("gems_line", gemsIcon + labelColor + "Gems: " + ChatColor.AQUA, formatGems(0)));
         lines.add(ScoreboardLineDefinition.team("separator_economy", separator, ""));
         lines.add(ScoreboardLineDefinition.team("kills_line", killsIcon + labelColor + "Kills: " + valueColor, formatKills(0)));
         lines.add(ScoreboardLineDefinition.team("mobs_deaths_line", mobsIcon + labelColor + "Mobs: " + valueColor, formatMobAndDeaths(0, 0)));
@@ -141,12 +141,12 @@ public class ScoreboardModel {
         return valueColor + (kingdomName == null ? "—" : kingdomName);
     }
 
-    public String formatMoney(double balance) {
-        return ChatColor.GREEN + "$" + MONEY_FORMAT.format(balance);
-    }
-
     public String formatCoins(double coins) {
         return ChatColor.GOLD + MONEY_FORMAT.format(coins);
+    }
+
+    public String formatGems(double gems) {
+        return ChatColor.AQUA + MONEY_FORMAT.format(gems);
     }
 
     public String formatKills(int kills) {
@@ -161,7 +161,7 @@ public class ScoreboardModel {
         return valueColor + achievements;
     }
 
-    public Map<String, String> buildDynamicValues(Player player, String clanName, String kingdomName, double balance, double coins,
+    public Map<String, String> buildDynamicValues(Player player, String clanName, String kingdomName, double coins, double gems,
                                                  int kills, int mobKills, int deaths, int achievements) {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("coords_line", formatCoordinates(player));
@@ -169,8 +169,8 @@ public class ScoreboardModel {
         values.put("world_line", formatWorld(player.getWorld()));
         values.put("clan_line", formatClan(clanName));
         values.put("kingdom_line", formatKingdom(kingdomName));
-        values.put("money_line", formatMoney(balance));
         values.put("coins_line", formatCoins(coins));
+        values.put("gems_line", formatGems(gems));
         values.put("kills_line", formatKills(kills));
         values.put("mobs_deaths_line", formatMobAndDeaths(mobKills, deaths));
         values.put("achievements_line", formatAchievements(achievements));

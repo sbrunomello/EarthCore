@@ -3,6 +3,7 @@ package earthcore.scoreboard;
 import mello.clans.Clan;
 import mello.clans.ClanService;
 import mello.economy.EconomyService;
+import mello.economy.MoneyCurrency;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomService;
 import org.bukkit.Bukkit;
@@ -89,8 +90,8 @@ public class ScoreboardService implements Listener {
         Clan clan = clanService != null ? clanService.getByMember(playerId) : null;
         Kingdom kingdom = kingdomService != null ? kingdomService.getByMember(playerId) : null;
 
-        double balance = economyService != null ? economyService.getBalance(playerId) : 0.0;
-        double coins = balance; // TODO Integrar com serviço de coins dedicado quando disponível.
+        double coins = economyService != null ? economyService.getBalance(playerId, MoneyCurrency.COINS) : 0.0;
+        double gems = economyService != null ? economyService.getBalance(playerId, MoneyCurrency.GEMS) : 0.0;
 
         int kills = statsService.getPlayerKills(player);
         int mobKills = statsService.getMobKills(player);
@@ -101,8 +102,8 @@ public class ScoreboardService implements Listener {
                 player,
                 clan != null ? clan.getName() : null,
                 kingdom != null ? kingdom.getName() : null,
-                balance,
                 coins,
+                gems,
                 kills,
                 mobKills,
                 deaths,

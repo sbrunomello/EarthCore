@@ -84,15 +84,19 @@ public class JobsConfig {
             ConfigurationSection rewards = jobSection.getConfigurationSection("rewards");
             if (rewards != null) {
                 for (String key : rewards.getKeys(false)) {
-                    double value = rewards.getDouble(key, 0D);
+                    JobReward reward = parseReward(rewards, key);
+                    if (reward.isEmpty()) {
+                        continue;
+                    }
+
                     Material material = Material.matchMaterial(key);
                     if (material != null) {
-                        payout.getBlockBreakPayouts().put(material, value);
+                        payout.getBlockBreakPayouts().put(material, reward);
                         continue;
                     }
                     try {
                         EntityType entityType = EntityType.valueOf(key.toUpperCase());
-                        payout.getEntityKillPayouts().put(entityType, value);
+                        payout.getEntityKillPayouts().put(entityType, reward);
                     } catch (IllegalArgumentException ex) {
                         logger.warning("[Jobs] Item desconhecido na seção rewards de " + rawJob + ": " + key);
                     }
@@ -109,5 +113,17 @@ public class JobsConfig {
             return;
         }
         plugin.saveResource(FILE_NAME, false);
+    }
+
+    private JobReward parseReward(ConfigurationSection rewards, String key) {
+        Object rawValue = rewards.get(key);
+        if (rawValue instanceof ConfigurationSection section) {
+            double coins = section.getDouble("coins", 0D);
+            double gems = section.getDouble("gems", 0D);
+            return new JobReward(Math.max(0, coins), Math.max(0, gems));
+        }
+
+        double coins = rewards.getDouble(key, 0D);
+        return new JobReward(Math.max(0, coins), 0D);
     }
 }

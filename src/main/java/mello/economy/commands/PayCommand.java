@@ -3,6 +3,7 @@ package mello.economy.commands;
 import mello.clans.ClanService;
 import mello.clans.TaxResult;
 import mello.economy.EconomyService;
+import mello.economy.MoneyCurrency;
 import mello.economy.MoneyTransactionType;
 import mello.kingdoms.KingdomService;
 import mello.kingdoms.TaxBreakdown;
@@ -71,7 +72,7 @@ public class PayCommand implements CommandExecutor {
         double totalTax = (amount - netAmount);
 
         try {
-            if (!economyService.withdraw(player.getUniqueId(), amount, MoneyTransactionType.PLAYER_TRADE, "Pagamento para " + target.getName())) {
+            if (!economyService.withdraw(player.getUniqueId(), MoneyCurrency.COINS, amount, MoneyTransactionType.PLAYER_TRADE, "Pagamento para " + target.getName())) {
                 player.sendMessage("Você não tem saldo suficiente!");
                 return true;
             }
@@ -81,7 +82,7 @@ public class PayCommand implements CommandExecutor {
         }
 
         try {
-            economyService.deposit(target.getUniqueId(), netAmount, MoneyTransactionType.PLAYER_TRADE, "Pagamento recebido de " + player.getName());
+            economyService.deposit(target.getUniqueId(), MoneyCurrency.COINS, netAmount, MoneyTransactionType.PLAYER_TRADE, "Pagamento recebido de " + player.getName());
         } catch (IllegalStateException ex) {
             player.sendMessage("Operação cancelada: " + ex.getMessage());
             return true;

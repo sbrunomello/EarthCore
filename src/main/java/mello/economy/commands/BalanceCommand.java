@@ -1,6 +1,7 @@
 package mello.economy.commands;
 
 import mello.economy.EconomyService;
+import mello.economy.MoneyCurrency;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -23,8 +24,7 @@ public class BalanceCommand implements CommandExecutor {
                 sender.sendMessage("Somente jogadores podem consultar o próprio saldo.");
                 return true;
             }
-            double balance = economyService.getBalance(player.getUniqueId());
-            player.sendMessage("§7Seu saldo: §a" + format(balance));
+            sendBalances(player, player.getUniqueId());
             return true;
         }
 
@@ -39,12 +39,17 @@ public class BalanceCommand implements CommandExecutor {
             return true;
         }
 
-        double balance = economyService.getBalance(target.getUniqueId());
-        sender.sendMessage("§7Saldo de §f" + target.getName() + "§7: §a" + format(balance));
+        sendBalances(sender, target.getUniqueId());
         return true;
     }
 
+    private void sendBalances(CommandSender sender, java.util.UUID playerId) {
+        double coins = economyService.getBalance(playerId, MoneyCurrency.COINS);
+        double gems = economyService.getBalance(playerId, MoneyCurrency.GEMS);
+        sender.sendMessage("§7Coins: §6" + format(coins) + " §8| §7Gems: §d" + format(gems));
+    }
+
     private String format(double value) {
-        return String.format("%.2f", value);
+        return String.format("%,.2f", value);
     }
 }

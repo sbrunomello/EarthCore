@@ -25,6 +25,6 @@ public class NotificationListener implements Listener {
             return;
         }
 
-        notificationService.notifyMoneyReceived(player, event.getAmount(), event.getType(), event.getReason());
+        notificationService.notifyMoneyReceived(player, event.getAmount(), event.getCurrency(), event.getType(), event.getReason());
     }
 }
