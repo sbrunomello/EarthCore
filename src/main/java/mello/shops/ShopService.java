@@ -131,7 +131,7 @@ public class ShopService {
 
         ClaimContext primaryChestClaim = claimService.findClaimAt(plan.primaryChestBlock()).orElse(null);
         ClaimContext secondaryChestClaim = claimService.findClaimAt(plan.secondaryChestBlock()).orElse(null);
-        if (!Objects.equals(claimContext, primaryChestClaim) || !Objects.equals(claimContext, secondaryChestClaim)) {
+        if (!isSameClaim(claimContext, primaryChestClaim) || !isSameClaim(claimContext, secondaryChestClaim)) {
             return OperationResult.fail("O baú precisa ficar no mesmo claim onde o aldeão será colocado.");
         }
 
@@ -214,6 +214,17 @@ public class ShopService {
         giveWand(player, wand);
         player.sendMessage("§aBastão de posicionamento recebido! Clique em um bloco para escolher onde o aldeão ficará. Clique novamente no mesmo bloco para rotacionar em 90º e use /shop confirm para finalizar.");
         return OperationResult.ok("Seleção iniciada para a loja '" + trimmedName + "'.");
+    }
+
+    public OperationResult cancelShopPlacement(Player player) {
+        PendingShopPlacement pending = pendingPlacements.remove(player.getUniqueId());
+        if (pending == null) {
+            return OperationResult.fail("Nenhum posicionamento de loja pendente.");
+        }
+
+        clearPreview(player, pending);
+        consumeWand(player);
+        return OperationResult.ok("Posicionamento de loja cancelado. Use /shop create para iniciar novamente.");
     }
 
     public List<Shop> getShopsByOwner(UUID ownerId) {
@@ -792,6 +803,29 @@ public class ShopService {
             }
         }
         return false;
+    }
+
+    /**
+     * Compara dois contexts de claim pelo proprietário para garantir que
+     * elementos da loja (aldeão e baú) estejam no mesmo território.
+     */
+    private boolean isSameClaim(ClaimContext first, ClaimContext second) {
+        if (first == null || second == null) {
+            return first == second;
+        }
+
+        if (first.getOwnerType() != second.getOwnerType()) {
+            return false;
+        }
+
+        return switch (first.getOwnerType()) {
+            case CLAN -> first.getClan() != null
+                    && second.getClan() != null
+                    && Objects.equals(first.getClan().getName(), second.getClan().getName());
+            case KINGDOM -> first.getKingdom() != null
+                    && second.getKingdom() != null
+                    && Objects.equals(first.getKingdom().getId(), second.getKingdom().getId());
+        };
     }
 
     private void removeFromStock(Inventory inventory, ItemStack template, int requiredAmount) {
