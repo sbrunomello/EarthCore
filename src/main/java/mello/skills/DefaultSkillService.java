@@ -3,6 +3,9 @@ package mello.skills;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import mello.skills.hud.SkillHudService;
+import mello.skills.hud.SkillHudSettings;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -19,11 +22,20 @@ public class DefaultSkillService implements SkillService {
     private final Map<UUID, Map<SkillType, PlayerSkillProgress>> cache = new ConcurrentHashMap<>();
     private final SkillStorage storage;
     private final SkillDefinitionProvider config;
+    private final SkillHudSettings hudSettings;
+    private final SkillHudService hudService;
     private final Logger logger;
 
     public DefaultSkillService(SkillStorage storage, SkillDefinitionProvider config, Logger logger) {
+        this(storage, config, SkillHudSettings.disabled(), null, logger);
+    }
+
+    public DefaultSkillService(SkillStorage storage, SkillDefinitionProvider config, SkillHudSettings hudSettings,
+                               SkillHudService hudService, Logger logger) {
         this.storage = storage;
         this.config = config;
+        this.hudSettings = hudSettings;
+        this.hudService = hudService;
         this.logger = logger;
     }
 
@@ -53,6 +65,7 @@ public class DefaultSkillService implements SkillService {
 
         Map<SkillType, PlayerSkillProgress> progresses = cache.computeIfAbsent(playerId, storage::loadPlayer);
         PlayerSkillProgress current = progresses.getOrDefault(skill, new PlayerSkillProgress(playerId, skill, 1, 0, 0));
+        int previousLevel = current.getLevel();
 
         double totalXp = current.getTotalXp() + adjustedAmount;
         int level = current.getLevel();
@@ -80,6 +93,14 @@ public class DefaultSkillService implements SkillService {
         progresses.put(skill, updated);
         storage.savePlayer(playerId, progresses);
 
+        if (shouldDisplayHud(adjustedAmount)) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                double requiredXpForNextLevel = level >= maxLevel ? 0 : requiredXpForLevel(definition, level);
+                hudService.showXpGain(player, skill, updated, adjustedAmount, requiredXpForNextLevel, previousLevel);
+            }
+        }
+
         if (leveled) {
             logger.fine(String.format("Player %s ganhou nível %s em %s", playerId, level, skill));
         }
@@ -92,6 +113,11 @@ public class DefaultSkillService implements SkillService {
     public double requiredXpForLevel(SkillDefinition definition, int level) {
         int normalizedLevel = Math.max(1, level);
         return definition.getBaseXpCurve() * Math.pow(definition.getCurveMultiplier(), normalizedLevel - 1);
+    }
+
+    private boolean shouldDisplayHud(double adjustedAmount) {
+        return hudService != null && hudSettings != null && hudSettings.isEnabled()
+                && hudSettings.isShowOnXpGain() && adjustedAmount >= hudSettings.getMinXpToShow();
     }
 
     private void fireLevelUpEvent(UUID playerId, SkillType skill, int oldLevel, int newLevel) {
