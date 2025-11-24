@@ -29,6 +29,7 @@ import mello.clans.commands.ClanCommand;
 import mello.clans.ClanDynmapHook;
 import mello.core.gui.GuiManager;
 import mello.core.gui.GuiMessages;
+import mello.core.claims.ClaimMarkerService;
 import mello.core.claims.ClaimMessages;
 import mello.core.claims.ClaimPreviewManager;
 import mello.core.claims.ClaimSelectionHelper;
@@ -36,6 +37,7 @@ import mello.core.claims.ClaimSettings;
 import mello.core.claims.ClaimFlowService;
 import mello.core.claims.ClaimVisualizationService;
 import mello.core.claims.commands.ClaimCommand;
+import mello.core.claims.commands.UnclaimCommand;
 import mello.core.claims.ClaimProtectionListener;
 import mello.core.claims.ClaimProtectionSettings;
 import mello.core.claims.ClaimService;
@@ -191,6 +193,9 @@ public class EarthCore extends JavaPlugin {
         claimSettings = ClaimSettings.fromConfig(this);
         claimPreviewManager = new ClaimPreviewManager(this, claimSettings, null);
         claimVisualizationService = new ClaimVisualizationService(this);
+        ClaimMarkerService claimMarkerService = new ClaimMarkerService(getLogger());
+        clanService.setClaimMarkerService(claimMarkerService);
+        kingdomService.setClaimMarkerService(claimMarkerService);
         claimFlowService = new ClaimFlowService(claimPreviewManager, claimSettings, claimVisualizationService, kingdomService, clanService);
         ClaimSelectionHelper claimSelectionHelper = new ClaimSelectionHelper(claimSettings, kingdomService, clanService, kingdomsConfig, clansConfig);
 
@@ -220,6 +225,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("kingdom").setExecutor(new KingdomCommand(kingdomService, guiManager, guiMessages, claimVisualizationService));
         getCommand("clan").setExecutor(new ClanCommand(clanService, guiManager, guiMessages));
         getCommand("claim").setExecutor(claimCommand);
+        getCommand("unclaim").setExecutor(new UnclaimCommand(kingdomService, clanService));
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
         getCommand("spawn").setExecutor(new SpawnCommand(spawnService));
         getCommand("menu").setExecutor(new MenuCommand(guiManager, guiMessages, jobService));

@@ -3,6 +3,7 @@ package mello.kingdoms;
 import mello.clans.Clan;
 import mello.clans.ClanService;
 import mello.common.OperationResult;
+import mello.core.claims.ClaimMarkerService;
 import mello.core.claims.ClaimValidationResult;
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
@@ -10,7 +11,6 @@ import mello.kingdoms.TaxBreakdown;
 import org.bukkit.Chunk;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -32,6 +32,7 @@ public class KingdomService {
     private final Logger logger;
     private final KingdomBankService bankService;
     private KingdomMessages messages;
+    private ClaimMarkerService claimMarkerService;
 
     private final Map<UUID, String> invites = new HashMap<>();
     private final Map<String, Set<UUID>> joinRequests = new HashMap<>();
@@ -61,6 +62,10 @@ public class KingdomService {
 
     public void setMessages(KingdomMessages messages) {
         this.messages = messages;
+    }
+
+    public void setClaimMarkerService(ClaimMarkerService claimMarkerService) {
+        this.claimMarkerService = claimMarkerService;
     }
 
     public KingdomBankService getBankService() {
@@ -133,7 +138,12 @@ public class KingdomService {
             return OperationResult.fail("Saldo insuficiente para criar um reino (custo: " + config.getStartingKingdomCost() + ")");
         }
 
-        String capitalKey = clan.getSingleClaim().toStorageKey();
+        ClaimedChunk clanClaim = clanService != null ? clanService.consumeClaim(clan.getName()) : clan.getSingleClaim();
+        if (clanClaim == null) {
+            return OperationResult.fail("O claim do clã não pôde ser promovido para capital. Informe a staff.");
+        }
+
+        String capitalKey = clanClaim.toStorageKey();
         Kingdom kingdom = new Kingdom(UUID.randomUUID(), name, clan.getTag(), KingdomTier.VILLAGE, clan.getName(), capitalKey, creator);
         clan.getMembers().forEach((memberId, role) -> {
             if (!memberId.equals(creator)) {
@@ -323,26 +333,7 @@ public class KingdomService {
     public OperationResult claim(UUID playerId, Chunk chunk) {
         ClaimValidationResult validation = validateClaim(playerId, chunk);
         if (!validation.success()) {
-            if (validation.isClanClaim() && clanService != null) {
-                return clanService.claimChunk(playerId, chunk);
-            }
             return OperationResult.fail(validation.message());
-        }
-
-        // Delegamos para o fluxo de clã quando o jogador ainda não evoluiu o clã para reino,
-        // evitando NPEs e garantindo que as cobranças usem a configuração correta.
-        if (validation.isClanClaim()) {
-            if (clanService == null || validation.clan() == null) {
-                return OperationResult.fail("Configuração de clãs indisponível. Informe a staff.");
-            }
-
-            double clanCost = validation.cost();
-            if (!economyService.withdraw(playerId, clanCost, MoneyTransactionType.CLAIM_UPKEEP,
-                    "Claim de chunk para clã")) {
-                return OperationResult.fail("Saldo insuficiente para claim. Custo: " + clanCost);
-            }
-
-            return clanService.finalizeClaim(validation.clan(), chunk);
         }
 
         if (validation.kingdom() == null) {
@@ -368,10 +359,7 @@ public class KingdomService {
 
         Kingdom kingdom = getByMember(playerId);
         if (kingdom == null) {
-            if (clanService != null) {
-                return clanService.validateClaim(playerId, chunk);
-            }
-            return ClaimValidationResult.fail("Entre em um reino ou clã antes de reivindicar terras.");
+            return ClaimValidationResult.fail("Entre em um reino para reivindicar terras com este comando. Use /clan claim se quiser proteger pelo clã.");
         }
 
         KingdomRole role = kingdom.getRole(playerId);
@@ -409,17 +397,16 @@ public class KingdomService {
         kingdom.addClaim(claim);
         storage.updateChunks(kingdom);
         notifyDynmapUpdate(kingdom);
-        markChunkWithTorches(chunk);
+        if (claimMarkerService != null) {
+            claimMarkerService.markWithRedstoneTorches(chunk);
+        }
         return OperationResult.ok("Chunk reivindicado para " + kingdom.getName());
     }
 
     public OperationResult unclaim(UUID playerId, Chunk chunk) {
         Kingdom kingdom = getByMember(playerId);
         if (kingdom == null) {
-            if (clanService != null) {
-                return clanService.unclaimChunk(playerId, chunk);
-            }
-            return OperationResult.fail("Entre em um reino antes de remover claims.");
+            return OperationResult.fail("Entre em um reino antes de remover claims com este comando. Use /clan unclaim para clãs.");
         }
 
         KingdomRole role = kingdom.getRole(playerId);
@@ -779,50 +766,4 @@ public class KingdomService {
         return chunk.getWorld().getName() + ":" + chunk.getX() + ":" + chunk.getZ();
     }
 
-    /**
-     * Destaca visualmente as extremidades do chunk recém-claimado com tochas.
-     * As tochas são colocadas nos quatro cantos do chunk, sempre acima do bloco
-     * sólido mais alto disponível, sem sobrescrever estruturas existentes.
-     */
-    private void markChunkWithTorches(Chunk chunk) {
-        World world = chunk.getWorld();
-        int baseX = chunk.getX() << 4;
-        int baseZ = chunk.getZ() << 4;
-
-        placeTorchAtSurface(world, baseX, baseZ);
-        placeTorchAtSurface(world, baseX + 15, baseZ);
-        placeTorchAtSurface(world, baseX, baseZ + 15);
-        placeTorchAtSurface(world, baseX + 15, baseZ + 15);
-    }
-
-    /**
-     * Coloca uma tocha na superfície do mundo, garantindo que o bloco base seja sólido
-     * e que o espaço para a tocha esteja livre. Não altera o mundo quando não encontra
-     * uma posição segura.
-     */
-    private void placeTorchAtSurface(World world, int blockX, int blockZ) {
-        Block baseBlock = world.getHighestBlockAt(blockX, blockZ);
-        baseBlock = findSolidGround(baseBlock);
-        if (baseBlock == null) return;
-
-        Block torchBlock = baseBlock.getRelative(0, 1, 0);
-        if (!torchBlock.isEmpty() && !torchBlock.isPassable()) return;
-
-        torchBlock.setType(org.bukkit.Material.TORCH, false);
-    }
-
-    private Block findSolidGround(Block start) {
-        Block current = start;
-        int minY = current.getWorld().getMinHeight();
-
-        while (current.getY() >= minY && !current.getType().isSolid()) {
-            current = current.getRelative(0, -1, 0);
-        }
-
-        if (current.getY() < minY || !current.getType().isSolid()) {
-            return null;
-        }
-
-        return current;
-    }
 }

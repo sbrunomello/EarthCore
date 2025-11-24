@@ -24,10 +24,13 @@ commands:
     usage: /kingdom <create | invite | join | claim | unclaim | info | leave | deposit>
   clan:
     description: Comandos de clãs (convites e banco compartilhado)
-    usage: /clan <create | invite | join | deposit | withdraw | info | leave>
+    usage: /clan <create | invite | join | deposit | withdraw | claim | unclaim | info | leave>
   claim:
     description: Abre a interface completa de criação de claims
     usage: /claim [confirm|cancel]
+  unclaim:
+    description: Remove o claim atual do clã ou reino
+    usage: /unclaim [clan|kingdom]
   menu:
     description: Abre o menu interativo com atalhos
     usage: /menu
