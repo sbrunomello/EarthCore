@@ -1,0 +1,23 @@
+# Catálogo de pacotes de gems exibido no painel web.
+# Ajuste valores, descrições e badges para alinhar com campanhas VIP/MVP.
+packs:
+  starter:
+    name: "Pacote Iniciante"
+    gems: 500
+    bonus: 0
+    price: 9.90
+    description: "Entrada segura para testar o fluxo de compra."
+  vip:
+    name: "VIP Essencial"
+    gems: 2000
+    bonus: 300
+    price: 49.90
+    badge: "VIP"
+    description: "Pacote pensado para quem mantém o VIP ativo."
+  mvp:
+    name: "MVP Supremo"
+    gems: 4500
+    bonus: 900
+    price: 89.90
+    badge: "MVP+"
+    description: "Bundle premium com bônus reforçado para criadores e líderes."

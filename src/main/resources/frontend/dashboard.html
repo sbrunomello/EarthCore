@@ -78,9 +78,9 @@
 
     // Catálogo de fallback para manter a UI testável quando o backend estiver offline.
     const DEMO_GEM_PACKS = [
-        { id: 'starter', name: 'Pacote Iniciante', gems: 500, bonus: 0, price: 9.9, demo: true },
-        { id: 'adventurer', name: 'Aventureiro', gems: 1200, bonus: 120, price: 19.9, demo: true },
-        { id: 'champion', name: 'Campeão', gems: 3000, bonus: 450, price: 39.9, demo: true }
+        { id: 'starter', name: 'Pacote Iniciante', gems: 500, bonus: 0, price: 9.9, badge: '', description: 'Catálogo demo com dados básicos.', demo: true },
+        { id: 'adventurer', name: 'Aventureiro', gems: 1200, bonus: 120, price: 19.9, badge: 'VIP', description: 'Mock de pacote VIP para validação visual.', demo: true },
+        { id: 'champion', name: 'Campeão', gems: 3000, bonus: 450, price: 39.9, badge: 'MVP', description: 'Bundle premium em modo demonstração.', demo: true }
     ];
 
     const renderCards = (info) => {
@@ -142,19 +142,27 @@
         if (!cachedGemPacks.length) {
             return;
         }
-        gemPacksGrid.innerHTML = cachedGemPacks.map(pack => `
+        gemPacksGrid.innerHTML = cachedGemPacks.map(pack => {
+            const badge = pack.badge ? `<span class="pill accent">${pack.badge}</span>` : '';
+            const description = pack.description ? `<p class="muted">${pack.description}</p>` : '';
+            return `
             <div class="card stack">
-                <div class="toolbar" style="align-items:flex-start;">
+                <div class="toolbar" style="align-items:flex-start;justify-content:space-between;">
                     <div>
                         <h3>${pack.name}</h3>
                         <p class="muted">${pack.gems} gems + ${pack.bonus} bônus</p>
+                        ${description}
                         ${gemCatalogMode === 'demo' ? '<p class="hint">Modo demonstração - catálogo offline</p>' : ''}
                     </div>
-                    <span class="pill">R$ ${pack.price.toFixed(2)}</span>
+                    <div class="stack" style="align-items:flex-end;gap:8px;">
+                        ${badge}
+                        <span class="pill">R$ ${pack.price.toFixed(2)}</span>
+                    </div>
                 </div>
                 <button class="button" data-pack="${pack.id}">Comprar (mock)</button>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         gemPacksGrid.querySelectorAll('button[data-pack]').forEach(btn => {
             btn.addEventListener('click', () => purchaseGems(btn.dataset.pack, btn));
