@@ -22,7 +22,7 @@ public class EconomyRepository {
 
     private final File file;
     private final YamlConfiguration config;
-    private final Map<UUID, Double> balances = new ConcurrentHashMap<>();
+    private final Map<UUID, MoneyWallet> wallets = new ConcurrentHashMap<>();
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final Logger logger;
 
@@ -49,13 +49,13 @@ public class EconomyRepository {
             for (String key : config.getKeys(false)) {
                 try {
                     UUID uuid = UUID.fromString(key);
-                    double balance = config.getDouble(key);
-                    balances.put(uuid, balance);
+                    MoneyWallet wallet = readWallet(key);
+                    wallets.put(uuid, wallet);
                 } catch (IllegalArgumentException ex) {
                     logger.warning("[Economy] UUID inválido em currency.yml: " + key);
                 }
             }
-            logger.info("[Economy] Dados carregados: " + balances.size());
+            logger.info("[Economy] Dados carregados: " + wallets.size());
         } finally {
             lock.writeLock().unlock();
         }
@@ -64,8 +64,10 @@ public class EconomyRepository {
     public void saveAll() {
         lock.readLock().lock();
         try {
-            for (Map.Entry<UUID, Double> entry : balances.entrySet()) {
-                config.set(entry.getKey().toString(), entry.getValue());
+            for (Map.Entry<UUID, MoneyWallet> entry : wallets.entrySet()) {
+                String path = entry.getKey().toString();
+                config.set(path + ".coins", entry.getValue().coins());
+                config.set(path + ".gems", entry.getValue().gems());
             }
             config.save(file);
         } catch (IOException e) {
@@ -75,10 +77,10 @@ public class EconomyRepository {
         }
     }
 
-    public double getBalance(UUID uuid) {
+    public MoneyWallet getWallet(UUID uuid) {
         lock.readLock().lock();
         try {
-            return balances.getOrDefault(uuid, 0.0); 
+            return wallets.getOrDefault(uuid, MoneyWallet.empty());
         } finally {
             lock.readLock().unlock();
         }
@@ -87,8 +89,8 @@ public class EconomyRepository {
     public void initializeAccount(UUID uuid) {
         lock.writeLock().lock();
         try {
-            balances.putIfAbsent(uuid, 0.0);
-            config.set(uuid.toString(), balances.get(uuid));
+            wallets.putIfAbsent(uuid, MoneyWallet.empty());
+            persist(uuid, wallets.get(uuid));
             config.save(file);
         } catch (IOException e) {
             logger.warning("[Economy] Não foi possível persistir a criação da conta: " + e.getMessage());
@@ -97,11 +99,13 @@ public class EconomyRepository {
         }
     }
 
-    public void updateBalance(UUID uuid, double newBalance) {
+    public void updateBalance(UUID uuid, MoneyCurrency currency, double newBalance) {
         lock.writeLock().lock();
         try {
-            balances.put(uuid, newBalance);
-            config.set(uuid.toString(), newBalance);
+            MoneyWallet wallet = wallets.getOrDefault(uuid, MoneyWallet.empty());
+            wallet = currency == MoneyCurrency.COINS ? wallet.withCoins(newBalance) : wallet.withGems(newBalance);
+            wallets.put(uuid, wallet);
+            persist(uuid, wallet);
             config.save(file);
         } catch (IOException e) {
             logger.warning("[Economy] Não foi possível persistir o saldo de " + uuid + ": " + e.getMessage());
@@ -113,11 +117,11 @@ public class EconomyRepository {
     public Map<UUID, Double> getTopBalances(int limit) {
         lock.readLock().lock();
         try {
-            return balances.entrySet().stream()
-                    .sorted(Map.Entry.<UUID, Double>comparingByValue(Comparator.reverseOrder()))
+            return wallets.entrySet().stream()
+                    .sorted(Map.Entry.<UUID, MoneyWallet>comparingByValue(Comparator.comparingDouble(MoneyWallet::coins).reversed()))
                     .limit(limit)
                     .collect(LinkedHashMap::new,
-                            (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+                            (map, entry) -> map.put(entry.getKey(), entry.getValue().coins()),
                             Map::putAll);
         } finally {
             lock.readLock().unlock();
@@ -127,11 +131,27 @@ public class EconomyRepository {
     public Optional<UUID> findPlayerWithHighestBalance() {
         lock.readLock().lock();
         try {
-            return balances.entrySet().stream()
-                    .max(Map.Entry.comparingByValue())
+            return wallets.entrySet().stream()
+                    .max(Map.Entry.comparingByValue(Comparator.comparingDouble(MoneyWallet::coins)))
                     .map(Map.Entry::getKey);
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    private MoneyWallet readWallet(String key) {
+        if (config.isConfigurationSection(key)) {
+            double coins = Math.max(0, config.getDouble(key + ".coins", 0D));
+            double gems = Math.max(0, config.getDouble(key + ".gems", 0D));
+            return new MoneyWallet(coins, gems);
+        }
+
+        double legacyBalance = Math.max(0, config.getDouble(key, 0D));
+        return new MoneyWallet(legacyBalance, 0D);
+    }
+
+    private void persist(UUID uuid, MoneyWallet wallet) {
+        config.set(uuid.toString() + ".coins", wallet.coins());
+        config.set(uuid.toString() + ".gems", wallet.gems());
     }
 }

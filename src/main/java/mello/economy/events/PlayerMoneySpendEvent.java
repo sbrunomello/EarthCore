@@ -1,5 +1,6 @@
 package mello.economy.events;
 
+import mello.economy.MoneyCurrency;
 import mello.economy.MoneyTransactionType;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -14,11 +15,13 @@ public class PlayerMoneySpendEvent extends Event {
     private final UUID playerId;
     private final double amount;
     private final MoneyTransactionType type;
+    private final MoneyCurrency currency;
     private final String reason;
 
-    public PlayerMoneySpendEvent(UUID playerId, double amount, MoneyTransactionType type, String reason) {
+    public PlayerMoneySpendEvent(UUID playerId, double amount, MoneyTransactionType type, MoneyCurrency currency, String reason) {
         this.playerId = Objects.requireNonNull(playerId, "playerId");
         this.type = Objects.requireNonNull(type, "type");
+        this.currency = Objects.requireNonNull(currency, "currency");
         this.amount = amount;
         this.reason = reason == null ? "" : reason;
     }
@@ -33,6 +36,10 @@ public class PlayerMoneySpendEvent extends Event {
 
     public MoneyTransactionType getType() {
         return type;
+    }
+
+    public MoneyCurrency getCurrency() {
+        return currency;
     }
 
     public String getReason() {

@@ -12,6 +12,8 @@ public enum MoneyTransactionType {
     KINGDOM_WITHDRAW,
     KINGDOM_UPKEEP,
     PLAYER_TRADE,
+    GEM_PURCHASE,
+    GEM_REWARD,
     ADMIN_ADJUST,
     SYSTEM_EVENT,
     OTHER

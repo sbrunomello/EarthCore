@@ -48,16 +48,29 @@ public class EconomyService {
      * Recupera o saldo atual aplicando auto-provisionamento da conta.
      */
     public double getBalance(UUID playerId) {
+        return getBalance(playerId, MoneyCurrency.COINS);
+    }
+
+    public double getBalance(UUID playerId, MoneyCurrency currency) {
         ensureAccount(playerId);
-        return repository.getBalance(playerId);
+        return repository.getWallet(playerId).balanceFor(currency);
+    }
+
+    public MoneyWallet getWallet(UUID playerId) {
+        ensureAccount(playerId);
+        return repository.getWallet(playerId);
     }
 
     /**
      * Verifica se o jogador possui saldo suficiente para uma operação.
      */
     public boolean hasEnough(UUID playerId, double amount) {
+        return hasEnough(playerId, MoneyCurrency.COINS, amount);
+    }
+
+    public boolean hasEnough(UUID playerId, MoneyCurrency currency, double amount) {
         validateAmount(amount);
-        return getBalance(playerId) >= amount;
+        return getBalance(playerId, currency) >= amount;
     }
 
     /**
@@ -65,12 +78,16 @@ public class EconomyService {
      * e disparando eventos Bukkit para observabilidade.
      */
     public void setBalance(UUID playerId, double amount, String reason) {
+        setBalance(playerId, MoneyCurrency.COINS, amount, reason);
+    }
+
+    public void setBalance(UUID playerId, MoneyCurrency currency, double amount, String reason) {
         validateAmount(amount);
         enforceTransactionLimit(playerId);
         ensureAccount(playerId);
-        repository.updateBalance(playerId, amount);
-        recordTransaction(new MoneyTransaction(playerId, MoneyTransactionType.ADMIN_ADJUST, amount, Instant.now(), reason));
-        fireReceiveEvent(playerId, amount, MoneyTransactionType.ADMIN_ADJUST, reason);
+        repository.updateBalance(playerId, currency, amount);
+        recordTransaction(new MoneyTransaction(playerId, MoneyTransactionType.ADMIN_ADJUST, currency, amount, Instant.now(), reason));
+        fireReceiveEvent(playerId, amount, MoneyTransactionType.ADMIN_ADJUST, currency, reason);
     }
 
     /**
@@ -78,13 +95,17 @@ public class EconomyService {
      * registrando o evento para consumo de outros sistemas.
      */
     public void deposit(UUID playerId, double amount, MoneyTransactionType type, String reason) {
+        deposit(playerId, MoneyCurrency.COINS, amount, type, reason);
+    }
+
+    public void deposit(UUID playerId, MoneyCurrency currency, double amount, MoneyTransactionType type, String reason) {
         validateAmount(amount);
         enforceTransactionLimit(playerId);
         ensureAccount(playerId);
-        double newBalance = getBalance(playerId) + amount;
-        repository.updateBalance(playerId, newBalance);
-        recordTransaction(new MoneyTransaction(playerId, type, amount, Instant.now(), reason));
-        fireReceiveEvent(playerId, amount, type, reason);
+        double newBalance = getBalance(playerId, currency) + amount;
+        repository.updateBalance(playerId, currency, newBalance);
+        recordTransaction(new MoneyTransaction(playerId, type, currency, amount, Instant.now(), reason));
+        fireReceiveEvent(playerId, amount, type, currency, reason);
     }
 
     /**
@@ -92,16 +113,20 @@ public class EconomyService {
      * insuficiente, sem lançar exceção para facilitar o fluxo de chamada.
      */
     public boolean withdraw(UUID playerId, double amount, MoneyTransactionType type, String reason) {
+        return withdraw(playerId, MoneyCurrency.COINS, amount, type, reason);
+    }
+
+    public boolean withdraw(UUID playerId, MoneyCurrency currency, double amount, MoneyTransactionType type, String reason) {
         validateAmount(amount);
         enforceTransactionLimit(playerId);
         ensureAccount(playerId);
-        double current = getBalance(playerId);
+        double current = getBalance(playerId, currency);
         if (current < amount) {
             return false;
         }
-        repository.updateBalance(playerId, current - amount);
-        recordTransaction(new MoneyTransaction(playerId, type, -amount, Instant.now(), reason));
-        fireSpendEvent(playerId, amount, type, reason);
+        repository.updateBalance(playerId, currency, current - amount);
+        recordTransaction(new MoneyTransaction(playerId, type, currency, -amount, Instant.now(), reason));
+        fireSpendEvent(playerId, amount, type, currency, reason);
         return true;
     }
 
@@ -166,12 +191,12 @@ public class EconomyService {
         }
     }
 
-    private void fireReceiveEvent(UUID playerId, double amount, MoneyTransactionType type, String reason) {
-        Bukkit.getPluginManager().callEvent(new PlayerMoneyReceiveEvent(playerId, amount, type, reason));
+    private void fireReceiveEvent(UUID playerId, double amount, MoneyTransactionType type, MoneyCurrency currency, String reason) {
+        Bukkit.getPluginManager().callEvent(new PlayerMoneyReceiveEvent(playerId, amount, type, currency, reason));
     }
 
-    private void fireSpendEvent(UUID playerId, double amount, MoneyTransactionType type, String reason) {
-        Bukkit.getPluginManager().callEvent(new PlayerMoneySpendEvent(playerId, amount, type, reason));
+    private void fireSpendEvent(UUID playerId, double amount, MoneyTransactionType type, MoneyCurrency currency, String reason) {
+        Bukkit.getPluginManager().callEvent(new PlayerMoneySpendEvent(playerId, amount, type, currency, reason));
     }
 
     private record TransactionWindow(int tick, int count) { }

@@ -1,5 +1,6 @@
 package mello.core.notifications;
 
+import mello.economy.MoneyCurrency;
 import mello.economy.MoneyTransactionType;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -32,9 +33,9 @@ public class NotificationService {
      * Notifica um jogador sobre dinheiro recebido, identificando a origem para
      * reduzir dúvidas e dar visibilidade a impostos ou recompensas.
      */
-    public void notifyMoneyReceived(Player player, double amount, MoneyTransactionType type, String reason) {
+    public void notifyMoneyReceived(Player player, double amount, MoneyCurrency currency, MoneyTransactionType type, String reason) {
         Map<String, String> placeholders = new HashMap<>();
-        placeholders.put("amount", currencyFormat.format(amount));
+        placeholders.put("amount", decorateCurrency(amount, currency));
         placeholders.put("source", resolveSource(type, reason));
 
         String formatted = messages.format("notifications.money.receive", placeholders);
@@ -83,9 +84,16 @@ public class NotificationService {
             case CITY_TAX, CLAIM_UPKEEP, KINGDOM_UPKEEP -> "Taxas";
             case KINGDOM_DEPOSIT, KINGDOM_WITHDRAW -> "Banco do reino";
             case PLAYER_TRADE -> "Troca entre jogadores";
+            case GEM_PURCHASE -> "Loja premium";
+            case GEM_REWARD -> "Recompensa rara";
             case ADMIN_ADJUST -> "Ajuste da staff";
             case SYSTEM_EVENT -> "Evento";
             case OTHER -> reason == null || reason.isBlank() ? "Outros" : reason;
         };
+    }
+
+    private String decorateCurrency(double amount, MoneyCurrency currency) {
+        String formatted = currencyFormat.format(amount);
+        return currency == MoneyCurrency.GEMS ? formatted + " ✦" : formatted + "⛁";
     }
 }
