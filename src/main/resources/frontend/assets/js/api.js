@@ -49,6 +49,8 @@ const Api = (() => {
         clanClaim: () => request('/secure/clan/claim'),
         shops: () => request('/secure/shops'),
         shopDetails: (id) => request(`/secure/shops/${id}`),
+        gemPacks: () => request('/secure/gems/packs'),
+        purchaseGems: (packId) => request('/secure/gems/purchase', { method: 'POST', body: JSON.stringify({ packId }) }),
         jobs: () => request('/jobs'),
         currentJob: () => request('/secure/jobs/current'),
         portals: () => request('/secure/portals'),

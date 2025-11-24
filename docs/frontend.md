@@ -12,6 +12,7 @@ Este documento resume onde o frontend está localizado no projeto, como ele é s
 - A página principal embeda o Dynmap via `<iframe>` usando `frontend.dynmapUrl` (padrão: `http://localhost:8123/`).
 - O login é apenas por nome de usuário. O frontend faz `GET /api/user?username=<nick>` e recebe JSON com saldo, clã e reino, consultando os serviços internos do plugin.
 - Todos os assets são servidos do próprio jar, evitando dependência externa e mantendo o conteúdo sincronizado com o plugin.
+- A compra de gems pelo painel é mockada: o endpoint `/api/secure/gems/purchase` credita o pacote selecionado direto no saldo in-game usando a currency `GEMS` e registra a transação como `GEM_PURCHASE`.
 
 ## Como usar no servidor
 1. **Habilite e configure** em `plugins/EarthCore/config.yml`:
@@ -30,3 +31,4 @@ Este documento resume onde o frontend está localizado no projeto, como ele é s
 - Mantenha o `host` restrito (ex.: `127.0.0.1`) e faça proxy/reverse proxy se precisar expor publicamente, adicionando TLS no proxy.
 - A resposta de `/api/user` é sensível às dependências internas (Economia, Reinos, Clãs); se algum serviço estiver desabilitado, ajuste o frontend conforme necessário.
 - Logs do servidor web aparecem junto ao logger do plugin. Em caso de porta ocupada ou falha de bind, o plugin continua ativo e registra o erro.
+- A listagem de pacotes de gems está disponível em `/api/secure/gems/packs` e pode ser atualizada no código Java; ela serve apenas para UI/UX e não realiza cobrança real.
