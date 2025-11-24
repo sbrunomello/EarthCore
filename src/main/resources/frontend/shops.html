@@ -36,18 +36,60 @@
     Api.ensureAuth();
     document.querySelector('#logout').addEventListener('click', (e) => { e.preventDefault(); Api.logout(); });
 
+    // Mock local para permitir validação da UI mesmo sem API disponível.
+    const DEMO_SHOPS = [
+        {
+            id: 'demo-market',
+            name: 'Mercado Central',
+            type: 'SELL',
+            world: 'spawn',
+            x: 12.4,
+            y: 65.0,
+            z: -8.2,
+            items: [
+                { item: 'DIAMOND', price: 125.0, stock: 128 },
+                { item: 'NETHERITE_INGOT', price: 720.0, stock: 24 }
+            ]
+        },
+        {
+            id: 'demo-farm',
+            name: 'Feira do Fazendeiro',
+            type: 'BUY',
+            world: 'mundo',
+            x: -340.7,
+            y: 68.0,
+            z: 102.3,
+            items: [
+                { item: 'WHEAT', price: 8.5, stock: 640 },
+                { item: 'CARROT', price: 6.0, stock: 500 }
+            ]
+        }
+    ];
+
+    let cachedShops = [];
+
+    // Desenha a tabela tanto para dados reais quanto para o modo demonstração.
+    const renderShops = (shops, source = 'api') => {
+        const rows = ['<tr><th>Nome</th><th>Tipo</th><th>Local</th><th></th></tr>'];
+        shops.forEach(shop => {
+            const location = `${shop.world} (${shop.x.toFixed(1)}, ${shop.y.toFixed(1)}, ${shop.z.toFixed(1)})`;
+            rows.push(`<tr><td>${shop.name}</td><td>${shop.type}</td><td>${location}</td><td><button class="button" data-id="${shop.id}">Ver</button></td></tr>`);
+        });
+        if (source === 'demo') {
+            rows.push(`<tr><td colspan="4" class="muted">Visualização em modo demonstração; backend indisponível.</td></tr>`);
+        }
+        document.querySelector('#shops').innerHTML = rows.join('');
+        document.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => loadDetails(btn.dataset.id)));
+    };
+
     const loadShops = async () => {
         try {
             const shops = await Api.shops();
-            const rows = ['<tr><th>Nome</th><th>Tipo</th><th>Local</th><th></th></tr>'];
-            shops.forEach(shop => {
-                const location = `${shop.world} (${shop.x.toFixed(1)}, ${shop.y.toFixed(1)}, ${shop.z.toFixed(1)})`;
-                rows.push(`<tr><td>${shop.name}</td><td>${shop.type}</td><td>${location}</td><td><button class="button" data-id="${shop.id}">Ver</button></td></tr>`);
-            });
-            document.querySelector('#shops').innerHTML = rows.join('');
-            document.querySelectorAll('button[data-id]').forEach(btn => btn.addEventListener('click', () => loadDetails(btn.dataset.id)));
+            cachedShops = shops;
+            renderShops(shops);
         } catch (err) {
-            document.querySelector('#shops').innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+            cachedShops = DEMO_SHOPS;
+            renderShops(DEMO_SHOPS, 'demo');
         }
     };
 
@@ -55,6 +97,15 @@
         const panel = document.querySelector('#shop-details');
         panel.hidden = false;
         try {
+            // Se o modo demonstração estiver ativo, evita chamadas redundantes para a API.
+            if (cachedShops.length && cachedShops.find(s => s.id === id && s.items)) {
+                const offlineShop = cachedShops.find(s => s.id === id);
+                const rows = ['<tr><th>Item</th><th>Preço</th><th>Estoque</th></tr>'];
+                offlineShop.items.forEach(i => rows.push(`<tr><td>${i.item}</td><td>${UI.formatCurrency(i.price)}</td><td>${i.stock}</td></tr>`));
+                document.querySelector('#items').innerHTML = rows.join('');
+                return;
+            }
+
             const detail = await Api.shopDetails(id);
             const rows = ['<tr><th>Item</th><th>Preço</th><th>Estoque</th></tr>'];
             detail.items.forEach(i => rows.push(`<tr><td>${i.item}</td><td>${UI.formatCurrency(i.price)}</td><td>${i.stock}</td></tr>`));
