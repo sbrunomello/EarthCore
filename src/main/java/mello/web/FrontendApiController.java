@@ -25,6 +25,8 @@ import mello.kingdoms.ClaimedChunk;
 import mello.shops.Shop;
 import mello.shops.ShopService;
 import mello.shops.ShopType;
+import mello.economy.MoneyCurrency;
+import mello.economy.MoneyTransactionType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -58,6 +60,15 @@ import java.util.logging.Logger;
 public class FrontendApiController {
 
     private static final int SYNC_TIMEOUT_MILLIS = 2500;
+    /**
+     * Catálogo mockado de pacotes de gems. Não processa cobrança real, mas
+     * registra a compra no saldo in-game para testes e validação do fluxo web.
+     */
+    private static final List<GemPack> GEM_PACKS = List.of(
+            new GemPack("starter", "Pacote Iniciante", 500, 0, 9.90),
+            new GemPack("adventurer", "Aventureiro", 1200, 120, 19.90),
+            new GemPack("champion", "Campeão", 3000, 450, 39.90)
+    );
 
     private final JavaPlugin plugin;
     private final Gson gson;
@@ -442,9 +453,69 @@ public class FrontendApiController {
         respondJson(exchange, 200, portals);
     }
 
+    public void handleGemPacks(HttpExchange exchange) throws IOException {
+        ApiContext context = preflight(exchange, true);
+        if (context.isHalted()) return;
+
+        if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+            respondJson(exchange, 405, new ApiError("Método não permitido."));
+            return;
+        }
+
+        List<GemPackView> response = GEM_PACKS.stream()
+                .map(pack -> new GemPackView(pack.id(), pack.name(), pack.gems(), pack.bonus(), pack.price()))
+                .toList();
+        respondJson(exchange, 200, response);
+    }
+
+    public void handleGemPurchase(HttpExchange exchange) throws IOException {
+        ApiContext context = preflight(exchange, true);
+        if (context.isHalted()) return;
+
+        if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+            respondJson(exchange, 405, new ApiError("Método não permitido."));
+            return;
+        }
+
+        GemPurchaseRequest request = readBody(exchange, GemPurchaseRequest.class);
+        if (request == null || isBlank(request.packId())) {
+            respondJson(exchange, 400, new ApiError("Pacote de gems é obrigatório."));
+            return;
+        }
+
+        Optional<GemPack> packOpt = GEM_PACKS.stream()
+                .filter(pack -> pack.id().equalsIgnoreCase(request.packId()))
+                .findFirst();
+        if (packOpt.isEmpty()) {
+            respondJson(exchange, 404, new ApiError("Pacote de gems não encontrado."));
+            return;
+        }
+
+        GemPack pack = packOpt.get();
+        String orderId = UUID.randomUUID().toString();
+        String reason = "Webstore (mock) - " + pack.name();
+
+        try {
+            double newBalance = plugin.getServer().getScheduler()
+                    .callSyncMethod(plugin, () -> {
+                        double totalGems = pack.gems() + pack.bonus();
+                        economyService.deposit(context.playerId(), MoneyCurrency.GEMS, totalGems,
+                                MoneyTransactionType.GEM_PURCHASE, reason + " [" + orderId + "]");
+                        return economyService.getBalance(context.playerId(), MoneyCurrency.GEMS);
+                    })
+                    .get(SYNC_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+            respondJson(exchange, 200, new GemPurchaseResponse(orderId, pack.id(), pack.name(),
+                    pack.gems(), pack.bonus(), pack.price(), newBalance));
+        } catch (Exception ex) {
+            logger.log(Level.WARNING, "Erro ao registrar compra de gems para " + context.username(), ex);
+            respondJson(exchange, 500, new ApiError("Não foi possível concluir a compra no momento."));
+        }
+    }
+
     private UserProfile assembleProfile(String username, UUID playerId, ApiContext authContext) {
         double coins = economyService.getBalance(playerId);
-        double gems = economyService.getBalance(playerId, mello.economy.MoneyCurrency.GEMS);
+        double gems = economyService.getBalance(playerId, MoneyCurrency.GEMS);
         Clan clan = clanService.getByMember(playerId);
         Kingdom kingdom = kingdomService.getByMember(playerId);
 
@@ -588,6 +659,11 @@ public class FrontendApiController {
     private record JobConfigView(String id, String name, boolean enabled, Map<?, ?> blockRewards, Map<?, ?> mobRewards) {}
     private record CurrentJobView(String job) {}
     private record PortalView(String name, String world, int x, int y, int z, boolean online) {}
+    private record GemPack(String id, String name, int gems, int bonus, double price) {}
+    private record GemPackView(String id, String name, int gems, int bonus, double price) {}
+    private record GemPurchaseRequest(String packId) {}
+    private record GemPurchaseResponse(String orderId, String packId, String packName, int gems, int bonus, double price,
+                                       double newBalance) {}
 
     private record ApiContext(UUID playerId, String username, boolean blocked) {
         static ApiContext halted() { return new ApiContext(null, null, true); }

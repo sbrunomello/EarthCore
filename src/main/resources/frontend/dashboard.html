@@ -17,6 +17,7 @@
             <a href="/shops">Minhas Lojas</a>
             <a href="/jobs">Jobs</a>
             <a href="/portals">Portais</a>
+            <a href="#gems">Comprar Gems</a>
             <a href="#" id="logout">Sair</a>
         </nav>
     </aside>
@@ -44,6 +45,18 @@
             <h3>Transações recentes</h3>
             <table class="table" id="transactions"></table>
         </section>
+
+        <section class="card" id="gems">
+            <div class="toolbar">
+                <div>
+                    <h3>Comprar Gems</h3>
+                    <p class="muted">Mock de checkout: ao comprar, os gems entram direto na conta in-game com transação auditada.</p>
+                </div>
+                <span class="pill" id="gem-balance">0 ✦</span>
+            </div>
+            <div id="gem-error" class="error" hidden></div>
+            <div class="card-grid" id="gem-packs"></div>
+        </section>
     </main>
 </div>
 <script src="/assets/js/api.js"></script>
@@ -55,10 +68,17 @@
     const txTable = document.querySelector('#transactions');
     const coordsBox = document.querySelector('#coords');
     const statsBox = document.querySelector('#stats');
+    const gemBalance = document.querySelector('#gem-balance');
+    const gemPacksGrid = document.querySelector('#gem-packs');
+    const gemError = document.querySelector('#gem-error');
+
+    let cachedGemPacks = [];
+    let lastProfile = null;
 
     const renderCards = (info) => {
         const cards = [];
-        cards.push(`<div class="card"><h3>Saldo</h3><p>${UI.formatCurrency(info.balance)}</p></div>`);
+        cards.push(`<div class="card"><h3>Coins</h3><p>${UI.formatCurrency(info.balance)}</p></div>`);
+        cards.push(`<div class="card"><h3>Gems</h3><p>${formatGems(info.gems)}</p><p class="muted">Conversão mock pelo painel</p></div>`);
         if (info.clan) {
             cards.push(`<div class="card"><h3>Clã</h3><p>${info.clan.name} [${info.clan.tag}]</p><span class="pill">${info.clan.role}</span></div>`);
         } else {
@@ -88,9 +108,64 @@
         `;
     };
 
+    const formatGems = (value) => `${Number(value).toLocaleString('pt-BR')} ✦`;
+
+    const renderGemSection = (info) => {
+        gemBalance.textContent = formatGems(info.gems || 0);
+        if (!cachedGemPacks.length) {
+            return;
+        }
+        gemPacksGrid.innerHTML = cachedGemPacks.map(pack => `
+            <div class="card stack">
+                <div class="toolbar" style="align-items:flex-start;">
+                    <div>
+                        <h3>${pack.name}</h3>
+                        <p class="muted">${pack.gems} gems + ${pack.bonus} bônus</p>
+                    </div>
+                    <span class="pill">R$ ${pack.price.toFixed(2)}</span>
+                </div>
+                <button class="button" data-pack="${pack.id}">Comprar (mock)</button>
+            </div>
+        `).join('');
+
+        gemPacksGrid.querySelectorAll('button[data-pack]').forEach(btn => {
+            btn.addEventListener('click', () => purchaseGems(btn.dataset.pack, btn));
+        });
+    };
+
+    const purchaseGems = async (packId, button) => {
+        gemError.hidden = true;
+        button.classList.add('loading');
+        button.disabled = true;
+        try {
+            await Api.purchaseGems(packId);
+            await refresh();
+        } catch (err) {
+            gemError.textContent = err.message;
+            gemError.hidden = false;
+        } finally {
+            button.classList.remove('loading');
+            button.disabled = false;
+        }
+    };
+
+    const loadGemPacks = async () => {
+        try {
+            cachedGemPacks = await Api.gemPacks();
+            if (lastProfile) {
+                renderGemSection(lastProfile);
+            }
+            gemError.hidden = true;
+        } catch (err) {
+            gemError.textContent = err.message;
+            gemError.hidden = false;
+        }
+    };
+
     const refresh = async () => {
         try {
             const info = await Api.userInfo();
+            lastProfile = info;
             UI.setText('#player-id', info.username);
             renderCards(info);
             if (info.coordinates) {
@@ -102,12 +177,14 @@
             renderStats(stats);
             const tx = await Api.userTransactions();
             renderTransactions(tx);
+            renderGemSection(info);
         } catch (err) {
             coordsBox.textContent = err.message;
         }
     };
 
     refresh();
+    loadGemPacks();
     setInterval(refresh, 3000);
 </script>
 </body>

@@ -156,6 +156,8 @@ public class FrontendServer {
         server.createContext("/api/secure/clan/claim", api::handleClanClaim);
         server.createContext("/api/secure/shops", api::handleShops);
         server.createContext("/api/secure/shops/", api::handleShopDetails);
+        server.createContext("/api/secure/gems/packs", api::handleGemPacks);
+        server.createContext("/api/secure/gems/purchase", api::handleGemPurchase);
         server.createContext("/api/jobs", api::handleJobs);
         server.createContext("/api/secure/jobs/current", api::handleCurrentJob);
         server.createContext("/api/secure/portals", api::handlePortals);
