@@ -14,15 +14,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthSessionManager {
 
     /**
-     * Duração longa para manter a tela preta enquanto o jogador não fizer login.
-     * Utilizamos um valor alto para evitar renovações constantes do efeito.
+     * Duração longa para manter a tela totalmente escura enquanto o jogador não
+     * fizer login. Utilizamos um valor alto para evitar renovações constantes
+     * do efeito.
      */
-    private static final int BLINDNESS_DURATION_TICKS = Integer.MAX_VALUE;
+    private static final int VISION_LOCK_DURATION_TICKS = Integer.MAX_VALUE;
 
     /**
-     * Amplificador 1 (nível 2) para garantir o escurecimento total da visão.
+     * Amplificador moderado; no efeito de cegueira valores maiores não ampliam
+     * o escurecimento, então mantemos 1 para evitar comportamento estranho em
+     * versões futuras.
      */
     private static final int BLINDNESS_AMPLIFIER = 1;
+
+    /**
+     * A escuridão garante bloqueio completo da visão, mesmo em áreas próximas.
+     * O amplificador não influencia no efeito, por isso mantemos 0.
+     */
+    private static final int DARKNESS_AMPLIFIER = 0;
 
     private final Set<UUID> loggedPlayers = ConcurrentHashMap.newKeySet();
 
@@ -32,35 +41,45 @@ public class AuthSessionManager {
 
     public void setLoggedIn(Player player) {
         loggedPlayers.add(player.getUniqueId());
-        removeBlindness(player);
+        clearVisionLocks(player);
     }
 
     public void logout(Player player) {
         loggedPlayers.remove(player.getUniqueId());
-        applyBlindness(player);
+        applyVisionLocks(player);
     }
 
-    private void applyBlindness(Player player) {
+    private void applyVisionLocks(Player player) {
         if (!player.isOnline()) {
             return;
         }
 
+        // Escurece completamente a tela para evitar qualquer visão pré-login.
         PotionEffect blindness = new PotionEffect(
                 PotionEffectType.BLINDNESS,
-                BLINDNESS_DURATION_TICKS,
+                VISION_LOCK_DURATION_TICKS,
                 BLINDNESS_AMPLIFIER,
                 true,
                 false,
                 false
         );
-        player.addPotionEffect(blindness);
+        PotionEffect darkness = new PotionEffect(
+                PotionEffectType.DARKNESS,
+                VISION_LOCK_DURATION_TICKS,
+                DARKNESS_AMPLIFIER,
+                true,
+                false,
+                false
+        );
+        player.addPotionEffects(Set.of(blindness, darkness));
     }
 
-    private void removeBlindness(Player player) {
+    private void clearVisionLocks(Player player) {
         if (!player.isOnline()) {
             return;
         }
 
         player.removePotionEffect(PotionEffectType.BLINDNESS);
+        player.removePotionEffect(PotionEffectType.DARKNESS);
     }
 }
