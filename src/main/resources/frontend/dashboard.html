@@ -199,7 +199,14 @@
     const loadGemPacks = async () => {
         renderGemLoading();
         try {
-            cachedGemPacks = await Api.gemPacks();
+            const response = await Api.gemPacks();
+
+            // Evita deixar a UI vazia quando o backend responde 200 porém sem catálogo configurado.
+            if (!Array.isArray(response) || response.length === 0) {
+                throw new Error('Catálogo de gems indisponível no backend');
+            }
+
+            cachedGemPacks = response;
             gemCatalogMode = 'api';
             if (lastProfile) {
                 renderGemSection(lastProfile);
