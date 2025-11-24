@@ -65,7 +65,7 @@ commands:
     usage: /starterkit
   shop:
     description: Cria e gerencia sua loja pessoal
-    usage: /shop create
+    usage: "/shop create|clan create|kingdom create <nome> | /shop confirm"
   register:
     description: Registra uma senha para sua conta.
     usage: "/register <senha> <senha>"

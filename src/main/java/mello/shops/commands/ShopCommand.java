@@ -29,6 +29,7 @@ public class ShopCommand implements CommandExecutor {
             sender.sendMessage("§e/shop create <nome> §7- cria uma loja pessoal");
             sender.sendMessage("§e/shop clan create <nome> §7- cria uma loja do clã (somente líder)");
             sender.sendMessage("§e/shop kingdom create <nome> §7- cria uma loja do reino (somente líder)");
+            sender.sendMessage("§e/shop confirm §7- confirma a posição selecionada com o bastão de loja");
             sender.sendMessage("§e/shop delete <nome> §7- remove todas as lojas com esse nome (estoque perdido)");
             return true;
         }
@@ -43,6 +44,12 @@ public class ShopCommand implements CommandExecutor {
         if (args[0].equalsIgnoreCase("delete")) {
             String name = args.length >= 2 ? String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)) : "";
             OperationResult result = shopService.deleteByName(player, name);
+            sender.sendMessage((result.success() ? "§a" : "§c") + result.message());
+            return true;
+        }
+
+        if (args[0].equalsIgnoreCase("confirm")) {
+            OperationResult result = shopService.confirmShopPlacement(player);
             sender.sendMessage((result.success() ? "§a" : "§c") + result.message());
             return true;
         }
