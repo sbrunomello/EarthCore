@@ -28,6 +28,9 @@ commands:
   claim:
     description: Abre a interface completa de criação de claims
     usage: /claim [confirm|cancel]
+  menu:
+    description: Abre o menu interativo com atalhos
+    usage: /menu
   chat:
     description: Troca entre canais de chat (global, local, clã, cidade e admin)
     usage: /chat <global | local | clan | cidade | admin>
