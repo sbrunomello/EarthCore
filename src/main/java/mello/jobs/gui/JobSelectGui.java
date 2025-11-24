@@ -111,12 +111,7 @@ public class JobSelectGui extends AbstractGui {
         }
         payout.getBlockBreakPayouts().entrySet().stream().limit(3).forEach(entry -> {
             double coins = entry.getValue().coins();
-            double gems = entry.getValue().gems();
-            String rewardText = String.format("§a%.2f⛁", coins);
-            if (gems > 0) {
-                rewardText += String.format(" §b%.2f✦", gems);
-            }
-            lore.add(" §f" + entry.getKey().name() + " §7-> " + rewardText);
+            lore.add(" §f" + entry.getKey().name() + " §7-> " + String.format("§a%.2f⛁", coins));
         });
         if (current) {
             lore.add("");

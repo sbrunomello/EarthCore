@@ -122,7 +122,7 @@ public class JobService {
 
         payJobReward(player, reward);
         lastRewardReceived.put(playerId, System.currentTimeMillis());
-        logger.fine("[Jobs] Pagando " + reward.coins() + " coins e " + reward.gems() + " gems para " + playerId + " por quebrar " + material + ".");
+        logger.fine("[Jobs] Pagando " + reward.coins() + " coins para " + playerId + " por quebrar " + material + ".");
     }
 
     /**
@@ -151,7 +151,7 @@ public class JobService {
 
         payJobReward(player, reward);
         lastRewardReceived.put(playerId, System.currentTimeMillis());
-        logger.fine("[Jobs] Pagando " + reward.coins() + " coins e " + reward.gems() + " gems para " + playerId + " por matar " + entityType + ".");
+        logger.fine("[Jobs] Pagando " + reward.coins() + " coins para " + playerId + " por matar " + entityType + ".");
     }
 
     private void payJobReward(Player player, JobReward reward) {
@@ -185,7 +185,7 @@ public class JobService {
         }
 
         double netCoins = Math.max(0, reward.coins() - tax);
-        depositRewards(playerId, new JobReward(netCoins, reward.gems()), MoneyTransactionType.JOB_REWARD, tax > 0 ? "Job reward (líquido)" : "Job reward");
+        depositRewards(playerId, new JobReward(netCoins), MoneyTransactionType.JOB_REWARD, tax > 0 ? "Job reward (líquido)" : "Job reward");
         if (tax > 0) {
             bankService.deposit(kingdom, tax, "Taxa de job de " + player.getName());
             logger.fine("[Jobs] Imposto de " + tax + " destinado ao reino " + kingdom.getName() + " para o jogador " + player.getName());
@@ -195,9 +195,6 @@ public class JobService {
     private void depositRewards(UUID playerId, JobReward reward, MoneyTransactionType type, String reason) {
         if (reward.coins() > 0) {
             economyService.deposit(playerId, MoneyCurrency.COINS, reward.coins(), type, reason);
-        }
-        if (reward.gems() > 0) {
-            economyService.deposit(playerId, MoneyCurrency.GEMS, reward.gems(), MoneyTransactionType.GEM_REWARD, reason);
         }
     }
 

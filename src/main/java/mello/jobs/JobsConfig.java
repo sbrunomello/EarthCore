@@ -118,12 +118,15 @@ public class JobsConfig {
     private JobReward parseReward(ConfigurationSection rewards, String key) {
         Object rawValue = rewards.get(key);
         if (rawValue instanceof ConfigurationSection section) {
-            double coins = section.getDouble("coins", 0D);
-            double gems = section.getDouble("gems", 0D);
-            return new JobReward(Math.max(0, coins), Math.max(0, gems));
+            double coins = Math.max(0, section.getDouble("coins", 0D));
+            double gems = Math.max(0, section.getDouble("gems", 0D));
+            if (gems > 0) {
+                logger.warning("[Jobs] Gems configuradas em " + key + " serão ignoradas. Use apenas coins.");
+            }
+            return new JobReward(coins);
         }
 
         double coins = rewards.getDouble(key, 0D);
-        return new JobReward(Math.max(0, coins), 0D);
+        return new JobReward(Math.max(0, coins));
     }
 }
