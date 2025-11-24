@@ -622,10 +622,8 @@ public class ShopService {
             }
         }
 
-        if (type == ShopType.PERSONAL && context == null) {
-            return OperationResult.fail("Você precisa estar em um claim autorizado para criar uma loja pessoal.");
-        }
-
+        // Lojas pessoais podem ser criadas em áreas públicas; quando houver claim,
+        // a validação de associação acima garante que apenas membros possam construir.
         return OperationResult.ok("");
     }
 
