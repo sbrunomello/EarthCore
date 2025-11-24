@@ -24,13 +24,13 @@ public class TpaCommand implements CommandExecutor {
             return true;
         }
 
-        if (!player.hasPermission("core.tpa")) {
-            player.sendMessage(Messages.NO_PERMISSION);
+        if (args.length < 1) {
+            player.sendMessage("Usage: /tpa <player> | y | n");
             return true;
         }
 
-        if (args.length < 1) {
-            player.sendMessage("Usage: /tpa <player>");
+        if (args.length == 1 && isResponseArgument(args[0])) {
+            handleResponse(player, args[0]);
             return true;
         }
 
@@ -49,5 +49,43 @@ public class TpaCommand implements CommandExecutor {
         player.sendMessage(Messages.TPA_REQUEST_SENT);
         target.sendMessage(String.format(Messages.TPA_REQUEST_RECEIVED, player.getName()));
         return true;
+    }
+
+    private boolean isResponseArgument(String arg) {
+        return arg.equalsIgnoreCase("y") || arg.equalsIgnoreCase("yes")
+                || arg.equalsIgnoreCase("n") || arg.equalsIgnoreCase("no");
+    }
+
+    private void handleResponse(Player player, String responseArg) {
+        teleportRequestService.consumeRequest(player.getUniqueId())
+                .ifPresentOrElse(request -> processRequestResponse(player, request, responseArg),
+                        () -> player.sendMessage(Messages.TELEPORT_REQUEST_EXPIRED));
+    }
+
+    private void processRequestResponse(Player target, TeleportRequestService.TeleportRequest request, String responseArg) {
+        Player requester = Bukkit.getPlayer(request.getRequester());
+        boolean accepted = responseArg.equalsIgnoreCase("y") || responseArg.equalsIgnoreCase("yes");
+
+        if (!accepted) {
+            target.sendMessage(Messages.TELEPORT_REQUEST_DENIED);
+            if (requester != null) {
+                requester.sendMessage(String.format(Messages.TELEPORT_REQUEST_DENIED_BY, target.getName()));
+            }
+            return;
+        }
+
+        if (requester == null) {
+            target.sendMessage(Messages.TELEPORT_REQUESTER_OFFLINE);
+            return;
+        }
+
+        if (request.getType() == TeleportRequestType.TPA) {
+            requester.teleport(target.getLocation());
+        } else {
+            target.teleport(requester.getLocation());
+        }
+
+        target.sendMessage(Messages.TELEPORT_REQUEST_ACCEPTED);
+        requester.sendMessage(String.format(Messages.TELEPORT_REQUEST_ACCEPTED_BY, target.getName()));
     }
 }

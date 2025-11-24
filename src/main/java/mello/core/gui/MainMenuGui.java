@@ -69,7 +69,8 @@ public class MainMenuGui extends AbstractGui {
                 () -> dispatchAndClose("home"));
 
         setActionItem(32, Material.ENDER_PEARL, "&5Pedidos de TP",
-                List.of("&7Use /tpa <jogador> para ir", "&7ou /tphere <jogador> para puxar."),
+                List.of("&7Use /tpa <jogador> para ir", "&7ou /tphere <jogador> para puxar.",
+                        "&7Responda com /tpa y ou /tpa n."),
                 this::sendTeleportHelp);
 
         setActionItem(34, Material.WRITABLE_BOOK, "&eMensagens",
@@ -107,6 +108,8 @@ public class MainMenuGui extends AbstractGui {
         player.sendMessage(ChatColor.YELLOW + "Teleportes rápidos:");
         player.sendMessage(ChatColor.GRAY + "/tpa <jogador> " + ChatColor.WHITE + "- pede para ir até alguém");
         player.sendMessage(ChatColor.GRAY + "/tphere <jogador> " + ChatColor.WHITE + "- pede para trazer alguém até você");
+        player.sendMessage(ChatColor.GRAY + "/tpa y | /tpa n " + ChatColor.WHITE
+                + "- aceita ou recusa o último pedido recebido");
     }
 
     private void sendMessageHelp() {
