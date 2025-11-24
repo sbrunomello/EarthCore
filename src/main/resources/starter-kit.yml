@@ -7,21 +7,47 @@ messages:
   dropped: "&eSeu inventário estava cheio, alguns itens foram dropados aos seus pés."
 command:
   enabled: true
-  cooldown-seconds: 600
+  cooldown-seconds: 1800 # 30 minutos – evita abuso sem ser tão punitivo
   messages:
     received: "&aKit inicial entregue novamente. Boa sorte!"
     cooldown: "&cAguarde %time% para usar o comando /starterkit novamente."
     disabled: "&cO comando /starterkit está temporariamente indisponível."
 items:
+  # COMBATE BÁSICO
   - material: STONE_SWORD
     amount: 1
     enchantments:
       SHARPNESS: 1
   - material: SHIELD
     amount: 1
-  - material: IRON_PICKAXE
+
+  # FERRAMENTAS INICIAIS
+  - material: STONE_PICKAXE
     amount: 1
+    enchantments:
+      UNBREAKING: 1
+  - material: STONE_AXE
+    amount: 1
+    enchantments:
+      UNBREAKING: 1
+  - material: STONE_SHOVEL
+    amount: 1
+
+  # ARMADURA LEVE (SOBREVIVER, NÃO DOMINAR)
+  - material: LEATHER_HELMET
+    amount: 1
+  - material: LEATHER_CHESTPLATE
+    amount: 1
+  - material: LEATHER_LEGGINGS
+    amount: 1
+  - material: LEATHER_BOOTS
+    amount: 1
+
+  # RECURSOS INICIAIS
   - material: COOKED_BEEF
-    amount: 16
-  - material: OAK_PLANKS
+    amount: 24
+  - material: TORCH
     amount: 32
+  - material: OAK_LOG
+    amount: 16
+

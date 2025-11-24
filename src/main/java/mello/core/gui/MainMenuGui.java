@@ -26,7 +26,6 @@ public class MainMenuGui extends AbstractGui {
 
     @Override
     protected void build() {
-        fillBorder(GuiTheme.MENU.getBorderMaterial());
 
         setActionItem(10, Material.EMERALD, "&aEconomia",
                 List.of("&7Veja seu saldo", "&7ou pague jogadores."),
@@ -52,9 +51,6 @@ public class MainMenuGui extends AbstractGui {
                 List.of("&7Crie ou edite sua loja", "&7pessoal rapidamente."),
                 () -> dispatchAndClose("shop"));
 
-        setActionItem(23, Material.NETHER_STAR, "&9Portais",
-                List.of("&7Visualize portais ativos", "&7(requer permissão de staff)."),
-                () -> dispatchAndClose("portal list"));
 
         setActionItem(25, Material.PAPER, "&fChat",
                 List.of("&7Troque de canal", "&7global, local, clã ou cidade."),
@@ -77,12 +73,11 @@ public class MainMenuGui extends AbstractGui {
                 List.of("&7Envie /msg <jogador> ...", "&7ou use /reply para responder."),
                 this::sendMessageHelp);
 
-        setActionItem(31, Material.CHEST, "&6Starter Kit",
+        setActionItem(23, Material.CHEST, "&6Starter Kit",
                 List.of("&7Resgate itens iniciais", "&7quando necessário."),
                 () -> dispatchAndClose("starterkit"));
 
         setCloseButton(44);
-        fillEmpty(GuiTheme.MENU.getContentMaterial());
     }
 
     private void setActionItem(int slot, Material material, String title, List<String> lore, Runnable action) {
