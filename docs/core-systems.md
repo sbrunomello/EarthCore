@@ -99,8 +99,8 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Mensagens**: mensagens rápidas de bloqueio ficam em `AuthMessages`, voltadas para lembrar que o login é obrigatório.
 
 ## Lojas físicas com NPC
-- **Tipos de loja**: pessoal (`/shop create <nome>`), clã (`/shop clan create <nome>`, apenas líder, dentro de claim do clã) e reino (`/shop kingdom create <nome>`, apenas rei, dentro de claim do reino). Pessoais exigem estar em área onde você tenha permissão de construir.
-- **Infraestrutura**: ao criar, o `ShopService` spawna um aldeão fixo (invulnerável, sem IA) e gera um baú duplo atrás do NPC para ser o estoque físico; cada loja mantém cache de itens e vínculo com o baú.
+- **Tipos de loja**: pessoal (`/shop create <nome>`), clã (`/shop clan create <nome>`, apenas líder, dentro de claim do clã) e reino (`/shop kingdom create <nome>`, apenas rei, dentro de claim do reino). Pessoais exigem estar em área onde você tenha permissão de construir. O posicionamento é confirmado com `/shop confirm` usando um bastão personalizado.
+- **Infraestrutura**: ao criar, o `ShopService` spawna um aldeão fixo (invulnerável, sem IA) e gera um baú duplo atrás do NPC para ser o estoque físico; a posição é pré-visualizada com blocos vermelhos antes de materializar o baú e o aldeão.
 - **Edição**: o dono abre uma GUI de edição (`ShopEditGui`) que pede preço via chat e quantidade por clique (1 ou 64). O item é copiado do que está na mão para garantir fidelidade de metadados.
 - **Compra**: `ShopBuyGui` lista os itens; ao comprar o sistema verifica saldo (`EconomyService`), espaço no inventário e estoque antes de debitar o comprador e creditar o dono (tipo `PLAYER_TRADE`). Estoque é removido diretamente do baú.
 - **Persistência e resiliência**: lojas e itens são salvos em disco (`ShopStorage`). NPCs e baús são recriados no carregamento; remoção limpa o estoque e destrói o aldeão. NPCs de loja também são protegidos por `NpcProtectionListener` contra dano/target.
