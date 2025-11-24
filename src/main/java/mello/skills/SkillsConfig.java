@@ -1,6 +1,10 @@
 package mello.skills;
 
+import mello.skills.hud.SkillHudSettings;
+import mello.skills.hud.SkillHudSettingsActionBar;
 import org.bukkit.Material;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -25,6 +29,7 @@ public class SkillsConfig implements SkillDefinitionProvider {
     private final JavaPlugin plugin;
     private final Logger logger;
     private final Map<SkillType, SkillDefinition> definitions = new EnumMap<>(SkillType.class);
+    private SkillHudSettings hudSettings = SkillHudSettings.disabled();
 
     public SkillsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -42,8 +47,13 @@ public class SkillsConfig implements SkillDefinitionProvider {
         return definitions;
     }
 
+    public SkillHudSettings getHudSettings() {
+        return hudSettings;
+    }
+
     public void reload() {
         definitions.clear();
+        hudSettings = SkillHudSettings.disabled();
         load();
     }
 
@@ -52,6 +62,7 @@ public class SkillsConfig implements SkillDefinitionProvider {
         File file = new File(plugin.getDataFolder(), FILE_NAME);
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 
+        loadHudSettings(config);
         ConfigurationSection skillsSection = config.getConfigurationSection("skills");
         if (skillsSection == null) {
             logger.warning("[Skills] Nenhuma skill configurada em skills.yml.");
@@ -114,6 +125,62 @@ public class SkillsConfig implements SkillDefinitionProvider {
             SkillDefinition definition = new SkillDefinition(type, displayName, enabled, baseCurve, curveMultiplier,
                     maxLevel, icon, xpEvents, xpSources, effects);
             definitions.put(type, definition);
+        }
+    }
+
+    private void loadHudSettings(FileConfiguration config) {
+        ConfigurationSection hudSection = config.getConfigurationSection("skills.hud");
+        if (hudSection == null) {
+            hudSettings = SkillHudSettings.disabled();
+            return;
+        }
+
+        boolean enabled = hudSection.getBoolean("enabled", true);
+        boolean showOnXpGain = hudSection.getBoolean("show_on_xp_gain", true);
+        boolean showOnlyForPlayer = hudSection.getBoolean("show_only_for_player", true);
+        double minXpToShow = hudSection.getDouble("min_xp_to_show", 0.1D);
+        int durationTicks = hudSection.getInt("display_duration_ticks", 60);
+        String titleFormat = hudSection.getString("title_format",
+                "&e[%skill_display%] &7Nível &a%level% &7- &b%current_xp%&7/&b%required_xp% XP &7(&a%progress_percent%%&7)");
+        String maxLevelTitleFormat = hudSection.getString("max_level_title_format",
+                "&e[%skill_display%] &aNÍVEL MÁXIMO");
+
+        BarColor color = parseColor(hudSection.getString("bossbar.color", "GREEN"));
+        BarStyle overlay = parseOverlay(hudSection.getString("bossbar.overlay", "SEGMENTED_10"));
+
+        ConfigurationSection actionBarSection = hudSection.getConfigurationSection("actionbar");
+        boolean actionBarEnabled = actionBarSection == null || actionBarSection.getBoolean("enabled", true);
+        String actionBarFormat = actionBarSection != null
+                ? actionBarSection.getString("format",
+                "&a+%gained_xp% XP &7em &e%skill_display% &7(Nv %old_level% &7→ &a%new_level%)")
+                : "&a+%gained_xp% XP &7em &e%skill_display% &7(Nv %old_level% &7→ &a%new_level%)";
+
+        SkillHudSettingsActionBar actionBar = new SkillHudSettingsActionBar(actionBarEnabled, actionBarFormat);
+
+        if (!enabled) {
+            hudSettings = SkillHudSettings.disabled();
+            return;
+        }
+
+        hudSettings = new SkillHudSettings(enabled, showOnXpGain, showOnlyForPlayer, minXpToShow,
+                durationTicks, titleFormat, maxLevelTitleFormat, color, overlay, actionBar);
+    }
+
+    private BarColor parseColor(String rawColor) {
+        try {
+            return BarColor.valueOf(rawColor.toUpperCase());
+        } catch (Exception ignored) {
+            logger.warning("[Skills] Cor de bossbar inválida, usando GREEN: " + rawColor);
+            return BarColor.GREEN;
+        }
+    }
+
+    private BarStyle parseOverlay(String rawOverlay) {
+        try {
+            return BarStyle.valueOf(rawOverlay.toUpperCase());
+        } catch (Exception ignored) {
+            logger.warning("[Skills] Overlay de bossbar inválido, usando SEGMENTED_10: " + rawOverlay);
+            return BarStyle.SEGMENTED_10;
         }
     }
 

@@ -1,4 +1,18 @@
 skills:
+  hud:
+    enabled: true
+    show_on_xp_gain: true
+    show_only_for_player: true
+    min_xp_to_show: 0.1
+    display_duration_ticks: 60
+    title_format: "&e[%skill_display%] &7Nível &a%level% &7- &b%current_xp%&7/&b%required_xp% XP &7(&a%progress_percent%%&7)"
+    max_level_title_format: "&e[%skill_display%] &aNÍVEL MÁXIMO"
+    bossbar:
+      color: "GREEN"
+      overlay: "SEGMENTED_10"
+    actionbar:
+      enabled: true
+      format: "&a+%gained_xp% XP &7em &e%skill_display% &7(Nv %old_level% &7→ &a%new_level%)"
   MINING:
     display_name: "Minerador"
     enabled: true
