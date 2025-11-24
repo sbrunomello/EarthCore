@@ -25,3 +25,8 @@ gui.open.error: "&cNão foi possível abrir o menu agora. Tente novamente mais t
 notifications.money.receive: "&a+{amount} ⛁ &7({source})"
 notifications.important: "&6⚠ {message}"
 notifications.claim.enter: "&6⚑ Território de &e{owner}"
+skills.command.header: "&eSkills de {player}:\n"
+skills.command.line: "&7[{skill_display}] &aNível {level} &7- &b{current_xp}&7/&b{required_xp} XP &7({progress_percent}%)"
+skills.command.player_only: "&cApenas jogadores podem usar esse comando sem alvo."
+skills.command.no_permission_others: "&cVocê não tem permissão para ver skills de outros jogadores."
+skills.command.target_not_found: "&cJogador {target} não encontrado."
