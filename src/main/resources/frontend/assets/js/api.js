@@ -19,10 +19,20 @@ const Api = (() => {
         return data;
     };
 
+    const releaseAuthGuard = () => {
+        const body = document.body;
+        if (body && body.classList.contains('requires-auth')) {
+            body.classList.add('auth-ready');
+        }
+    };
+
     const ensureAuth = () => {
         if (!getToken() && location.pathname !== '/') {
             location.href = '/';
+            return false;
         }
+        releaseAuthGuard();
+        return true;
     };
 
     const logout = () => {

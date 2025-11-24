@@ -23,6 +23,17 @@ body {
     min-height: 100vh;
 }
 
+body.requires-auth {
+    opacity: 0;
+    visibility: hidden;
+}
+
+body.requires-auth.auth-ready {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 160ms ease-out;
+}
+
 a { color: var(--primary); text-decoration: none; }
 
 .layout {
