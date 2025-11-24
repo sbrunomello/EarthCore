@@ -24,11 +24,6 @@ public class TphereCommand implements CommandExecutor {
             return true;
         }
 
-        if (!player.hasPermission("core.tphere")) {
-            player.sendMessage(Messages.NO_PERMISSION);
-            return true;
-        }
-
         if (args.length < 1) {
             player.sendMessage("Usage: /tphere <player>");
             return true;

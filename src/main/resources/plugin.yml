@@ -50,7 +50,8 @@ commands:
     usage: /home [set]
   tpa:
     description: Envia um pedido para teleportar até outro jogador
-    usage: /tpa <player>
+    usage: /tpa <player> | y | n
+    aliases: [tp]
   tphere:
     description: Envia um pedido para puxar um jogador até você
     usage: /tphere <player>

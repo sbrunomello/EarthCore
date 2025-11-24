@@ -47,9 +47,20 @@ public final class Messages {
     public static final String PORTAL_NOT_FOUND = ChatColor.RED + "Portal não encontrado: %s";
 
     public static final String TPA_REQUEST_SENT = ChatColor.GREEN + "Teleport request sent.";
-    public static final String TPA_REQUEST_RECEIVED = ChatColor.YELLOW + "%s wants to teleport to you. Use /tpacept or /tpdeny.";
+    public static final String TPA_REQUEST_RECEIVED = ChatColor.YELLOW
+            + "%s quer teleportar até você. Use /tpa y para aceitar ou /tpa n para recusar.";
     public static final String TPHERE_REQUEST_SENT = ChatColor.GREEN + "Teleport-here request sent.";
-    public static final String TPHERE_REQUEST_RECEIVED = ChatColor.YELLOW + "%s wants you to teleport to them. Use /tpacept or /tpdeny.";
+    public static final String TPHERE_REQUEST_RECEIVED = ChatColor.YELLOW
+            + "%s quer que você teleporte até ele. Use /tpa y para aceitar ou /tpa n para recusar.";
+    public static final String TELEPORT_REQUEST_ACCEPTED = ChatColor.GREEN + "Pedido de teleporte aceito.";
+    public static final String TELEPORT_REQUEST_ACCEPTED_BY = ChatColor.GREEN
+            + "Seu pedido de teleporte foi aceito por %s.";
+    public static final String TELEPORT_REQUEST_DENIED = ChatColor.RED + "Pedido de teleporte recusado.";
+    public static final String TELEPORT_REQUEST_DENIED_BY = ChatColor.RED
+            + "Seu pedido de teleporte foi recusado por %s.";
+    public static final String TELEPORT_REQUEST_EXPIRED = ChatColor.RED + "Nenhum pedido de teleporte pendente.";
+    public static final String TELEPORT_REQUESTER_OFFLINE = ChatColor.RED
+            + "Quem enviou o pedido está offline. Envie um novo pedido.";
 
     public static final String MSG_SENT = ChatColor.GRAY + "[Me -> %s] " + ChatColor.WHITE + "%s";
     public static final String MSG_RECEIVED = ChatColor.GRAY + "[%s -> Me] " + ChatColor.WHITE + "%s";
