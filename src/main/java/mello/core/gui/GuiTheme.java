@@ -6,6 +6,7 @@ import org.bukkit.Material;
  * Simple theme descriptor to keep GUI colors consistent across modules.
  */
 public enum GuiTheme {
+    MENU(Material.GRAY_STAINED_GLASS_PANE, Material.GRAY_CONCRETE, Material.NETHER_STAR),
     JOBS(Material.GREEN_STAINED_GLASS_PANE, Material.GREEN_TERRACOTTA, Material.EMERALD),
     CLAN(Material.LIGHT_BLUE_STAINED_GLASS_PANE, Material.BLUE_STAINED_GLASS_PANE, Material.BLUE_BANNER),
     KINGDOM(Material.YELLOW_STAINED_GLASS_PANE, Material.GOLD_BLOCK, Material.GOLDEN_HELMET),

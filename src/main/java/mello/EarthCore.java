@@ -55,6 +55,7 @@ import org.bukkit.plugin.Plugin;
 import org.dynmap.DynmapAPI;
 import mello.core.commands.HomeCommand;
 import mello.core.commands.MsgCommand;
+import mello.core.commands.MenuCommand;
 import mello.core.commands.ReplyCommand;
 import mello.core.commands.SetSpawnCommand;
 import mello.core.commands.SpawnCommand;
@@ -218,6 +219,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("claim").setExecutor(claimCommand);
         getCommand("chat").setExecutor(new ChatCommand(chatService, clanService, kingdomService));
         getCommand("spawn").setExecutor(new SpawnCommand(spawnService));
+        getCommand("menu").setExecutor(new MenuCommand(guiManager, guiMessages, jobService));
         getCommand("setspawn").setExecutor(new SetSpawnCommand(spawnService));
         getCommand("portal").setExecutor(new PortalCommand(portalService));
         getCommand("home").setExecutor(new HomeCommand(homeService));
