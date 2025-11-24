@@ -1,6 +1,7 @@
 package mello.clans;
 
 import mello.common.OperationResult;
+import mello.core.claims.ClaimMarkerService;
 import mello.core.claims.ClaimValidationResult;
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
@@ -26,6 +27,7 @@ public class ClanService {
     private final Map<UUID, String> invites = new HashMap<>();
     private KingdomService kingdomService;
     private ClanDynmapHook dynmapHook;
+    private ClaimMarkerService claimMarkerService;
 
     /**
      * Cria o serviço aplicando injeção explícita de dependências financeiras e
@@ -67,6 +69,10 @@ public class ClanService {
     public void setDynmapHook(ClanDynmapHook dynmapHook) {
         this.dynmapHook = dynmapHook;
         dynmapHook.redrawAll(storage.getClans());
+    }
+
+    public void setClaimMarkerService(ClaimMarkerService claimMarkerService) {
+        this.claimMarkerService = claimMarkerService;
     }
 
     /**
@@ -225,6 +231,9 @@ public class ClanService {
         clan.setClaim(claimedChunk);
         storage.updateClaim(clan);
         notifyDynmapUpdate(clan);
+        if (claimMarkerService != null) {
+            claimMarkerService.markWithRedstoneTorches(chunk);
+        }
         return OperationResult.ok("Chunk reivindicado para o clã " + clan.getName() + ". Crie um reino para expandir suas terras.");
     }
 

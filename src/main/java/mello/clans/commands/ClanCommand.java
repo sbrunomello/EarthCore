@@ -89,6 +89,16 @@ public class ClanCommand implements CommandExecutor {
                 player.sendMessage(leaveResult.message());
                 return true;
 
+            case "claim":
+                OperationResult claimResult = service.claimChunk(player.getUniqueId(), player.getLocation().getChunk());
+                player.sendMessage(claimResult.message());
+                return true;
+
+            case "unclaim":
+                OperationResult unclaimResult = service.unclaimChunk(player.getUniqueId(), player.getLocation().getChunk());
+                player.sendMessage(unclaimResult.message());
+                return true;
+
             case "deposit":
                 if (args.length < 2) {
                     player.sendMessage("Uso: /clan deposit <valor>");
@@ -173,7 +183,8 @@ public class ClanCommand implements CommandExecutor {
         player.sendMessage("§7/clan join <nome> §f- aceita convite");
         player.sendMessage("§7/clan deposit <valor> §f- deposita no banco do clã");
         player.sendMessage("§7/clan withdraw <valor> §f- saca do banco (apenas líder)");
-        player.sendMessage("§7/kingdom claim §f- reivindica 1 chunk temporário para o clã");
+        player.sendMessage("§7/clan claim §f- reivindica 1 chunk para o clã");
+        player.sendMessage("§7/clan unclaim §f- remove o claim atual do clã");
         player.sendMessage("§7/clan info [nome] §f- detalhes do clã");
         player.sendMessage("§7/clan leave §f- sair do clã");
     }
