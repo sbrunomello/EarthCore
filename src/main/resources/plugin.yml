@@ -76,6 +76,11 @@ commands:
   login:
     description: Faz login com sua conta.
     usage: "/login <senha>"
+  skills:
+    description: "Mostra o progresso das suas skills."
+    usage: "/skills [jogador]"
+    permission: "earthcore.skills"
+    permission-message: "Você não tem permissão para ver skills."
 
 permissions:
   economy.admin:

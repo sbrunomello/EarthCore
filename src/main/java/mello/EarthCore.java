@@ -84,6 +84,15 @@ import mello.shops.ShopListener;
 import mello.web.FrontendServer;
 import mello.web.FrontendSettings;
 import mello.web.GemPackConfig;
+import mello.skills.DefaultSkillService;
+import mello.skills.SkillService;
+import mello.skills.SkillsConfig;
+import mello.skills.SkillsMessages;
+import mello.skills.SkillStorage;
+import mello.skills.hud.BossBarSkillHudService;
+import mello.skills.hud.SkillHudService;
+import mello.skills.listeners.SkillXpListener;
+import mello.skills.commands.SkillsCommand;
 import earthcore.scoreboard.PlayerStatsService;
 import earthcore.scoreboard.ScoreboardService;
 
@@ -127,6 +136,10 @@ public class EarthCore extends JavaPlugin {
     private AuthSessionManager authSessionManager;
     private AuthStorage authStorage;
     private GemPackConfig gemPackConfig;
+    private SkillService skillService;
+    private SkillHudService skillHudService;
+    private SkillsConfig skillsConfig;
+    private SkillsMessages skillsMessages;
 
     /**
      * Inicializa todos os serviços do plugin em ordem explícita para evitar
@@ -219,6 +232,13 @@ public class EarthCore extends JavaPlugin {
         // Catálogo de gems do frontend
         gemPackConfig = new GemPackConfig(this);
 
+        // Sistema de skills MMO (progressão e HUD)
+        skillsConfig = new SkillsConfig(this);
+        skillHudService = new BossBarSkillHudService(this, skillsConfig, skillsConfig.getHudSettings(), getLogger());
+        SkillStorage skillStorage = new SkillStorage(getDataFolder(), getLogger());
+        skillsMessages = new SkillsMessages(this);
+        skillService = new DefaultSkillService(skillStorage, skillsConfig, skillsConfig.getHudSettings(), skillHudService, getLogger());
+
         ClaimCommand claimCommand = new ClaimCommand(this, kingdomService, clanService, kingdomsConfig, clansConfig, claimPreviewManager, claimSelectionHelper, claimSettings, guiManager, claimFlowService);
         claimPreviewManager.setCleanupCallback(claimCommand::removeClaimStick);
 
@@ -245,12 +265,14 @@ public class EarthCore extends JavaPlugin {
         getCommand("shop").setExecutor(new ShopCommand(shopService));
         getCommand("register").setExecutor(new RegisterCommand(authService, authSessionManager));
         getCommand("login").setExecutor(new LoginCommand(authService, authSessionManager));
+        getCommand("skills").setExecutor(new SkillsCommand(skillService, skillsConfig, skillsMessages));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);
         getServer().getPluginManager().registerEvents(new ClaimStickListener(claimPreviewManager, claimSettings, claimSelectionHelper, claimCommand, guiManager, claimFlowService), this);
         getServer().getPluginManager().registerEvents(new ShopListener(shopService), this);
         getServer().getPluginManager().registerEvents(new NpcProtectionListener(shopService, portalService), this);
+        getServer().getPluginManager().registerEvents(new SkillXpListener(skillService, skillsConfig, claimService), this);
 
         // Auto-save no desligamento
         getServer().getPluginManager().registerEvents(new ChatListener(chatService), this);
@@ -294,6 +316,10 @@ public class EarthCore extends JavaPlugin {
 
         if (shopService != null) {
             shopService.saveAll();
+        }
+
+        if (skillService != null) {
+            skillService.saveAll();
         }
 
         if (frontendServer != null) {

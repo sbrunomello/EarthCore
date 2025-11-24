@@ -46,7 +46,7 @@ public class DefaultSkillService implements SkillService {
     }
 
     @Override
-    public Map<SkillType, PlayerSkillProgress> getAllSkills(UUID playerId) {
+    public Map<SkillType, PlayerSkillProgress> getAllProgress(UUID playerId) {
         return Collections.unmodifiableMap(cache.computeIfAbsent(playerId, storage::loadPlayer));
     }
 
@@ -74,7 +74,7 @@ public class DefaultSkillService implements SkillService {
         int maxLevel = Math.max(1, definition.getMaxLevel());
         boolean leveled = false;
         while (level < maxLevel) {
-            double required = requiredXpForLevel(definition, level);
+            double required = SkillExperienceCalculator.requiredXpForLevel(definition, level);
             if (currentXp < required) {
                 break;
             }
@@ -96,7 +96,8 @@ public class DefaultSkillService implements SkillService {
         if (shouldDisplayHud(adjustedAmount)) {
             Player player = Bukkit.getPlayer(playerId);
             if (player != null) {
-                double requiredXpForNextLevel = level >= maxLevel ? 0 : requiredXpForLevel(definition, level);
+                double requiredXpForNextLevel = level >= maxLevel ? 0
+                        : SkillExperienceCalculator.requiredXpForLevel(definition, level);
                 hudService.showXpGain(player, skill, updated, adjustedAmount, requiredXpForNextLevel, previousLevel);
             }
         }
@@ -104,15 +105,13 @@ public class DefaultSkillService implements SkillService {
         if (leveled) {
             logger.fine(String.format("Player %s ganhou nível %s em %s", playerId, level, skill));
         }
+
+        fireXpGainEvent(playerId, skill, adjustedAmount, previousLevel, level);
     }
 
+    @Override
     public void saveAll() {
         storage.saveAll();
-    }
-
-    public double requiredXpForLevel(SkillDefinition definition, int level) {
-        int normalizedLevel = Math.max(1, level);
-        return definition.getBaseXpCurve() * Math.pow(definition.getCurveMultiplier(), normalizedLevel - 1);
     }
 
     private boolean shouldDisplayHud(double adjustedAmount) {
@@ -129,5 +128,16 @@ public class DefaultSkillService implements SkillService {
             return;
         }
         Bukkit.getPluginManager().callEvent(new PlayerSkillLevelUpEvent(player, skill, oldLevel, newLevel));
+    }
+
+    private void fireXpGainEvent(UUID playerId, SkillType skill, double amount, int previousLevel, int newLevel) {
+        if (Bukkit.getServer() == null) {
+            return;
+        }
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null) {
+            return;
+        }
+        Bukkit.getPluginManager().callEvent(new PlayerSkillXpGainEvent(player, skill, amount, previousLevel, newLevel));
     }
 }
