@@ -1,0 +1,90 @@
+skills:
+  MINING:
+    display_name: "Minerador"
+    enabled: true
+    base_xp_curve: 100.0
+    curve_multiplier: 1.25
+    max_level: 100
+    icon: "IRON_PICKAXE"
+    xp_sources:
+      MINING: 1.0
+    xp_events:
+      STONE: 0.5
+      COBBLESTONE: 0.5
+      COAL_ORE: 2.0
+      IRON_ORE: 4.0
+      GOLD_ORE: 6.0
+      DIAMOND_ORE: 10.0
+  FARMING:
+    display_name: "Fazendeiro"
+    enabled: true
+    base_xp_curve: 80.0
+    curve_multiplier: 1.2
+    max_level: 100
+    icon: "IRON_HOE"
+    xp_sources:
+      FARMING: 1.0
+    xp_events:
+      WHEAT: 1.0
+      POTATOES: 1.0
+      CARROTS: 1.0
+  WOODCUTTING:
+    display_name: "Lenhador"
+    enabled: true
+    base_xp_curve: 90.0
+    curve_multiplier: 1.22
+    max_level: 100
+    icon: "IRON_AXE"
+    xp_sources:
+      WOODCUTTING: 1.0
+    xp_events:
+      OAK_LOG: 1.2
+      BIRCH_LOG: 1.2
+      SPRUCE_LOG: 1.2
+  HUNTER:
+    display_name: "Caçador"
+    enabled: true
+    base_xp_curve: 120.0
+    curve_multiplier: 1.3
+    max_level: 100
+    icon: "IRON_SWORD"
+    xp_sources:
+      KILL_MOB: 1.0
+    xp_events:
+      ZOMBIE: 2.0
+      SKELETON: 3.0
+      CREEPER: 4.0
+      ENDER_DRAGON: 500.0
+  FISHING:
+    display_name: "Pescador"
+    enabled: true
+    base_xp_curve: 70.0
+    curve_multiplier: 1.18
+    max_level: 100
+    icon: "FISHING_ROD"
+    xp_sources:
+      FISHING: 1.0
+    xp_events:
+      COD: 2.0
+      SALMON: 2.0
+  EXPLORATION:
+    display_name: "Explorador"
+    enabled: true
+    base_xp_curve: 60.0
+    curve_multiplier: 1.15
+    max_level: 100
+    icon: "COMPASS"
+    xp_sources:
+      WALK: 1.0
+      EXPLORE_CHUNK: 1.0
+    xp_events:
+      CHUNK_DISCOVERED: 5.0
+
+effects:
+  MINING:
+    bonus_haste_per_level: 0.02
+    drop_multiplier_per_level: 0.01
+  HUNTER:
+    bonus_damage_percent_per_level: 0.5
+  FARMING:
+    extra_drops_chance_per_level: 0.3
