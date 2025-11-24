@@ -13,6 +13,7 @@ import mello.economy.EconomyService;
 import mello.jobs.JobService;
 import mello.kingdoms.KingdomService;
 import mello.shops.ShopService;
+import mello.web.GemPackConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -65,6 +66,7 @@ public class FrontendServer {
     private final AuthService authService;
     private final AuthStorage authStorage;
     private final FrontendSettings settings;
+    private final GemPackConfig gemPackConfig;
     private final Gson gson;
     private final Logger logger;
 
@@ -81,6 +83,7 @@ public class FrontendServer {
                           PortalService portalService,
                           AuthService authService,
                           AuthStorage authStorage,
+                          GemPackConfig gemPackConfig,
                           FrontendSettings settings) {
         this.plugin = plugin;
         this.economyService = economyService;
@@ -91,6 +94,7 @@ public class FrontendServer {
         this.portalService = portalService;
         this.authService = authService;
         this.authStorage = authStorage;
+        this.gemPackConfig = gemPackConfig;
         this.settings = settings;
         this.logger = plugin.getLogger();
         this.gson = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
@@ -108,7 +112,7 @@ public class FrontendServer {
 
             JwtService jwtService = new JwtService(settings.jwtSecret(), settings.jwtIssuer(), logger);
             RateLimiter rateLimiter = new RateLimiter(settings.rateLimitPerMinute());
-            FrontendApiController api = new FrontendApiController(plugin, gson, settings, jwtService, rateLimiter, authService, authStorage, economyService, kingdomService, clanService, jobService, shopService, portalService);
+            FrontendApiController api = new FrontendApiController(plugin, gson, settings, jwtService, rateLimiter, authService, authStorage, economyService, kingdomService, clanService, jobService, shopService, portalService, gemPackConfig);
 
             registerStaticRoutes();
             registerApiRoutes(api);

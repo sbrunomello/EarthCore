@@ -83,6 +83,7 @@ import mello.shops.commands.ShopCommand;
 import mello.shops.ShopListener;
 import mello.web.FrontendServer;
 import mello.web.FrontendSettings;
+import mello.web.GemPackConfig;
 import earthcore.scoreboard.PlayerStatsService;
 import earthcore.scoreboard.ScoreboardService;
 
@@ -125,6 +126,7 @@ public class EarthCore extends JavaPlugin {
     private AuthService authService;
     private AuthSessionManager authSessionManager;
     private AuthStorage authStorage;
+    private GemPackConfig gemPackConfig;
 
     /**
      * Inicializa todos os serviços do plugin em ordem explícita para evitar
@@ -213,6 +215,9 @@ public class EarthCore extends JavaPlugin {
 
         ShopStorage shopStorage = new ShopStorage(getDataFolder(), getLogger());
         shopService = new ShopService(this, shopStorage, economyService, claimService, clanService, kingdomService, guiManager, getLogger());
+
+        // Catálogo de gems do frontend
+        gemPackConfig = new GemPackConfig(this);
 
         ClaimCommand claimCommand = new ClaimCommand(this, kingdomService, clanService, kingdomsConfig, clansConfig, claimPreviewManager, claimSelectionHelper, claimSettings, guiManager, claimFlowService);
         claimPreviewManager.setCleanupCallback(claimCommand::removeClaimStick);
@@ -340,7 +345,7 @@ public class EarthCore extends JavaPlugin {
      */
     private void startFrontend() {
         FrontendSettings settings = FrontendSettings.fromConfig(getConfig(), getLogger());
-        frontendServer = new FrontendServer(this, economyService, kingdomService, clanService, jobService, shopService, portalService, authService, authStorage, settings);
+        frontendServer = new FrontendServer(this, economyService, kingdomService, clanService, jobService, shopService, portalService, authService, authStorage, gemPackConfig, settings);
         frontendServer.start();
     }
 }

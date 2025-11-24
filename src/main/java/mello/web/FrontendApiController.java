@@ -60,16 +60,6 @@ import java.util.logging.Logger;
 public class FrontendApiController {
 
     private static final int SYNC_TIMEOUT_MILLIS = 2500;
-    /**
-     * Catálogo mockado de pacotes de gems. Não processa cobrança real, mas
-     * registra a compra no saldo in-game para testes e validação do fluxo web.
-     */
-    private static final List<GemPack> GEM_PACKS = List.of(
-            new GemPack("starter", "Pacote Iniciante", 500, 0, 9.90),
-            new GemPack("adventurer", "Aventureiro", 1200, 120, 19.90),
-            new GemPack("champion", "Campeão", 3000, 450, 39.90)
-    );
-
     private final JavaPlugin plugin;
     private final Gson gson;
     private final Logger logger;
@@ -84,6 +74,14 @@ public class FrontendApiController {
     private final JobService jobService;
     private final ShopService shopService;
     private final PortalService portalService;
+    private final GemPackConfig gemPackConfig;
+    private final List<GemPack> gemPacks;
+
+    private static final List<GemPack> DEFAULT_GEM_PACKS = List.of(
+            new GemPack("starter", "Pacote Iniciante", 500, 0, 9.90, "", "Entrada perfeita para novos jogadores."),
+            new GemPack("adventurer", "Aventureiro", 1200, 120, 19.90, "VIP", "Pacote recomendado para jogadores VIP."),
+            new GemPack("champion", "Campeão", 3000, 450, 39.90, "MVP", "Bundle premium com bônus generoso.")
+    );
 
     public FrontendApiController(JavaPlugin plugin,
                                  Gson gson,
@@ -97,7 +95,8 @@ public class FrontendApiController {
                                  ClanService clanService,
                                  JobService jobService,
                                  ShopService shopService,
-                                 PortalService portalService) {
+                                 PortalService portalService,
+                                 GemPackConfig gemPackConfig) {
         this.plugin = plugin;
         this.gson = gson;
         this.logger = plugin.getLogger();
@@ -112,6 +111,30 @@ public class FrontendApiController {
         this.jobService = jobService;
         this.shopService = shopService;
         this.portalService = portalService;
+        this.gemPackConfig = gemPackConfig;
+        this.gemPacks = buildGemCatalog();
+    }
+
+    private List<GemPack> buildGemCatalog() {
+        List<GemPack> configured = gemPackConfig.getGemPacks().stream()
+                .map(entry -> new GemPack(entry.id(), entry.name(), entry.gems(), entry.bonus(), entry.price(),
+                        normalize(entry.badge()), normalize(entry.description())))
+                .toList();
+
+        if (configured.isEmpty()) {
+            logger.warning("[Frontend] Catálogo de gems não configurado. Usando defaults embutidos para manter a UI operante.");
+            return DEFAULT_GEM_PACKS;
+        }
+
+        return configured;
+    }
+
+    private GemPackView toView(GemPack pack) {
+        return new GemPackView(pack.id(), pack.name(), pack.gems(), pack.bonus(), pack.price(), pack.badge(), pack.description());
+    }
+
+    private String normalize(String value) {
+        return (value == null || value.isBlank()) ? null : value;
     }
 
     public void handleLogin(HttpExchange exchange) throws IOException {
@@ -462,8 +485,8 @@ public class FrontendApiController {
             return;
         }
 
-        List<GemPackView> response = GEM_PACKS.stream()
-                .map(pack -> new GemPackView(pack.id(), pack.name(), pack.gems(), pack.bonus(), pack.price()))
+        List<GemPackView> response = gemPacks.stream()
+                .map(this::toView)
                 .toList();
         respondJson(exchange, 200, response);
     }
@@ -483,7 +506,7 @@ public class FrontendApiController {
             return;
         }
 
-        Optional<GemPack> packOpt = GEM_PACKS.stream()
+        Optional<GemPack> packOpt = gemPacks.stream()
                 .filter(pack -> pack.id().equalsIgnoreCase(request.packId()))
                 .findFirst();
         if (packOpt.isEmpty()) {
@@ -659,8 +682,8 @@ public class FrontendApiController {
     private record JobConfigView(String id, String name, boolean enabled, Map<?, ?> blockRewards, Map<?, ?> mobRewards) {}
     private record CurrentJobView(String job) {}
     private record PortalView(String name, String world, int x, int y, int z, boolean online) {}
-    private record GemPack(String id, String name, int gems, int bonus, double price) {}
-    private record GemPackView(String id, String name, int gems, int bonus, double price) {}
+    private record GemPack(String id, String name, int gems, int bonus, double price, String badge, String description) {}
+    private record GemPackView(String id, String name, int gems, int bonus, double price, String badge, String description) {}
     private record GemPurchaseRequest(String packId) {}
     private record GemPurchaseResponse(String orderId, String packId, String packName, int gems, int bonus, double price,
                                        double newBalance) {}

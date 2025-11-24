@@ -123,6 +123,11 @@ a { color: var(--primary); text-decoration: none; }
 
 .pill.danger { color: var(--danger); }
 .pill.success { color: var(--success); }
+.pill.accent {
+    background: linear-gradient(135deg, rgba(76, 201, 240, 0.15), rgba(129, 140, 248, 0.25));
+    border-color: rgba(129, 140, 248, 0.4);
+    color: #dfe9ff;
+}
 
 .table {
     width: 100%;
