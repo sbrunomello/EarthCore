@@ -25,10 +25,13 @@ public class AuthSessionListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         sessionManager.logout(event.getPlayer());
-        if (authService.isRegistered(event.getPlayer().getUniqueId())) {
+        boolean registered = authService.isRegistered(event.getPlayer().getUniqueId());
+        if (registered) {
             event.getPlayer().sendMessage(AuthMessages.JOIN_MESSAGE_LOGIN);
+            event.getPlayer().sendTitle(AuthMessages.TITLE_LOGIN_HEADER, AuthMessages.TITLE_LOGIN_SUBTITLE, 10, 80, 20);
         } else {
             event.getPlayer().sendMessage(AuthMessages.JOIN_MESSAGE_REGISTER);
+            event.getPlayer().sendTitle(AuthMessages.TITLE_LOGIN_HEADER, AuthMessages.TITLE_REGISTER_SUBTITLE, 10, 80, 20);
         }
     }
 

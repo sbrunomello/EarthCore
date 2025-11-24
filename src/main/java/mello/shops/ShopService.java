@@ -452,6 +452,25 @@ public class ShopService {
         Entity entity = Bukkit.getEntity(shop.getNpcUuid());
         if (entity != null) {
             entity.remove();
+            return;
+        }
+
+        // Fallback defensivo para garantir que nenhum NPC fique órfão caso o UUID não esteja
+        // resolvido (chunk descarregado ou entidade recriada por terceiros).
+        for (World world : Bukkit.getWorlds()) {
+            for (Villager villager : world.getEntitiesByClass(Villager.class)) {
+                if (shop.getNpcUuid().equals(villager.getUniqueId())) {
+                    villager.remove();
+                    return;
+                }
+
+                String storedShopId = villager.getPersistentDataContainer()
+                        .getOrDefault(shopKey, PersistentDataType.STRING, null);
+                if (storedShopId != null && storedShopId.equals(shop.getId().toString())) {
+                    villager.remove();
+                    return;
+                }
+            }
         }
     }
 
