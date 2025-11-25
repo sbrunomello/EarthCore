@@ -234,7 +234,7 @@ public class EarthCore extends JavaPlugin {
 
         // Sistema de skills MMO (progressão e HUD)
         skillsConfig = new SkillsConfig(this);
-        skillHudService = new BossBarSkillHudService(this, skillsConfig, skillsConfig.getHudSettings(), getLogger());
+        skillHudService = new BossBarSkillHudService(this, skillsConfig, skillsConfig.getHudSettings());
         SkillStorage skillStorage = new SkillStorage(getDataFolder(), getLogger());
         skillsMessages = new SkillsMessages(this);
         skillService = new DefaultSkillService(skillStorage, skillsConfig, skillsConfig.getHudSettings(), skillHudService, getLogger());
