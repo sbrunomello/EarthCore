@@ -4,8 +4,6 @@ import mello.skills.PlayerSkillProgress;
 import mello.skills.SkillDefinition;
 import mello.skills.SkillDefinitionProvider;
 import mello.skills.SkillType;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -21,7 +19,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 /**
  * Implementação padrão usando {@link BossBar} para exibir progresso de XP,
@@ -34,16 +31,14 @@ public class BossBarSkillHudService implements SkillHudService {
     private final JavaPlugin plugin;
     private final SkillDefinitionProvider definitions;
     private final SkillHudSettings settings;
-    private final Logger logger;
 
     private final Map<UUID, BossBar> bars = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitTask> hideTasks = new ConcurrentHashMap<>();
 
-    public BossBarSkillHudService(JavaPlugin plugin, SkillDefinitionProvider definitions, SkillHudSettings settings, Logger logger) {
+    public BossBarSkillHudService(JavaPlugin plugin, SkillDefinitionProvider definitions, SkillHudSettings settings) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.definitions = Objects.requireNonNull(definitions, "definitions");
         this.settings = Objects.requireNonNull(settings, "settings");
-        this.logger = Objects.requireNonNull(logger, "logger");
     }
 
     @Override
@@ -81,7 +76,7 @@ public class BossBarSkillHudService implements SkillHudService {
             }
 
             scheduleHide(player);
-            sendActionBar(player, definition, skill, gainedXp, previousLevel, progress.getLevel());
+            // Feedback adicional de XP por action bar foi removido para evitar conflito com mensagens de Jobs.
         };
 
         // Garantir uso seguro da API Bukkit.
@@ -116,39 +111,6 @@ public class BossBarSkillHudService implements SkillHudService {
                 .replace("%progress_percent%", String.valueOf(progressPercent));
 
         return net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', formatted);
-    }
-
-    private void sendActionBar(Player player, SkillDefinition definition, SkillType skill, double gainedXp,
-                               int oldLevel, int newLevel) {
-        SkillHudSettingsActionBar actionBarSettings = settings.getActionBar();
-        if (!actionBarSettings.isEnabled()) {
-            return;
-        }
-
-        String skillDisplay = definition != null ? definition.getDisplayName() : skill.name();
-        String formatted = actionBarSettings.getFormat()
-                .replace("%skill%", skill.name())
-                .replace("%skill_display%", skillDisplay)
-                .replace("%gained_xp%", XP_FORMAT.format(gainedXp))
-                .replace("%old_level%", String.valueOf(oldLevel))
-                .replace("%new_level%", String.valueOf(newLevel));
-
-        formatted = net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', formatted);
-
-        try {
-            player.sendActionBar(formatted);
-            return;
-        } catch (NoSuchMethodError ignored) {
-            // Compatibilidade com versões antigas.
-        } catch (Throwable error) {
-            logger.warning("Falha ao enviar action bar de skill: " + error.getMessage());
-        }
-
-        try {
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(formatted));
-        } catch (Throwable error) {
-            logger.warning("Fallback de action bar de skill indisponível: " + error.getMessage());
-        }
     }
 
     private void scheduleHide(Player player) {

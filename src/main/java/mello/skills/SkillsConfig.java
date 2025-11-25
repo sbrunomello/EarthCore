@@ -149,7 +149,8 @@ public class SkillsConfig implements SkillDefinitionProvider {
         BarStyle overlay = parseOverlay(hudSection.getString("bossbar.overlay", "SEGMENTED_10"));
 
         ConfigurationSection actionBarSection = hudSection.getConfigurationSection("actionbar");
-        boolean actionBarEnabled = actionBarSection == null || actionBarSection.getBoolean("enabled", true);
+        boolean actionBarEnabled = actionBarSection != null && actionBarSection.getBoolean("enabled", false);
+        // Mantém desativado por padrão para não sobrescrever mensagens de Jobs ou outros sistemas na action bar.
         String actionBarFormat = actionBarSection != null
                 ? actionBarSection.getString("format",
                 "&a+%gained_xp% XP &7em &e%skill_display% &7(Nv %old_level% &7→ &a%new_level%)")

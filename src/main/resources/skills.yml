@@ -11,7 +11,7 @@ skills:
       color: "GREEN"
       overlay: "SEGMENTED_10"
     actionbar:
-      enabled: true
+      enabled: false # Mensagens de XP em action bar desativadas para não sobrescrever avisos do Jobs; ative apenas se precisar.
       format: "&a+%gained_xp% XP &7em &e%skill_display% &7(Nv %old_level% &7→ &a%new_level%)"
   MINING:
     display_name: "Minerador"
