@@ -10,29 +10,60 @@
 <body class="requires-auth">
 <div class="layout">
     <aside class="sidebar">
-        <div class="brand">🌎 EarthCore</div>
+        <div class="brand">
+            <div class="brand-logo">🌎</div>
+            <div>
+                <div class="brand-title">EarthCore</div>
+                <small class="muted">Painel do player</small>
+            </div>
+        </div>
         <nav class="nav">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/kingdom">Meu Reino</a>
-            <a href="/clan">Meu Clã</a>
-            <a href="/shops">Minhas Lojas</a>
-            <a href="/jobs">Jobs</a>
-            <a href="/portals">Portais</a>
-            <a href="/gems" class="active">Comprar Gems</a>
-            <a href="#" id="logout">Sair</a>
+            <a href="/dashboard">
+                <span class="nav-icon">📊</span>
+                <div><span class="nav-label">Dashboard</span><small>Visão geral</small></div>
+            </a>
+            <a href="/kingdom">
+                <span class="nav-icon">🏰</span>
+                <div><span class="nav-label">Meu Reino</span><small>Governança</small></div>
+            </a>
+            <a href="/clan">
+                <span class="nav-icon">🛡️</span>
+                <div><span class="nav-label">Meu Clã</span><small>Equipe</small></div>
+            </a>
+            <a href="/shops">
+                <span class="nav-icon">🛒</span>
+                <div><span class="nav-label">Minhas Lojas</span><small>Economia</small></div>
+            </a>
+            <a href="/jobs">
+                <span class="nav-icon">💼</span>
+                <div><span class="nav-label">Jobs</span><small>Progressão</small></div>
+            </a>
+            <a href="/portals">
+                <span class="nav-icon">🌀</span>
+                <div><span class="nav-label">Portais</span><small>Rede</small></div>
+            </a>
+            <a href="/gems" class="active">
+                <span class="nav-icon">✦</span>
+                <div><span class="nav-label">Comprar Gems</span><small>Loja</small></div>
+            </a>
+            <a href="#" id="logout">
+                <span class="nav-icon">↩️</span>
+                <div><span class="nav-label">Sair</span><small>Encerrar sessão</small></div>
+            </a>
         </nav>
     </aside>
     <main class="content">
-        <div class="toolbar">
+        <header class="page-header">
             <div>
-                <h2>Loja de Gems & VIP</h2>
-                <p class="muted">Checkout mock validando catálogo e créditos em tempo real. Ideal para testes do fluxo de monetização.</p>
+                <p class="eyebrow">Loja</p>
+                <h1>Gems & VIP</h1>
+                <p class="muted">Checkout mock com catálogo responsivo para validar monetização e saldo em tempo real.</p>
             </div>
-            <div class="stack" style="align-items:flex-end;gap:8px;">
-                <span class="pill" id="player-id"></span>
-                <span class="pill" id="gem-balance">0 ✦</span>
+            <div class="chip-group">
+                <span class="chip" id="player-id"></span>
+                <span class="chip soft" id="gem-balance">0 ✦</span>
             </div>
-        </div>
+        </header>
 
         <section class="card" id="gem-hero">
             <div class="toolbar">

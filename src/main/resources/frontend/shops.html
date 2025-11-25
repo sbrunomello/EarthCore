@@ -10,26 +10,77 @@
 <body class="requires-auth">
 <div class="layout">
     <aside class="sidebar">
-        <div class="brand">🌎 EarthCore</div>
+        <div class="brand">
+            <div class="brand-logo">🌎</div>
+            <div>
+                <div class="brand-title">EarthCore</div>
+                <small class="muted">Painel do player</small>
+            </div>
+        </div>
         <nav class="nav">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/kingdom">Meu Reino</a>
-            <a href="/clan">Meu Clã</a>
-            <a href="/shops" class="active">Minhas Lojas</a>
-            <a href="/jobs">Jobs</a>
-            <a href="/portals">Portais</a>
-            <a href="/gems">Comprar Gems</a>
-            <a href="#" id="logout">Sair</a>
+            <a href="/dashboard">
+                <span class="nav-icon">📊</span>
+                <div><span class="nav-label">Dashboard</span><small>Visão geral</small></div>
+            </a>
+            <a href="/kingdom">
+                <span class="nav-icon">🏰</span>
+                <div><span class="nav-label">Meu Reino</span><small>Governança</small></div>
+            </a>
+            <a href="/clan">
+                <span class="nav-icon">🛡️</span>
+                <div><span class="nav-label">Meu Clã</span><small>Equipe</small></div>
+            </a>
+            <a href="/shops" class="active">
+                <span class="nav-icon">🛒</span>
+                <div><span class="nav-label">Minhas Lojas</span><small>Economia</small></div>
+            </a>
+            <a href="/jobs">
+                <span class="nav-icon">💼</span>
+                <div><span class="nav-label">Jobs</span><small>Progressão</small></div>
+            </a>
+            <a href="/portals">
+                <span class="nav-icon">🌀</span>
+                <div><span class="nav-label">Portais</span><small>Rede</small></div>
+            </a>
+            <a href="/gems">
+                <span class="nav-icon">✦</span>
+                <div><span class="nav-label">Comprar Gems</span><small>Loja</small></div>
+            </a>
+            <a href="#" id="logout">
+                <span class="nav-icon">↩️</span>
+                <div><span class="nav-label">Sair</span><small>Encerrar sessão</small></div>
+            </a>
         </nav>
     </aside>
     <main class="content">
-        <div class="toolbar"><h2>Lojas</h2></div>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Economia</p>
+                <h1>Minhas Lojas</h1>
+                <p class="muted">Visual mais limpo para localizar coordenadas, estoque e itens com rapidez.</p>
+            </div>
+            <div class="chip-group">
+                <span class="chip soft">Suporte a modo demonstração</span>
+            </div>
+        </header>
         <section class="card">
-            <table class="table" id="shops"></table>
+            <div class="toolbar" style="margin-bottom:6px;">
+                <div>
+                    <p class="eyebrow">Catálogo</p>
+                    <h3>Lojas registradas</h3>
+                </div>
+                <span class="pill accent">Coord / estoque</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="table" id="shops"></table>
+            </div>
         </section>
         <section class="card" id="shop-details" hidden>
-            <h3>Itens</h3>
-            <table class="table" id="items"></table>
+            <p class="eyebrow">Itens</p>
+            <h3>Inventário da loja</h3>
+            <div class="table-wrapper">
+                <table class="table" id="items"></table>
+            </div>
         </section>
     </main>
 </div>

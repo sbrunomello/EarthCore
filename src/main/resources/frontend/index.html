@@ -7,22 +7,39 @@
     <link rel="stylesheet" href="/assets/css/styles.css">
 </head>
 <body>
-<div class="layout" style="justify-content:center;align-items:center;">
-    <div class="card" style="max-width:420px;width:100%;">
+<main class="content" style="display:grid;grid-template-columns:1.2fr 0.9fr;gap:22px;min-height:100vh;align-items:center;">
+    <section class="hero">
+        <p class="eyebrow">EarthCore</p>
+        <h2>Painel moderno para o seu mundo</h2>
+        <p class="muted">Gerencie saldo, reinos, clãs e lojas com uma interface refinada e preparada para telas grandes ou mobile. Use o mesmo login configurado no servidor.</p>
+        <div class="chip-group">
+            <span class="chip">Segurança first-party</span>
+            <span class="chip">UI responsiva</span>
+            <span class="chip soft">/register · /login</span>
+        </div>
+    </section>
+
+    <div class="card" style="max-width:460px;width:100%;margin-left:auto;">
         <div class="stack">
-            <h2>Entrar no Painel EarthCore</h2>
-            <p class="muted">Use o mesmo usuário e senha configurados in-game via /register e /login.</p>
+            <div class="toolbar" style="margin-bottom:6px;">
+                <div>
+                    <p class="eyebrow">Acesso</p>
+                    <h2>Entrar no painel</h2>
+                </div>
+                <span class="pill accent">EarthCore</span>
+            </div>
+            <p class="muted">Autentique com seu usuário in-game para sincronizar progressos e experimentar o painel redesenhado.</p>
             <label>Usuário
-                <input id="username" class="input" type="text" autocomplete="username">
+                <input id="username" class="input" type="text" autocomplete="username" placeholder="Seu nick">
             </label>
             <label>Senha
-                <input id="password" class="input" type="password" autocomplete="current-password">
+                <input id="password" class="input" type="password" autocomplete="current-password" placeholder="Senha segura">
             </label>
             <button id="login" class="button">Entrar</button>
             <div id="error" class="error" hidden></div>
         </div>
     </div>
-</div>
+</main>
 <script src="/assets/js/api.js"></script>
 <script>
     const loginBtn = document.querySelector('#login');

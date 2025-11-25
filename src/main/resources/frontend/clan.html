@@ -10,34 +10,81 @@
 <body class="requires-auth">
 <div class="layout">
     <aside class="sidebar">
-        <div class="brand">🌎 EarthCore</div>
+        <div class="brand">
+            <div class="brand-logo">🌎</div>
+            <div>
+                <div class="brand-title">EarthCore</div>
+                <small class="muted">Painel do player</small>
+            </div>
+        </div>
         <nav class="nav">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/kingdom">Meu Reino</a>
-            <a href="/clan" class="active">Meu Clã</a>
-            <a href="/shops">Minhas Lojas</a>
-            <a href="/jobs">Jobs</a>
-            <a href="/portals">Portais</a>
-            <a href="/gems">Comprar Gems</a>
-            <a href="#" id="logout">Sair</a>
+            <a href="/dashboard">
+                <span class="nav-icon">📊</span>
+                <div><span class="nav-label">Dashboard</span><small>Visão geral</small></div>
+            </a>
+            <a href="/kingdom">
+                <span class="nav-icon">🏰</span>
+                <div><span class="nav-label">Meu Reino</span><small>Governança</small></div>
+            </a>
+            <a href="/clan" class="active">
+                <span class="nav-icon">🛡️</span>
+                <div><span class="nav-label">Meu Clã</span><small>Equipe</small></div>
+            </a>
+            <a href="/shops">
+                <span class="nav-icon">🛒</span>
+                <div><span class="nav-label">Minhas Lojas</span><small>Economia</small></div>
+            </a>
+            <a href="/jobs">
+                <span class="nav-icon">💼</span>
+                <div><span class="nav-label">Jobs</span><small>Progressão</small></div>
+            </a>
+            <a href="/portals">
+                <span class="nav-icon">🌀</span>
+                <div><span class="nav-label">Portais</span><small>Rede</small></div>
+            </a>
+            <a href="/gems">
+                <span class="nav-icon">✦</span>
+                <div><span class="nav-label">Comprar Gems</span><small>Loja</small></div>
+            </a>
+            <a href="#" id="logout">
+                <span class="nav-icon">↩️</span>
+                <div><span class="nav-label">Sair</span><small>Encerrar sessão</small></div>
+            </a>
         </nav>
     </aside>
     <main class="content">
-        <div class="toolbar"><h2>Clã</h2><span class="pill" id="clan-name"></span></div>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Equipe</p>
+                <h1>Meu Clã</h1>
+                <p class="muted">Controle membros, claims e cofre em um painel mais organizado.</p>
+            </div>
+            <div class="chip-group">
+                <span class="chip" id="clan-name"></span>
+                <span class="chip soft">Visão colaborativa</span>
+            </div>
+        </header>
         <section class="card-grid" id="clan-overview"></section>
         <section class="card-grid" style="grid-template-columns: 1.2fr 1fr;">
             <div class="card">
+                <p class="eyebrow">Time</p>
                 <h3>Membros</h3>
-                <table class="table" id="member-table"></table>
+                <div class="table-wrapper">
+                    <table class="table" id="member-table"></table>
+                </div>
             </div>
             <div class="card">
+                <p class="eyebrow">Tesouro</p>
                 <h3>Banco</h3>
                 <div id="bank"></div>
             </div>
         </section>
         <section class="card">
+            <p class="eyebrow">Território</p>
             <h3>Claim</h3>
-            <table class="table" id="claim"></table>
+            <div class="table-wrapper">
+                <table class="table" id="claim"></table>
+            </div>
         </section>
     </main>
 </div>
