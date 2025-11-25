@@ -10,36 +10,83 @@
 <body class="requires-auth">
 <div class="layout">
     <aside class="sidebar">
-        <div class="brand">🌎 EarthCore</div>
+        <div class="brand">
+            <div class="brand-logo">🌎</div>
+            <div>
+                <div class="brand-title">EarthCore</div>
+                <small class="muted">Painel do player</small>
+            </div>
+        </div>
         <nav class="nav">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/kingdom" class="active">Meu Reino</a>
-            <a href="/clan">Meu Clã</a>
-            <a href="/shops">Minhas Lojas</a>
-            <a href="/jobs">Jobs</a>
-            <a href="/portals">Portais</a>
-            <a href="/gems">Comprar Gems</a>
-            <a href="#" id="logout">Sair</a>
+            <a href="/dashboard">
+                <span class="nav-icon">📊</span>
+                <div><span class="nav-label">Dashboard</span><small>Visão geral</small></div>
+            </a>
+            <a href="/kingdom" class="active">
+                <span class="nav-icon">🏰</span>
+                <div><span class="nav-label">Meu Reino</span><small>Governança</small></div>
+            </a>
+            <a href="/clan">
+                <span class="nav-icon">🛡️</span>
+                <div><span class="nav-label">Meu Clã</span><small>Equipe</small></div>
+            </a>
+            <a href="/shops">
+                <span class="nav-icon">🛒</span>
+                <div><span class="nav-label">Minhas Lojas</span><small>Economia</small></div>
+            </a>
+            <a href="/jobs">
+                <span class="nav-icon">💼</span>
+                <div><span class="nav-label">Jobs</span><small>Progressão</small></div>
+            </a>
+            <a href="/portals">
+                <span class="nav-icon">🌀</span>
+                <div><span class="nav-label">Portais</span><small>Rede</small></div>
+            </a>
+            <a href="/gems">
+                <span class="nav-icon">✦</span>
+                <div><span class="nav-label">Comprar Gems</span><small>Loja</small></div>
+            </a>
+            <a href="#" id="logout">
+                <span class="nav-icon">↩️</span>
+                <div><span class="nav-label">Sair</span><small>Encerrar sessão</small></div>
+            </a>
         </nav>
     </aside>
     <main class="content">
-        <div class="toolbar"><h2>Reino</h2><span class="pill" id="kingdom-name"></span></div>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Governança</p>
+                <h1>Meu Reino</h1>
+                <p class="muted">Visual renovado para acompanhar tier, banco, membros e claims.</p>
+            </div>
+            <div class="chip-group">
+                <span class="chip" id="kingdom-name"></span>
+                <span class="chip soft">Status em tempo real</span>
+            </div>
+        </header>
         <section class="card-grid" id="kingdom-overview"></section>
         <section class="card-grid" style="grid-template-columns: 1.2fr 1fr;">
             <div class="card">
+                <p class="eyebrow">Time</p>
                 <h3>Membros</h3>
-                <table class="table" id="member-table"></table>
+                <div class="table-wrapper">
+                    <table class="table" id="member-table"></table>
+                </div>
             </div>
             <div class="card">
+                <p class="eyebrow">Tesouro</p>
                 <h3>Banco</h3>
                 <div id="bank"></div>
-                <h3>Próximo Upkeep</h3>
+                <h3 style="margin-top:16px;">Próximo Upkeep</h3>
                 <div id="upkeep"></div>
             </div>
         </section>
         <section class="card">
+            <p class="eyebrow">Territórios</p>
             <h3>Claims</h3>
-            <table class="table" id="claims"></table>
+            <div class="table-wrapper">
+                <table class="table" id="claims"></table>
+            </div>
         </section>
     </main>
 </div>
