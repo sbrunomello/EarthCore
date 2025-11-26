@@ -15,7 +15,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.util.NumberConversions;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -66,12 +69,20 @@ public class SkillsCommand implements CommandExecutor {
         sender.sendMessage(messages.format("skills.command.header", headerPlaceholders));
 
         Map<SkillType, PlayerSkillProgress> progresses = new EnumMap<>(skillService.getAllProgress(targetId));
-        for (SkillType type : SkillType.values()) {
-            SkillDefinition definition = definitionProvider.getDefinition(type).orElse(null);
+        List<SkillDefinition> definitions = new ArrayList<>(definitionProvider.getDefinitions().values());
+        definitions.sort(Comparator.comparing(SkillDefinition::getDisplayName, String.CASE_INSENSITIVE_ORDER));
+
+        if (definitions.isEmpty()) {
+            sender.sendMessage(messages.format("skills.command.no_skills_configured"));
+            return true;
+        }
+
+        for (SkillDefinition definition : definitions) {
             if (definition == null || !definition.isEnabled()) {
                 continue;
             }
 
+            SkillType type = definition.getType();
             PlayerSkillProgress progress = progresses.getOrDefault(type,
                     new PlayerSkillProgress(targetId, type, 1, 0, 0));
 

@@ -23,6 +23,7 @@ public class SkillsMessages {
         defaults.put("skills.command.player_only", "&cApenas jogadores podem usar esse comando sem alvo.");
         defaults.put("skills.command.no_permission_others", "&cVocê não tem permissão para ver skills de outros jogadores.");
         defaults.put("skills.command.target_not_found", "&cJogador {target} não encontrado.");
+        defaults.put("skills.command.no_skills_configured", "&cNenhuma skill foi configurada no servidor.");
 
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {
