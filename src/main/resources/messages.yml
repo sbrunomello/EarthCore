@@ -30,3 +30,4 @@ skills.command.line: "&7[{skill_display}] &aNível {level} &7- &b{current_xp}&7/
 skills.command.player_only: "&cApenas jogadores podem usar esse comando sem alvo."
 skills.command.no_permission_others: "&cVocê não tem permissão para ver skills de outros jogadores."
 skills.command.target_not_found: "&cJogador {target} não encontrado."
+skills.command.no_skills_configured: "&cNenhuma skill foi configurada no servidor."
