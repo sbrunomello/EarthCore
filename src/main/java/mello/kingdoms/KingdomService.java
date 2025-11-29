@@ -8,6 +8,7 @@ import mello.core.claims.ClaimValidationResult;
 import mello.economy.EconomyService;
 import mello.economy.MoneyTransactionType;
 import mello.kingdoms.TaxBreakdown;
+import mello.map.BlueMapClaimIntegration;
 import org.bukkit.Chunk;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -36,7 +37,7 @@ public class KingdomService {
 
     private final Map<UUID, String> invites = new HashMap<>();
     private final Map<String, Set<UUID>> joinRequests = new HashMap<>();
-    private KingdomDynmapHook dynmapHook;
+    private BlueMapClaimIntegration blueMapIntegration;
     private ClanService clanService;
 
     /**
@@ -51,9 +52,8 @@ public class KingdomService {
         this.bankService = new KingdomBankService(config, logger);
     }
 
-    public void setDynmapHook(KingdomDynmapHook dynmapHook) {
-        this.dynmapHook = dynmapHook;
-        dynmapHook.redrawAll(storage.getKingdoms());
+    public void setBlueMapIntegration(BlueMapClaimIntegration blueMapIntegration) {
+        this.blueMapIntegration = blueMapIntegration;
     }
 
     public void setClanService(ClanService clanService) {
@@ -152,7 +152,7 @@ public class KingdomService {
         });
         storage.addKingdom(kingdom);
         logger.info("[Kingdoms] Novo reino criado: " + name + " por " + creator);
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         return OperationResult.ok("Reino criado com sucesso! Você agora é rei de " + name + ".");
     }
 
@@ -302,7 +302,7 @@ public class KingdomService {
             return OperationResult.fail("Saldo insuficiente para evoluir. Custo: " + settings.upgradeCost());
         }
         kingdom.setTier(next);
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         return OperationResult.ok("Reino evoluído para " + settings.displayName());
     }
 
@@ -321,7 +321,7 @@ public class KingdomService {
         if (kingdom.getMembers().isEmpty()) {
             storage.removeKingdom(kingdom.getName());
             logger.info("[Kingdoms] Reino removido por ficar vazio: " + kingdom.getName());
-            notifyDynmapRemoval(kingdom.getName());
+            notifyMapRemoval(kingdom.getName());
         }
         return OperationResult.ok("Você saiu do reino " + kingdom.getName());
     }
@@ -389,14 +389,14 @@ public class KingdomService {
     }
 
     /**
-     * Persiste um novo claim no armazenamento, atualiza Dynmap e sinaliza o
+     * Persiste um novo claim no armazenamento, atualiza BlueMap e sinaliza o
      * chunk no mundo para feedback visual.
      */
     public OperationResult finalizeClaim(Kingdom kingdom, Chunk chunk) {
         KingdomClaim claim = KingdomClaim.fromChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
         kingdom.addClaim(claim);
         storage.updateChunks(kingdom);
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         if (claimMarkerService != null) {
             claimMarkerService.markWithRedstoneTorches(chunk);
         }
@@ -428,7 +428,7 @@ public class KingdomService {
 
         kingdom.removeClaim(target);
         storage.updateChunks(kingdom);
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         return OperationResult.ok("Claim removido em " + chunk.getX() + ", " + chunk.getZ());
     }
 
@@ -439,7 +439,7 @@ public class KingdomService {
 
         joinRequests.remove(normalizeName(kingdom.getName()));
         storage.removeKingdom(kingdom.getName());
-        notifyDynmapRemoval(kingdom.getName());
+        notifyMapRemoval(kingdom.getName());
         return OperationResult.ok("Reino dissolvido com sucesso.");
     }
 
@@ -462,7 +462,7 @@ public class KingdomService {
         }
 
         bankService.deposit(kingdom, amount, "Depósito manual de jogador");
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         return OperationResult.ok(formatBankMessage("kingdom.bank.deposit.success", kingdom, amount));
     }
 
@@ -489,7 +489,7 @@ public class KingdomService {
         }
 
         economyService.deposit(playerId, amount, MoneyTransactionType.KINGDOM_WITHDRAW, "Saque do banco do reino");
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         return OperationResult.ok(formatBankMessage("kingdom.bank.withdraw.success", kingdom, amount));
     }
 
@@ -664,7 +664,7 @@ public class KingdomService {
         kingdom.removeClaim(latestClaim);
         kingdom.setLastClaimLossAt(now);
         storage.updateChunks(kingdom);
-        notifyDynmapUpdate(kingdom);
+        notifyMapUpdate(kingdom);
         notifyMembers(kingdom, formatMessage("kingdom.upkeep.claim_lost", kingdom, 0));
         logger.info("[Kingdoms] Claim " + latestClaim.getId() + " removido por dívida do reino " + kingdom.getName());
     }
@@ -672,7 +672,7 @@ public class KingdomService {
     private void disbandForDebt(Kingdom kingdom) {
         joinRequests.remove(normalizeName(kingdom.getName()));
         storage.removeKingdom(kingdom.getName());
-        notifyDynmapRemoval(kingdom.getName());
+        notifyMapRemoval(kingdom.getName());
         notifyMembers(kingdom, formatMessage("kingdom.upkeep.disbanded", kingdom, 0));
         logger.info("[Kingdoms] Reino dissolvido por dívida: " + kingdom.getName());
     }
@@ -750,15 +750,15 @@ public class KingdomService {
         }
     }
 
-    private void notifyDynmapUpdate(Kingdom kingdom) {
-        if (dynmapHook != null) {
-            dynmapHook.refreshKingdom(kingdom);
+    private void notifyMapUpdate(Kingdom kingdom) {
+        if (blueMapIntegration != null) {
+            blueMapIntegration.refreshKingdom(kingdom);
         }
     }
 
-    private void notifyDynmapRemoval(String kingdomName) {
-        if (dynmapHook != null) {
-            dynmapHook.removeKingdom(kingdomName);
+    private void notifyMapRemoval(String kingdomName) {
+        if (blueMapIntegration != null) {
+            blueMapIntegration.removeKingdom(kingdomName);
         }
     }
 

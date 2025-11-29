@@ -16,11 +16,12 @@ repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://maven.elmakers.com/repository/")
+    maven("https://jitpack.io")
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.3-R0.1-SNAPSHOT")
-    compileOnly("org.dynmap:dynmap-api:1.9")
+    compileOnly("com.github.BlueMap-Minecraft:BlueMapAPI:2.7.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("com.auth0:java-jwt:4.4.0")

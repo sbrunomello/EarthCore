@@ -15,7 +15,6 @@ import mello.jobs.JobStorage;
 import mello.jobs.JobsConfig;
 import mello.jobs.commands.JobCommand;
 import mello.jobs.listeners.JobListener;
-import mello.kingdoms.KingdomDynmapHook;
 import mello.kingdoms.KingdomMessages;
 import mello.kingdoms.KingdomService;
 import mello.kingdoms.KingdomStorage;
@@ -26,7 +25,6 @@ import mello.clans.ClanService;
 import mello.clans.ClanStorage;
 import mello.clans.ClansConfig;
 import mello.clans.commands.ClanCommand;
-import mello.clans.ClanDynmapHook;
 import mello.core.gui.GuiManager;
 import mello.core.gui.GuiMessages;
 import mello.core.claims.ClaimMarkerService;
@@ -54,9 +52,10 @@ import mello.core.commands.PortalCommand;
 import mello.core.notifications.NotificationListener;
 import mello.core.notifications.NotificationMessages;
 import mello.core.notifications.NotificationService;
+import mello.map.BlueMapClaimIntegration;
+import mello.map.BlueMapSettings;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.Plugin;
-import org.dynmap.DynmapAPI;
+import de.bluecolored.bluemap.api.BlueMapAPI;
 import mello.core.commands.HomeCommand;
 import mello.core.commands.MsgCommand;
 import mello.core.commands.MenuCommand;
@@ -118,7 +117,8 @@ public class EarthCore extends JavaPlugin {
     private PrivateMessageService privateMessageService;
     private NotificationService notificationService;
     private ShopService shopService;
-    private DynmapAPI dynmapAPI;
+    private BlueMapClaimIntegration blueMapIntegration;
+    private BlueMapSettings blueMapSettings;
     private FrontendServer frontendServer;
     private ClaimService claimService;
     private ClaimPreviewManager claimPreviewManager;
@@ -144,13 +144,14 @@ public class EarthCore extends JavaPlugin {
     /**
      * Inicializa todos os serviços do plugin em ordem explícita para evitar
      * dependências cíclicas. Também registra comandos, listeners e integrações
-     * externas como Dynmap e o servidor web embutido.
+     * externas como BlueMap e o servidor web embutido.
      */
     @Override
     public void onEnable() {
         getLogger().info("MonolitoServidor iniciado!");
 
         saveDefaultConfig();
+        blueMapSettings = BlueMapSettings.fromConfig(getConfig(), getLogger());
 
         // Sistema de autenticação básico (register/login)
         authStorage = new AuthStorage(getDataFolder(), getLogger());
@@ -192,7 +193,7 @@ public class EarthCore extends JavaPlugin {
 
         kingdomService.startUpkeepScheduler(this);
 
-        setupDynmap();
+        setupBlueMapIntegration();
 
         // Iniciar sistema de chat
         chatService = new ChatService(clanService, kingdomService, this);
@@ -334,34 +335,36 @@ public class EarthCore extends JavaPlugin {
     }
 
     /**
-     * Configura a integração com o plugin Dynmap, validando a presença e a
-     * compatibilidade da API antes de registrar hooks para reinos e clãs.
+     * Configura a integração com BlueMap usando apenas a API exposta em runtime
+     * pelo plugin opcional. Se o BlueMap não estiver instalado, a inicialização
+     * continua normalmente e apenas logamos a ausência.
      */
-    private void setupDynmap() {
-        Plugin dynmapPlugin = getServer().getPluginManager().getPlugin("dynmap");
-
-        if (dynmapPlugin == null) {
-            getLogger().warning("Dynmap não encontrado (plugin não carregado). Integração de claims desativada.");
+    private void setupBlueMapIntegration() {
+        if (blueMapSettings == null || !blueMapSettings.enabled()) {
+            getLogger().info("Integração com BlueMap desativada via configuração (map.bluemap.enabled=false).");
             return;
         }
 
-        if (!(dynmapPlugin instanceof DynmapAPI api)) {
-            getLogger().warning("Dynmap encontrado, mas não expõe DynmapAPI compatível. Classe: " + dynmapPlugin.getClass().getName());
+        BlueMapAPI.onEnable(this::initializeBlueMapIntegration);
+        BlueMapAPI.getInstance().ifPresentOrElse(
+                this::initializeBlueMapIntegration,
+                () -> getLogger().info("BlueMap não encontrado - integração de mapa desativada.")
+        );
+    }
+
+    private void initializeBlueMapIntegration(BlueMapAPI api) {
+        if (blueMapIntegration != null) {
             return;
         }
-
-        this.dynmapAPI = api;
 
         try {
-            KingdomDynmapHook kingdomHook = new KingdomDynmapHook(dynmapAPI, getLogger());
-            kingdomService.setDynmapHook(kingdomHook);
-
-            ClanDynmapHook clanHook = new ClanDynmapHook(dynmapAPI, getLogger());
-            clanService.setDynmapHook(clanHook);
-
-            getLogger().info("Integração com Dynmap habilitada - claims de reinos e clãs serão exibidos no mapa.");
-        } catch (IllegalStateException ex) {
-            getLogger().warning("Falha ao iniciar integração com Dynmap: " + ex.getMessage());
+            blueMapIntegration = new BlueMapClaimIntegration(api, blueMapSettings, getLogger());
+            kingdomService.setBlueMapIntegration(blueMapIntegration);
+            clanService.setBlueMapIntegration(blueMapIntegration);
+            blueMapIntegration.reloadAll(kingdomService.getAll(), clanService.getAll());
+            getLogger().info("Integração com BlueMap habilitada.");
+        } catch (Exception ex) {
+            getLogger().warning("Falha ao iniciar integração com BlueMap: " + ex.getMessage());
         }
     }
 

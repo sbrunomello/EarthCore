@@ -11,20 +11,26 @@ spawn:
   pitch: 0.0
 
 # Configuração do frontend incorporado que hospeda a experiência web unificada
-# junto ao plugin. O frontend expõe um iframe apontando para o Dynmap já
+# junto ao plugin. O frontend expõe um iframe apontando para o BlueMap já
 # existente, mais uma camada de autenticação simples via nome de usuário que
 # consulta as informações gravadas pelo plugin.
 frontend:
   enabled: true
   host: "0.0.0.0"
   port: 8210
-  dynmapUrl: "http://localhost:8123/"
+  mapUrl: "http://localhost:8100/"
   jwtSecret: "troque-este-segredo"
   jwtIssuer: "earthcore"
   allowedOrigins:
     - "http://localhost"
     - "http://127.0.0.1"
   rateLimitPerMinute: 30
+
+map:
+  bluemap:
+    enabled: true
+    kingdom_color: "#0044ff"
+    clan_color: "#00cc66"
 
 # Portais de viagem por aldeão: cada entrada representa um hub de continente.
 # O aldeão aparece no ponto "totem" e abre uma GUI com os demais portais configurados.

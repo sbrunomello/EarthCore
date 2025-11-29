@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 public record FrontendSettings(boolean enabled,
                                String host,
                                int port,
-                               String dynmapUrl,
+                               String mapUrl,
                                String jwtSecret,
                                String jwtIssuer,
                                Set<String> allowedOrigins,
@@ -30,7 +30,7 @@ public record FrontendSettings(boolean enabled,
         boolean enabled = config.getBoolean("frontend.enabled", true);
         String host = config.getString("frontend.host", "0.0.0.0");
         int port = config.getInt("frontend.port", 8210);
-        String dynmapUrl = config.getString("frontend.dynmapUrl", "http://localhost:8123/");
+        String mapUrl = config.getString("frontend.mapUrl", "http://localhost:8100/");
         String jwtSecret = config.getString("frontend.jwtSecret", "change-me-please");
         String jwtIssuer = config.getString("frontend.jwtIssuer", "earthcore");
         List<String> originList = config.getStringList("frontend.allowedOrigins");
@@ -41,9 +41,9 @@ public record FrontendSettings(boolean enabled,
             port = 8210;
         }
 
-        if (dynmapUrl == null || dynmapUrl.isBlank()) {
-            logger.warning("URL do Dynmap não configurada. Aplicando valor padrão http://localhost:8123/");
-            dynmapUrl = "http://localhost:8123/";
+        if (mapUrl == null || mapUrl.isBlank()) {
+            logger.warning("URL do mapa web não configurada. Aplicando valor padrão http://localhost:8100/");
+            mapUrl = "http://localhost:8100/";
         }
 
         if (jwtSecret == null || jwtSecret.isBlank()) {
@@ -60,6 +60,6 @@ public record FrontendSettings(boolean enabled,
                 ? Set.of("*")
                 : originList);
 
-        return new FrontendSettings(enabled, host, port, dynmapUrl, jwtSecret, jwtIssuer, allowedOrigins, rateLimit);
+        return new FrontendSettings(enabled, host, port, mapUrl, jwtSecret, jwtIssuer, allowedOrigins, rateLimit);
     }
 }

@@ -142,7 +142,7 @@
 </head>
 <body>
 <header>
-    <h1>EarthCore · Dynmap Hub</h1>
+    <h1>EarthCore · BlueMap Hub</h1>
     <p class="muted">Autenticação simplificada via nome de usuário (v1 experimental)</p>
 </header>
 
@@ -164,15 +164,15 @@
         </div>
     </section>
 
-    <section class="card" aria-label="Dynmap">
+    <section class="card" aria-label="BlueMap">
         <div id="map-container">
-            <iframe id="dynmap-frame" src="{{DYNMAP_URL}}" title="Dynmap"></iframe>
+            <iframe id="map-frame" src="{{MAP_URL}}" title="BlueMap"></iframe>
         </div>
     </section>
 </main>
 
 <script>
-    window.DynmapConfig = { baseUrl: "{{DYNMAP_URL}}" };
+    window.MapConfig = { baseUrl: "{{MAP_URL}}" };
 </script>
 <script src="/assets/app.js" defer></script>
 </body>
