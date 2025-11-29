@@ -95,3 +95,9 @@ permissions:
   core.starterkit:
     description: Autoriza o jogador a resgatar o kit inicial pelo comando /starterkit
     default: true
+  earthcore.skills:
+    description: Permite visualizar as próprias skills com o comando /skills
+    default: true
+  earthcore.skills.others:
+    description: Permite visualizar skills de outros jogadores usando /skills <jogador>
+    default: op
