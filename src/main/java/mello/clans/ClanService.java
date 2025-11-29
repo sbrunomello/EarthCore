@@ -8,6 +8,7 @@ import mello.economy.MoneyTransactionType;
 import mello.kingdoms.ClaimedChunk;
 import mello.kingdoms.Kingdom;
 import mello.kingdoms.KingdomService;
+import mello.map.BlueMapClaimIntegration;
 import org.bukkit.Chunk;
 
 import java.util.*;
@@ -26,7 +27,7 @@ public class ClanService {
     private final Logger logger;
     private final Map<UUID, String> invites = new HashMap<>();
     private KingdomService kingdomService;
-    private ClanDynmapHook dynmapHook;
+    private BlueMapClaimIntegration blueMapIntegration;
     private ClaimMarkerService claimMarkerService;
 
     /**
@@ -62,13 +63,8 @@ public class ClanService {
         return kingdomService;
     }
 
-    /**
-     * Registra a integração com Dynmap e força um redraw inicial para evitar
-     * discrepâncias visuais após reloads.
-     */
-    public void setDynmapHook(ClanDynmapHook dynmapHook) {
-        this.dynmapHook = dynmapHook;
-        dynmapHook.redrawAll(storage.getClans());
+    public void setBlueMapIntegration(BlueMapClaimIntegration blueMapIntegration) {
+        this.blueMapIntegration = blueMapIntegration;
     }
 
     public void setClaimMarkerService(ClaimMarkerService claimMarkerService) {
@@ -162,7 +158,7 @@ public class ClanService {
         if (clan.getMembers().isEmpty()) {
             storage.removeClan(clan.getName());
             logger.info("[Clans] Clã removido por ficar vazio: " + clan.getName());
-            notifyDynmapRemoval(clan.getName());
+            notifyMapRemoval(clan.getName());
         }
         return OperationResult.ok("Você saiu do clã " + clan.getName());
     }
@@ -224,13 +220,13 @@ public class ClanService {
     }
 
     /**
-     * Conclui o claim persistindo o território e disparando redraw no Dynmap.
+     * Conclui o claim persistindo o território e disparando redraw no BlueMap.
      */
     public OperationResult finalizeClaim(Clan clan, Chunk chunk) {
         ClaimedChunk claimedChunk = ClaimedChunk.fromChunk(chunk);
         clan.setClaim(claimedChunk);
         storage.updateClaim(clan);
-        notifyDynmapUpdate(clan);
+        notifyMapUpdate(clan);
         if (claimMarkerService != null) {
             claimMarkerService.markWithRedstoneTorches(chunk);
         }
@@ -256,7 +252,7 @@ public class ClanService {
 
         clan.setClaim(null);
         storage.updateClaim(clan);
-        notifyDynmapUpdate(clan);
+        notifyMapUpdate(clan);
         return OperationResult.ok("Claim do clã removido.");
     }
 
@@ -315,7 +311,7 @@ public class ClanService {
         if (claim != null) {
             clan.setClaim(null);
             storage.updateClaim(clan);
-            notifyDynmapUpdate(clan);
+            notifyMapUpdate(clan);
         }
         return claim;
     }
@@ -360,15 +356,15 @@ public class ClanService {
         storage.saveAll();
     }
 
-    private void notifyDynmapUpdate(Clan clan) {
-        if (dynmapHook != null) {
-            dynmapHook.refreshClan(clan);
+    private void notifyMapUpdate(Clan clan) {
+        if (blueMapIntegration != null) {
+            blueMapIntegration.refreshClan(clan);
         }
     }
 
-    private void notifyDynmapRemoval(String clanName) {
-        if (dynmapHook != null) {
-            dynmapHook.removeClan(clanName);
+    private void notifyMapRemoval(String clanName) {
+        if (blueMapIntegration != null) {
+            blueMapIntegration.removeClan(clanName);
         }
     }
 }

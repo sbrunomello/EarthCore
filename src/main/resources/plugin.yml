@@ -3,7 +3,7 @@ main: mello.EarthCore
 version: ${version}
 api-version: "1.21"
 author: Mello
-softdepend: [dynmap]
+softdepend: [BlueMap]
 
 commands:
   balance:

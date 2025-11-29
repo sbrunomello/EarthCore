@@ -4,10 +4,10 @@ Plugin monolítico de gameplay para servidores Minecraft estilo Earth, focado em
 
 ## Visão Geral do Projeto
 
-EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem reinos, disputam território e desenvolvem personagens em um ambiente persistente. O plugin atua como o "cérebro de gameplay" do servidor, orquestrando dinheiro, progressão, interações políticas e integrações externas (Dynmap e um futuro cliente web estilo RTS).
+EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem reinos, disputam território e desenvolvem personagens em um ambiente persistente. O plugin atua como o "cérebro de gameplay" do servidor, orquestrando dinheiro, progressão, interações políticas e integrações externas (BlueMap e um futuro cliente web estilo RTS).
 
 ### Documentação detalhada do que já está pronto
-- [Sistemas implementados](docs/core-systems.md): proteção de claims, economia, jobs, chat, portais, utilidades de teleporte/mensagens e frontend/Dynmap.
+- [Sistemas implementados](docs/core-systems.md): proteção de claims, economia, jobs, chat, portais, utilidades de teleporte/mensagens e frontend/BlueMap.
 
 ## Principais Funcionalidades
 
@@ -27,7 +27,7 @@ EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem
 - Sistema próprio de macroestrutura política: reinos controlam regiões (claims/chunks).
 - Criação de reino com custo, convites, cargos (rei, conselheiro, membro) e impostos.
 - Administração de território: permissões de construção/uso de containers e fronteiras.
-- Integração futura com Dynmap (fronteiras, marcadores) e web RTS (ordens remotas).
+- Integração com BlueMap (fronteiras, marcadores) e web RTS (ordens remotas).
 
 ### Clãs
 - Grupos paralelos aos reinos, focados em PvP ou cooperação.
@@ -44,7 +44,7 @@ EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem
 - Impostos de reinos em transações locais e custos de manutenção territorial.
 - Pontos de extensão para integrações externas (web market, moeda externa/cripto em estudo).
 
-### Integração com Dynmap
+### Integração com BlueMap
 - Exposição de dados de reinos, cidades, clãs e áreas de influência para markers/áreas.
 - Base para visualização macro do mapa e consumo por clientes web.
 
@@ -66,20 +66,20 @@ EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem
 - **Estrutura interna**: monorepo em um único .jar, com pacotes por domínio (core, economy, jobs, kingdoms, clans, skills, web, infra).
 - **Camadas**:
   - Domínio: serviços como `EconomyService`, `JobService`, `KingdomService`, `ClanService`, `SkillService`.
-  - Infraestrutura: persistência (MySQL/PostgreSQL), configuração, gateways externos (Dynmap, Web APIs).
-  - API/Bukkit: comandos, listeners de eventos e integrações com LuckPerms/Dynmap.
+  - Infraestrutura: persistência (MySQL/PostgreSQL), configuração, gateways externos (BlueMap, Web APIs).
+  - API/Bukkit: comandos, listeners de eventos e integrações com LuckPerms/BlueMap.
 - **Eventos Bukkit**: uso intensivo para reagir a ações de jogo (quebras de bloco, combate, login, interação com NPCs) e despachar lógicas de jobs/skills/economia.
 - **Configuração modular**: cada domínio possui seu próprio arquivo YAML, facilitando tuning sem recompilar.
 
 ## Instalação e Requisitos
 - Java 21+.
 - Paper ou Spigot 1.21.x (ou superior compatível).
-- Dependências recomendadas/esperadas: Dynmap, LuckPerms, EssentialsX.
+- Dependências recomendadas/esperadas: BlueMap, LuckPerms, EssentialsX.
 - Instalação: colocar o `EarthCore.jar` em `plugins/`, iniciar o servidor para gerar configs e reiniciar após ajustes.
 
-### Frontend web embutido (Dynmap + login simples)
-- O plugin sobe um servidor HTTP integrado que embeda o Dynmap em `http://<host>:<port>/` e oferece login por nome de usuário para exibir saldo, clã e reino.
-- Configure `frontend.host`, `frontend.port` e `frontend.dynmapUrl` em `plugins/EarthCore/config.yml` (padrão: `0.0.0.0:8210` apontando para `http://localhost:8123/`).
+### Frontend web embutido (BlueMap + login simples)
+- O plugin sobe um servidor HTTP integrado que embeda o BlueMap em `http://<host>:<port>/` e oferece login por nome de usuário para exibir saldo, clã e reino.
+- Configure `frontend.host`, `frontend.port` e `frontend.mapUrl` em `plugins/EarthCore/config.yml` (padrão: `0.0.0.0:8210` apontando para `http://localhost:8100/`).
 - Veja `docs/frontend.md` para detalhes de uso, endpoints (`/api/user`) e boas práticas de exposição.
 
 ## Configuração Básica
@@ -162,7 +162,7 @@ roles:
 - 🟢 Reinos e clãs com claims, cargos e impostos.
 - 🟡 Skills/MMO com árvore de benefícios.
 - 🟡 Lojas de jogador e mercado global.
-- 🟡 Integração completa com Dynmap (markers dinâmicos e áreas).
+- 🟡 Integração completa com BlueMap (markers dinâmicos e áreas).
 - 🟡 APIs REST/WebSocket para cliente web estilo RTS e automações.
 - 🟠 Integração opcional com moeda externa/cripto (em estudo).
 

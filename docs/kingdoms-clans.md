@@ -42,11 +42,11 @@ Este módulo adiciona gerenciamento político e social nativo ao plugin. Reinos 
 - **Dívida e penalidades**:
   - Incrementa `debtDays` e marca `atRiskSince` ao falhar uma cobrança.
   - Após `grace_days_before_penalty`, remove o claim mais recente a cada 24h sem pagamento (`kingdom.upkeep.claim_lost`).
-  - Após `grace_days_before_disband`, dissolve automaticamente o reino e remove markers do Dynmap (`kingdom.upkeep.disbanded`).
+  - Após `grace_days_before_disband`, dissolve automaticamente o reino e remove markers do BlueMap (`kingdom.upkeep.disbanded`).
 
-## Marcação visual e Dynmap
+## Marcação visual e BlueMap
 - **Tochas nos claims**: sempre que um chunk é claimado pelo reino, o serviço coloca tochas nos quatro cantos da superfície do chunk para feedback imediato sem GUIs.
-- **Dynmap**: hooks de reinos e clãs são carregados automaticamente se o plugin Dynmap estiver presente; claims são redesenhados após depósitos, claims/unclaims e disband, ou removidos junto ao reino/clã.
+- **BlueMap**: hooks de reinos e clãs são carregados automaticamente se o plugin BlueMap estiver presente; claims são redesenhados após depósitos, claims/unclaims e disband, ou removidos junto ao reino/clã.
 - **Feedback imediato**: após confirmar um claim (GUI ou comando), partículas verdes contornam o chunk por alguns segundos para facilitar a visualização da área protegida.
 
 ## Configuração

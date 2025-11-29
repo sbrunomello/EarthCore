@@ -177,7 +177,7 @@ public class FrontendServer {
         String cached = cachedPages.get(fileName);
         if (cached == null) {
             cached = loadResource("/frontend/" + fileName)
-                    .replace("{{DYNMAP_URL}}", settings.dynmapUrl());
+                    .replace("{{MAP_URL}}", settings.mapUrl());
             cachedPages.put(fileName, cached);
         }
         sendResponse(exchange, 200, "text/html; charset=utf-8", cached.getBytes(StandardCharsets.UTF_8));

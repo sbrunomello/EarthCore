@@ -36,7 +36,7 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Cargos e permissões**: líderes podem convidar, reivindicar território e sacar do banco; oficiais podem convidar/claimar se a role permitir (`ClanRole.canInvite/canClaim`).
 - **Claim inicial único**: cada clã só mantém um `ClaimedChunk` e precisa dele para evoluir a reino. Claims existentes impedem reclaims de outros clãs/reinos.
 - **Banco e impostos internos**: depósitos sofrem imposto configurável (`bankTaxRate`) antes de entrar no cofre; apenas líder saca. O cálculo de imposto (`calculateTax`) permite que ganhos externos direcionem parte ao banco do clã.
-- **Dynmap**: quando habilitado, o hook redesenha claims e remove marcadores ao dissolver o clã.
+- **BlueMap**: quando habilitado, o hook redesenha claims e remove marcadores ao dissolver o clã.
 
 ## Reinos
 - **Requisito de clã**: apenas o líder de um clã com claim ativo e mínimo de membros pode fundar um reino; o claim vira a capital e os membros do clã são copiados como cidadãos.
@@ -44,7 +44,7 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Evolução de tier**: `/kingdom upgrade` verifica requisitos por tier (`minMembers`, `minClaimsUsed`, custo) e atualiza o nível com feedback de mensagem/GUI.
 - **Banco e impostos automáticos**: depósitos/saques usam `KingdomBankService` (somente líder saca) e podem aplicar imposto automático sobre ganhos de membros (config `kingdom_bank.tax`). A função `calculateTax/applyTax` separa valor líquido do tributo para o reino.
 - **Upkeep agendado**: um scheduler periódico cobra manutenção baseada em claims e multiplicadores por tier. Usa saldo do banco, depois do rei; se falhar, acumula dívida, remove claims periodicamente e dissolve após dias de carência.
-- **Dynmap**: claims de reino são desenhados/atualizados pelo `KingdomDynmapHook`, sincronizando exclusões ao disband.
+- **BlueMap**: claims de reino são desenhados/atualizados pelo hook dedicado, sincronizando exclusões ao disband.
 
 ## GUIs embutidos
 - **Sistema base**: `GuiManager` registra inventários controlados, cancela cliques externos e entrega eventos para GUIs concretas, protegendo o jogador com mensagens de erro seguras.
@@ -89,10 +89,10 @@ Este arquivo descreve o que já está funcional dentro do plugin, com foco em m�
 - **Comando** (`/starterkit`): depende da permissão `core.starterkit` (true por padrão) e respeita cooldown configurável (`command.cooldown-seconds`). As mensagens de sucesso/bloqueio são parametrizadas com `%time%` e reutilizam o mesmo kit do fluxo automático.
 - **Persistência e auditoria**: `starter-kit-data.yml` guarda quem já recebeu o kit e o último uso do comando por UUID. Sempre que um kit é entregue, sobram itens são dropados aos pés do jogador e mensagens opcionais orientam sobre o drop.
 
-## Frontend embutido e Dynmap
-- **Inicialização**: `FrontendServer` sobe automaticamente se `frontend.enabled` estiver `true`, usando host/porta da config e apontando o iframe para `frontend.dynmapUrl`.
+## Frontend embutido e BlueMap
+- **Inicialização**: `FrontendServer` sobe automaticamente se `frontend.enabled` estiver `true`, usando host/porta da config e apontando o iframe para `frontend.mapUrl`.
 - **Dados expostos**: endpoint `/api/user?username=<nick>` retorna saldo, reino e clã consultando os serviços internos; ideal para painel informativo.
-- **Dynmap**: se o plugin Dynmap estiver carregado, o hook adiciona áreas de claims de reinos/clãs no mapa com logging de status na inicialização.
+- **BlueMap**: se o plugin BlueMap estiver carregado, os claims de reinos e clãs são projetados automaticamente no mapa via API oficial.
 
 ## Autenticação offline (register/login)
 - **Persistência segura**: hashes bcrypt ficam em `plugins/EarthCore/auth.yml` via `AuthStorage`; nenhuma senha é salva em texto puro.
