@@ -20,10 +20,12 @@ public class SkillsMessages {
     public SkillsMessages(JavaPlugin plugin) {
         defaults.put("skills.command.header", "&eSkills de {player}:\n");
         defaults.put("skills.command.line", "&7[{skill_display}] &aNível {level} &7- &b{current_xp}&7/&b{required_xp} XP &7({progress_percent}%)");
-        defaults.put("skills.command.player_only", "&cApenas jogadores podem usar esse comando sem alvo.");
+        defaults.put("skills.command.player_only", "&cApenas jogadores podem usar esse comando.");
         defaults.put("skills.command.no_permission_others", "&cVocê não tem permissão para ver skills de outros jogadores.");
         defaults.put("skills.command.target_not_found", "&cJogador {target} não encontrado.");
         defaults.put("skills.command.no_skills_configured", "&cNenhuma skill foi configurada no servidor.");
+        defaults.put("skills.command.no_arguments", "&eUse apenas /skills para abrir sua GUI de skills.");
+        defaults.put("skills.gui.title", "&8Suas Skills");
 
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {

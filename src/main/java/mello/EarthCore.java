@@ -265,7 +265,7 @@ public class EarthCore extends JavaPlugin {
         getCommand("shop").setExecutor(new ShopCommand(shopService));
         getCommand("register").setExecutor(new RegisterCommand(authService, authSessionManager));
         getCommand("login").setExecutor(new LoginCommand(authService, authSessionManager));
-        getCommand("skills").setExecutor(new SkillsCommand(skillService, skillsConfig, skillsMessages));
+        getCommand("skills").setExecutor(new SkillsCommand(skillService, skillsConfig, skillsMessages, guiManager));
         getServer().getPluginManager().registerEvents(new EconomyListener(economyService), this);
         getServer().getPluginManager().registerEvents(new NotificationListener(notificationService), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(claimPreviewManager, claimCommand), this);

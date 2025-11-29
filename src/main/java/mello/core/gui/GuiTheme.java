@@ -12,7 +12,8 @@ public enum GuiTheme {
     KINGDOM(Material.YELLOW_STAINED_GLASS_PANE, Material.GOLD_BLOCK, Material.GOLDEN_HELMET),
     CLAIM(Material.ORANGE_STAINED_GLASS_PANE, Material.MAP, Material.PAPER),
     SHOP(Material.PURPLE_STAINED_GLASS_PANE, Material.EMERALD_BLOCK, Material.EMERALD),
-    PORTAL(Material.CYAN_STAINED_GLASS_PANE, Material.LAPIS_BLOCK, Material.NETHER_STAR);
+    PORTAL(Material.CYAN_STAINED_GLASS_PANE, Material.LAPIS_BLOCK, Material.NETHER_STAR),
+    SKILLS(Material.LIME_STAINED_GLASS_PANE, Material.BOOKSHELF, Material.ENCHANTED_BOOK);
 
     private final Material borderMaterial;
     private final Material contentMaterial;
