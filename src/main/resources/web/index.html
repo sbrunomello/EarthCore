@@ -165,8 +165,12 @@
     </section>
 
     <section class="card" aria-label="BlueMap">
-        <div id="map-container">
-            <iframe id="map-frame" src="{{MAP_URL}}" title="BlueMap"></iframe>
+        <div class="form-row" style="justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <h2 style="margin: 0;">BlueMap</h2>
+            <button id="map-fullscreen" type="button">Abrir em tela cheia</button>
+        </div>
+        <div id="map-container" style="margin-top: 10px;">
+            <iframe id="map-frame" src="{{MAP_URL}}" title="BlueMap" allowfullscreen></iframe>
         </div>
     </section>
 </main>

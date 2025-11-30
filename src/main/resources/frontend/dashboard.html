@@ -75,9 +75,14 @@
                         <h3>BlueMap</h3>
                         <p class="muted">Visualize a evolução do servidor sem sair do painel.</p>
                     </div>
-                    <span class="pill accent">Live</span>
+                    <div class="map-actions">
+                        <button id="open-map" class="button ghost" type="button">Tela cheia</button>
+                        <span class="pill accent">Live</span>
+                    </div>
                 </div>
-                <iframe src="{{MAP_URL}}" style="border:none;width:100%;height:420px;border-radius:12px;"></iframe>
+                <div class="map-embed" id="map-embed" role="region" aria-label="Visualização do BlueMap">
+                    <iframe id="bluemap-frame" src="{{MAP_URL}}" title="BlueMap ao vivo" allowfullscreen></iframe>
+                </div>
             </div>
             <div class="card">
                 <p class="eyebrow">Status</p>
@@ -110,6 +115,39 @@
     const txTable = document.querySelector('#transactions');
     const coordsBox = document.querySelector('#coords');
     const statsBox = document.querySelector('#stats');
+    const mapButton = document.querySelector('#open-map');
+    const mapContainer = document.querySelector('#map-embed');
+    const mapUrl = '{{MAP_URL}}';
+
+    /**
+     * Normaliza a URL do BlueMap garantindo que caminhos relativos funcionem
+     * mesmo quando o iframe abre em tela cheia ou nova aba.
+     */
+    const normalizeMapUrl = (url) => {
+        if (!url) return '';
+        return url.endsWith('/') ? url : `${url}/`;
+    };
+
+    /**
+     * Tenta colocar o iframe em tela cheia; caso o navegador bloqueie,
+     * abre o mapa do BlueMap em uma nova aba para preservar a experiência.
+     */
+    const openMapFullscreen = async () => {
+        const targetUrl = normalizeMapUrl(mapUrl);
+
+        if (document.fullscreenEnabled && mapContainer?.requestFullscreen) {
+            try {
+                await mapContainer.requestFullscreen();
+                return;
+            } catch (err) {
+                console.warn('Não foi possível usar fullscreen nativo, abrindo em nova aba.', err);
+            }
+        }
+
+        if (targetUrl) {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        }
+    };
     const renderCards = (info) => {
         const cards = [];
         cards.push(`<div class="card"><h3>Coins</h3><p>${UI.formatCurrency(info.balance)}</p></div>`);
@@ -144,6 +182,8 @@
     };
 
     const formatGems = (value) => `${Number(value).toLocaleString('pt-BR')} ✦`;
+
+    mapButton?.addEventListener('click', openMapFullscreen);
 
     const refresh = async () => {
         try {

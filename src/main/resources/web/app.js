@@ -3,6 +3,9 @@
     const loginButton = document.getElementById('login-btn');
     const profileContainer = document.getElementById('profile');
     const statusBadge = document.getElementById('status');
+    const mapButton = document.getElementById('map-fullscreen');
+    const mapContainer = document.getElementById('map-container');
+    const mapUrl = window.MapConfig?.baseUrl;
 
     const showStatus = (message, tone = 'warning') => {
         statusBadge.textContent = message;
@@ -15,6 +18,32 @@
     };
 
     const buildListItem = (label, value) => `<p class="muted"><strong>${label}:</strong> ${value ?? '—'}</p>`;
+
+    const normalizeMapUrl = (url) => {
+        if (!url) return '';
+        return url.endsWith('/') ? url : `${url}/`;
+    };
+
+    /**
+     * Tenta usar fullscreen do navegador para o BlueMap; se falhar, abre uma nova aba.
+     * Mantém a UX consistente mesmo com bloqueios de permissões.
+     */
+    const handleMapFullscreen = async () => {
+        const targetUrl = normalizeMapUrl(mapUrl);
+
+        if (document.fullscreenEnabled && mapContainer?.requestFullscreen) {
+            try {
+                await mapContainer.requestFullscreen();
+                return;
+            } catch (error) {
+                console.warn('Fallback para nova aba após falha no fullscreen do mapa', error);
+            }
+        }
+
+        if (targetUrl) {
+            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        }
+    };
 
     const renderProfile = (data) => {
         const fragments = [];
@@ -66,6 +95,7 @@
         }
     };
 
+    mapButton?.addEventListener('click', handleMapFullscreen);
     loginButton.addEventListener('click', fetchProfile);
     usernameInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
