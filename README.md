@@ -2,6 +2,12 @@
 
 Plugin monolítico de gameplay para servidores Minecraft estilo Earth, focado em dominação de território, economia profunda e progressão de personagens. O objetivo é reduzir a dependência de plugins de terceiros, concentrando sistemas críticos como economia, jobs, reinos, clãs e skills em um único .jar.
 
+## Estado da implementação
+
+O repositório contém serviços Java para economia, claims, clãs, jobs, skills e integrações. A persistência atual da economia usa **YAML** em [EconomyRepository](src/main/java/mello/economy/EconomyRepository.java); MySQL/PostgreSQL representam uma direção de evolução, não o backend implementado nesse módulo.
+
+Os testes atuais em [SkillCurveTest](src/test/java/mello/skills/SkillCurveTest.java) cobrem a curva de XP e progressão de nível. Cobertura mais ampla dos serviços, atomicidade das operações monetárias e validação de integração com o servidor continuam como trabalho de evolução.
+
 ## Visão Geral do Projeto
 
 EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem reinos, disputam território e desenvolvem personagens em um ambiente persistente. O plugin atua como o "cérebro de gameplay" do servidor, orquestrando dinheiro, progressão, interações políticas e integrações externas (Dynmap e um futuro cliente web estilo RTS).
@@ -66,7 +72,7 @@ EarthCore é pensado para servidores com mapa da Terra, onde jogadores constroem
 - **Estrutura interna**: monorepo em um único .jar, com pacotes por domínio (core, economy, jobs, kingdoms, clans, skills, web, infra).
 - **Camadas**:
   - Domínio: serviços como `EconomyService`, `JobService`, `KingdomService`, `ClanService`, `SkillService`.
-  - Infraestrutura: persistência (MySQL/PostgreSQL), configuração, gateways externos (Dynmap, Web APIs).
+  - Infraestrutura: persistência atual em YAML nos módulos implementados, configuração e gateways externos (Dynmap, Web APIs); persistência SQL é uma evolução planejada.
   - API/Bukkit: comandos, listeners de eventos e integrações com LuckPerms/Dynmap.
 - **Eventos Bukkit**: uso intensivo para reagir a ações de jogo (quebras de bloco, combate, login, interação com NPCs) e despachar lógicas de jobs/skills/economia.
 - **Configuração modular**: cada domínio possui seu próprio arquivo YAML, facilitando tuning sem recompilar.
